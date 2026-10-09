@@ -28,7 +28,7 @@ void test('Android source dispatch admits only the exact Maestro camera selectio
     false,
   );
   assert.equal(
-    isSupportedAndroidCameraSourceSelection(selection({ engine: 'detox' }).arguments),
+    isSupportedAndroidCameraSourceSelection(selection({ engine: 'detox' as never }).arguments),
     false,
   );
   assert.equal(
@@ -65,7 +65,7 @@ void test('Android source dispatch forwards the exact revalidated selection to i
 void test('Android source dispatch rejects a cross-platform or Detox selection before the runner', async () => {
   for (const invalid of [
     selection({ platform: 'ios' }),
-    selection({ engine: 'detox' }),
+    selection({ engine: 'detox' as never }),
     selection({ scenario: 'SCN-camera-denied-ios' }),
     selection({ mode: 'fixture' }),
   ]) {

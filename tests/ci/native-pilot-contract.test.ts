@@ -149,7 +149,7 @@ void test('native argument parsing rejects ambiguous/incomplete inputs before an
 void test('selection derives all cells from the canonical declaration; unknown/platform/flow/stale declarations block', async () => {
   const declared = await inventory();
   for (const row of declared.scenarios)
-    for (const engine of ['maestro', 'detox'])
+    for (const engine of ['maestro'])
       for (const mode of ['fixture', 'integration']) {
         const args = parseNativePilotArguments([
           `--platform=${row.platform}`,
@@ -279,7 +279,7 @@ void test('native completion rejects false pass, altered identity, missing core 
       );
     }
     for (const platform of ['ios', 'android'] as const)
-      for (const engine of ['maestro', 'detox'] as const)
+      for (const engine of ['maestro'] as const)
         for (const mode of ['integration'] as const) {
           const matrixDeclaration = structuredClone(declared);
           const matrixScenario = matrixDeclaration.scenarios.find(
@@ -346,7 +346,7 @@ void test('native completion rejects false pass, altered identity, missing core 
         x.platform = 'android';
       },
       (x: typeof receipt) => {
-        x.engine = 'detox';
+        x.engine = 'detox' as never;
       },
       (x: typeof receipt) => {
         x.dataMode = 'fixture';
@@ -493,7 +493,7 @@ void test('canonical native ledgers are equivalent across platforms/engines and 
   ] as const) {
     let baseline: unknown;
     for (const platform of ['ios', 'android'] as const)
-      for (const engine of ['maestro', 'detox'] as const) {
+      for (const engine of ['maestro'] as const) {
         const selected = await selectNativePilotScenario(
           { platform, engine, scenario: `SCN-${family}-${platform}`, mode: 'integration' },
           declared,

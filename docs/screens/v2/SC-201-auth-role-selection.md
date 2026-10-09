@@ -61,8 +61,8 @@
   - `features/auth/role-selection-runtime.test.ts`
 - Current implementation status:
   - Full role-card UX is implemented with student/professional options, role-lock helper copy, and required-selection validation.
-  - A deterministic runtime source contract verifies that the Continue control receives and exposes the disabled accessibility/interaction state before role selection; native E2E verifies the user remains on role selection before a choice because iOS Detox reports the backing React Native view's generic `enabled` attribute instead of its accessibility disabled state.
-  - Native E2E initializes Detox synchronization as disabled in the app launch arguments so startup analytics cannot block the test boundary.
+  - A deterministic runtime source contract verifies that the Continue control receives and exposes the disabled accessibility/interaction state before role selection; native E2E verifies the user remains on role selection before a choice because the native accessibility tree can report the backing React Native view's generic `enabled` attribute instead of its accessibility disabled state.
+  - Native E2E starts every case from a fresh, clean-state app launch, so startup analytics and earlier cases cannot block the test boundary.
   - Self-guided start path is implemented through Student selection + Continue, commits `student` role lock through auth profile source abstraction, and routes to student home.
   - Continue action commits selected role lock through auth profile source abstraction and routes to role-specific journeys:
     - Student -> `/` (self-managed tracking shell).

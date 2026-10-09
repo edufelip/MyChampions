@@ -55,7 +55,7 @@ void test('all iOS adapters preserve the cold binding into the owned capture cal
   assert.match(runner, /coldReset: coldResetPreparation \?\? undefined,/u);
   assert.match(
     runner,
-    /executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH[\s\S]{0,420}?Cold reset consumption requires/u,
+    /coldResetExpectation &&[\s\S]{0,160}?executionAdapter === 'ios-session'[\s\S]{0,240}?Cold reset consumption requires/u,
   );
   assert.match(runner, /Cold reset consumption requires an iOS Maestro callback adapter/u);
   assert.match(runner, /target: deferredColdResetBinding\.target,/u);

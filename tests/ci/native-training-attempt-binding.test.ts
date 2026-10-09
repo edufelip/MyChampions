@@ -13,8 +13,6 @@ import {
 for (const { engine, platform } of [
   { engine: 'maestro', platform: 'ios' },
   { engine: 'maestro', platform: 'android' },
-  { engine: 'detox', platform: 'ios' },
-  { engine: 'detox', platform: 'android' },
 ] as const)
   void test(`${platform}/${engine} requested, capture and backend training identities stay distinct and tampering cannot silently rebind`, async () => {
     // Private preparation controls only. No native execution/public pass is implied.

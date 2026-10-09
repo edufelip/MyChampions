@@ -12,7 +12,6 @@ import {
   type DetoxAndroidOwnedCommandExecution,
   type DetoxAndroidSessionStoragePhase,
 } from '../../scripts/testing/detox-android-session-storage-producer';
-import { ownedDetoxBaselineFactories } from '../../scripts/testing/detox-integrated-session-baseline';
 import type { NativeCommandExecution } from '../../scripts/testing/owned-native-command';
 
 const presentQuery = JSON.stringify([
@@ -471,49 +470,6 @@ void test('does not dispatch any adb command after cancellation', async () => {
       }),
     );
     assert.deepEqual(target.calls, []);
-  } finally {
-    await rm(artifactRoot, { recursive: true, force: true });
-  }
-});
-
-void test('baseline factory delegates to the owned Android producer and rejects a target without it', async () => {
-  const artifactRoot = await privateRoot();
-  const runtime = targetFactory();
-  const target = {
-    platform: 'android' as const,
-    deviceId: runtime.target.serial,
-    ownership: {
-      artifactRoot,
-      hostLockRequired: true as const,
-      cleanupAuthorized: true as const,
-    },
-    verify: runtime.target.verify,
-    stop: () => Promise.resolve(),
-    androidSessionStorage: runtime.target,
-  };
-  try {
-    const reader = ownedDetoxBaselineFactories.readAndroidSessionStorageCheckpoint;
-    assert(reader);
-    const checkpoint = await reader({
-      checkpoint: 'afterLogin',
-      artifactRoot,
-      target,
-      binding: runtime.binding,
-      actorAuthUid: 'coach-1',
-      signal: new AbortController().signal,
-    });
-    assert.equal(checkpoint.status, 'session-present');
-    await assert.rejects(
-      reader({
-        checkpoint: 'afterLogin',
-        artifactRoot,
-        target: { ...target, androidSessionStorage: undefined },
-        binding: runtime.binding,
-        actorAuthUid: 'coach-1',
-        signal: new AbortController().signal,
-      }),
-      /owned Android target runtime/,
-    );
   } finally {
     await rm(artifactRoot, { recursive: true, force: true });
   }

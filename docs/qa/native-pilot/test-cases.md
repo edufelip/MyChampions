@@ -4,7 +4,7 @@ The platform IDs are `SCN-<family>-ios` and `SCN-<family>-android`; flow IDs are
 `FLW-<family>`. These are plan-local scenarios, not replacement product TC IDs.
 Read the linked screen/UC/rule before assertions. Every case uses a fresh
 owned attempt fixture, normal app actions, declared locale and disabled
-operation-under-test bypasses. Maestro and Detox must prove the same assertions.
+operation-under-test bypasses. Maestro must prove these assertions.
 
 For the fresh English iOS inventory target, observe the native credential-save
 offer after sign-in and decline `Not Now` before asserting the app's home state.
@@ -88,7 +88,7 @@ smoke/debug qualification; preserve first failures and both engine receipts.
 Five families × two platforms × two engines × 20 attempts is at least 400
 attempts before extra branches/locales. The 19/20 threshold, controlled
 regressions, zero unexplained failures/leaks and later protected hosted gates
-remain mandatory. No Detox deletion is authorized by a local pilot pass.
+remain mandatory. The owner later replaced this bar (2026-10-07): a real passing Maestro run per platform plus a detected deliberate bug, after which Detox was retired (2026-10-09).
 
 ## Native logout owner decision (2026-10-03, 18:58 UTC)
 

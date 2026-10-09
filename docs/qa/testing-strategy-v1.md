@@ -1,6 +1,6 @@
 ## 2026-10-06 — Android camera impact registration
 
-Status: **In progress** for testing modernization (D-218 / BL-018). Register the existing Android Detox camera spec as `detox:integrated-camera-android`, with `owned-integrated-camera` fixtures and `ci:false`, matching the existing iOS integration entry. This resolves the fast-quality manifest omission without enabling a selective native runner. Actual native qualification, protected hosted receipt and CI promotion remain **Pending**. No product/provider/localization behavior changes.
+Status: **In progress** for testing modernization (D-218 / BL-018). Native E2E moved from Detox to Maestro on 2026-10-09: the five integrated journeys pass on iOS and Android through the native pilot, and the 67 former Detox fixture cases run as the tagged Maestro suite in `.maestro/suite`. Detox, its specs and its CI lanes are retired. Protected hosted receipts and CI promotion remain **Pending**. No product/provider/localization behavior changes.
 
 # Testing strategy V1
 
@@ -19,7 +19,7 @@ Implemented P0/P1: AST inventory, separate server non-DB/integration commands, o
 
 Client Node/tsx checks combine domain logic, architecture policy and source-shape assertions. `yarn test:component` runs Jest/Expo/RNTL only under `tests/component/`; `test:all` runs unit then component suites. Pinned component dependencies are RNTL 14.0.1, test-renderer 1.1.0 and jest-expo 54.0.18; runtime React 19.1/Expo 54 remain unchanged. Client ambient types explicitly include React/React Native/Node/Jest so the sibling Bun workspace's globals do not change fetch mock contracts. Playwright has fixture UI batches and a memory-backed HTTP/session lane (`test:e2e:web:server`); that lane does not prove durable Postgres writes. Detox remains the native engine. Real providers have separate credential-gated lanes.
 
-Checked-in `trusted-selective-tests.yml` handles authorized workflow-run candidates, main pushes, and explicit dispatch, uses web-only selection and universal unit/lint/type checks. It has no schedule. `detox-protected-full.yml` handles manual, published-release, and release/hotfix push validation. This is configuration evidence only. Hosted history/promotion is unverified; D-195 remains open.
+Checked-in `trusted-selective-tests.yml` handles authorized workflow-run candidates, main pushes, and explicit dispatch, uses web-only selection and universal unit/lint/type checks. It has no schedule. `native-protected-full.yml` handles manual, published-release, and release/hotfix push validation with the Maestro suite. This is configuration evidence only. Hosted history/promotion is unverified; D-195 remains open.
 
 ## Inventory and curation
 
@@ -83,11 +83,11 @@ matrices with matching per-attempt input hashes; lifecycle probes also pass.
 The inactive auth-atlas project's
 registry/profile mismatch is explicitly tracked for P6 reconciliation.
 
-Retain Node logic, Bun server, Playwright browser and provider lanes; add rendered component tests, owned disposable Postgres integration and an explicit Maestro/Detox pilot. All new wrapper receipts distinguish application failure, harness block, cancellation, cleanup and first-attempt result. Fixtures, memory HTTP, Postgres, native and provider results cannot substitute for each other.
+Retain Node logic, Bun server, Playwright browser and provider lanes; add rendered component tests, owned disposable Postgres integration and Maestro native E2E (Detox retired 2026-10-09). All new wrapper receipts distinguish application failure, harness block, cancellation, cleanup and first-attempt result. Fixtures, memory HTTP, Postgres, native and provider results cannot substitute for each other.
 
 P3 complete local matrix evidence and lifecycle receipts are recorded in the
 task card; native, exploration and hosted gates remain pending. Execute P0,
-P1A/P1B, P2, P3, P4A/P4B, P5, P6/P6B in dependency order. Native migration requires equivalent assertions, at least 19/20 first passes per integrated platform/scenario cell, no leaks/unexplained failures and three protected hosted passes across two revisions. Until those receipts exist, retain Detox. Agent exploration is bounded, observed and advisory; convert confirmed defects to deterministic regressions.
+P1A/P1B, P2, P3, P4A/P4B, P5, P6/P6B in dependency order. Native migration bar (owner decision 2026-10-07): each journey needs a real passing Maestro run on each platform plus a deliberately introduced bug the flow detects; the earlier 19/20 cold-matrix comparison against Detox was dropped. Detox was retired on 2026-10-09 once that bar was met. Agent exploration is bounded, observed and advisory; convert confirmed defects to deterministic regressions.
 
 Ignored private `.qa/artifacts/testing-modernization/<run-id>/` stores receipts. Never store tokens/passwords in public JSON/logs. Record exact owner SHAs/dirty state; pending hosted/native/provider acceptance remains pending. No new product behavior or localized strings are introduced by inventory and DB guards.
 

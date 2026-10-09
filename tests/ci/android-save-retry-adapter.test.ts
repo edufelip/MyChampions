@@ -268,7 +268,7 @@ void test('Android save/retry dispatch is limited to integrated Maestro', () => 
     mode: 'integration',
   } as const;
   assert.equal(nativePilotExecutionAdapter(args), 'android-save-retry');
-  assert.equal(nativePilotExecutionAdapter({ ...args, engine: 'detox' }), null);
+  assert.equal(nativePilotExecutionAdapter({ ...args, engine: 'detox' as never }), null);
   assert.equal(nativePilotExecutionAdapter({ ...args, mode: 'fixture' }), null);
   assert.equal(
     nativePilotExecutionAdapter({ ...args, platform: 'ios', scenario: 'SCN-save-retry-ios' }),

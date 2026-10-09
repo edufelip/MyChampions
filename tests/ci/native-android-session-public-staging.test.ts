@@ -329,7 +329,7 @@ void test('Android staging rejects missing files, wrong selection and public rec
           captureRoot,
           outputRoot,
           requestedRunId,
-          selection: { ...current, arguments: { ...current.arguments, engine: 'detox' } },
+          selection: { ...current, arguments: { ...current.arguments, engine: 'detox' as never } },
           producerReceipts,
         }),
         /Android|selection|Expected values/,

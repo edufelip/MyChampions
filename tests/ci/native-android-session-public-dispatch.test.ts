@@ -32,7 +32,7 @@ const selection: NativePilotSelection = {
 
 void test('Android public dispatch selects only the exact reviewed Maestro cell', () => {
   assert.equal(androidSessionExecutionAdapter(args), 'android-session');
-  assert.equal(androidSessionExecutionAdapter({ ...args, engine: 'detox' }), null);
+  assert.equal(androidSessionExecutionAdapter({ ...args, engine: 'detox' as never }), null);
   assert.equal(androidSessionExecutionAdapter({ ...args, mode: 'fixture' }), null);
   assert.equal(androidSessionExecutionAdapter({ ...args, scenario: 'SCN-session-ios' }), null);
   assert.equal(nativePilotExecutionAdapterWithAndroid(args, 'training'), 'android-session');

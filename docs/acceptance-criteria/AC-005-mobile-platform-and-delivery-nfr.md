@@ -20,12 +20,12 @@ Mobile platform constraints and delivery workflow without EAS dependency.
 - `AC-511`: Post-compression uploads enforce `<= 1.5 MB` file size and `<= 1600 px` longest-side dimension.
 - `AC-512`: Core screens meet accessibility baseline for contrast, dynamic text scaling, focus order, and screen-reader labels. Each workout session exposes one dedicated expandable-details control with a minimum 44×44 CSS px touch/focus target, a localized label, and its expanded/collapsed state; the SC-222 language rows expose semantic radio roles, localized names, and an explicit checked state that follows the pending selection.
 - `AC-513`: User-facing strings use localization keys with populated values for `en-US`, `pt-BR`, and `es-ES` in release-candidate builds.
-- `AC-514`: Detox E2E suite is configured for iOS simulator and Android emulator builds, includes auth sign-in smoke scenarios (empty-submit validation + success route to role-selection), and keeps the default Android build runnable without release credentials by targeting `productionDebug`; signed `productionRelease` evidence is exposed only through explicit release commands and still requires its CI version code and private keystore. The suite documents debug-build runtime prerequisites such as Metro when JS is not embedded, and uses stable non-production auth credentials or the explicit dev-only `EXPO_PUBLIC_E2E_AUTH_SESSION=true` harness, the sign-in-specific `EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN=true` fixture, the create-account-specific `EXPO_PUBLIC_E2E_CREATE_ACCOUNT=true` fixture, or the social-auth-specific `EXPO_PUBLIC_E2E_SOCIAL_AUTH=true` fixture for approved mock auth coverage. The auth-session harness may provide deterministic read-only fixtures for source modules that otherwise require a local server session, such as empty student connections and a personal water goal for the dashboard. Provider-backed and network-state story fixtures must be opt-in via explicit dev-only flags such as `EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE`, `EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE`, `EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE`, `EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE`, `EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE`, `EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE`, `EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE`, `EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS`, `EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT`, `EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS`, and `EXPO_PUBLIC_E2E_NETWORK_STATUS`.
+- `AC-514`: The Maestro native suite (`.maestro/suite`) runs on iOS simulator and Android emulator Debug builds, includes auth sign-in smoke scenarios (empty-submit validation + success route to role-selection), and never needs release credentials: it builds the secret-free `devDebug` (Android) and `Debug` (iOS) apps. The suite documents debug-build runtime prerequisites such as Metro when JS is not embedded, and uses stable non-production auth credentials or the explicit dev-only `EXPO_PUBLIC_E2E_AUTH_SESSION=true` harness, the sign-in-specific `EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN=true` fixture, the create-account-specific `EXPO_PUBLIC_E2E_CREATE_ACCOUNT=true` fixture, or the social-auth-specific `EXPO_PUBLIC_E2E_SOCIAL_AUTH=true` fixture for approved mock auth coverage. The auth-session harness may provide deterministic read-only fixtures for source modules that otherwise require a local server session, such as empty student connections and a personal water goal for the dashboard. Provider-backed and network-state story fixtures must be opt-in via explicit dev-only flags such as `EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE`, `EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE`, `EXPO_PUBLIC_E2E_STUDENT_NUTRITION_FIXTURE`, `EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE`, `EXPO_PUBLIC_E2E_CUSTOM_MEALS_FIXTURE`, `EXPO_PUBLIC_E2E_FOOD_SEARCH_FIXTURE`, `EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE`, `EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS`, `EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT`, `EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS`, and `EXPO_PUBLIC_E2E_NETWORK_STATUS`.
 - `AC-515`: Android and iOS launcher icon assets are generated from the same source logo file (`assets/images/logo.svg`) and updated together.
 - `AC-540`: Feature-aware test impact is resolved from a checked-in
   ownership/suite manifest, the PR merge-base-to-exact-head change set, reverse
   feature dependencies, and base/head TypeScript import consumers. Feature-only
-  changes select affected Playwright and both declared mobile-platform Detox
+  changes select affected Playwright and both declared mobile-platform Maestro
   suites; shared or indirect changes widen selection; renames, copies, and
   deletions preserve historical and current ownership; invalid, unknown,
   oversized, unresolved, merge-queue, scheduled, release/hotfix, or explicit-full
@@ -33,22 +33,19 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   profile must pass; native jobs build once while freshly owned Metro phases
   override or clear embedded dev-only fixture values. After Metro reports
   listening, the executor fully consumes the exact iOS or Android Expo
-  development bundle within a bounded four-minute request window before Detox
-  launches; timeout, response, body-stream, or Metro-exit failures fail the
+  development bundle within a bounded four-minute request window before Maestro
+  launches the app; timeout, response, body-stream, or Metro-exit failures fail the
   phase instead of consuming the test's first UI wait. Contradictory image-upload
   sheet and fixture-success expectations execute in separate scenario-gated
   phases, and authenticated runs reject a missing or invalid scenario. iOS CI
   reserves dedicated Metro port `18081`, verifies that it is unoccupied before
-  building, compiles it as the React Native fallback, routes every debug-app
-  launch to the same port through `RCT_jsLocation`, and forwards it to every
-  prewarm/Detox phase without killing an unrelated
-  listener on the local default `8081`. Android
-  instrumentation persists `debug_http_host=localhost:8081` before React Native
-  starts so the configured ADB reverse tunnel, rather than the emulator gateway,
-  owns the Metro route; failure to persist that setting fails the invocation.
+  building, compiles it into the Debug app (`RCT_METRO_PORT`), and forwards it to
+  every prewarm/Maestro phase without killing an unrelated listener on the local
+  default `8081`. The Android Debug app compiles its Metro port through
+  `reactNativeDevServerPort` and reaches it on the emulator's host loopback.
   Native selective phases
   preserve warning diagnostics without allowing the development LogBox overlay
-  to intercept Detox actions, and tests bring compact-viewport targets into view
+  to intercept Maestro actions, and tests bring compact-viewport targets into view
   before interaction. The SC-215 quick-log story uses atomic grams replacement,
   an exact-value assertion, explicit platform keyboard dismissal, and stable
   element targets. The Android job starts with no stale device, QEMU process, or
@@ -210,15 +207,13 @@ Feature: Mobile platform and delivery constraints
     When localization table and runtime resource bundles are validated
     Then all user-facing keys have populated values for en-US, pt-BR, and es-ES
 
-  Scenario: Detox auth smoke coverage
-    Given Detox config and native build profiles are available for iOS and Android
-    And the default Android command selects the secret-free productionDebug profile
-    And the selected debug or release-like build has its required JavaScript runtime available
+  Scenario: Maestro auth smoke coverage
+    Given the Maestro suite and the iOS Debug and Android devDebug builds are available
+    And the build has its required Metro JavaScript runtime available
     And stable non-production auth credentials or the explicit dev-only E2E auth session harness is configured
     When the auth smoke suite runs
     Then empty sign-in submission shows required-field validation errors
     And valid credential submission routes the user to role-selection screen
-    And signed productionRelease evidence remains an explicit credentialed command
 
   Scenario: Cross-platform icon source consistency
     Given the source logo file at assets/images/logo.svg
@@ -230,7 +225,7 @@ Feature: Mobile platform and delivery constraints
     When feature-aware impact is resolved
     Then feature A and its reverse dependents are selected
     And unrelated feature B suites are excluded
-    And the selected Detox suites run on iOS and Android
+    And the selected Maestro suites run on iOS and Android
 
   Scenario: Shared changes fail closed
     Given a pull request changes navigation, localization, native configuration, or CI tooling

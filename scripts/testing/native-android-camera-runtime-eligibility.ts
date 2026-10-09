@@ -68,26 +68,12 @@ const ANDROID_CAMERA_APK_READ_CHUNK_BYTES = 64 * 1024;
 const ANDROID_CAMERA_HELPER_MAX_FILE_BYTES = 16 * 1024 * 1024;
 const ANDROID_CAMERA_HELPER_MAX_AGGREGATE_BYTES = 512 * 1024 * 1024;
 /**
- * The Android camera capture ledger must bind the complete Detox dispatch
- * dependency set. These modules are loaded before native preparation when the
- * public runner imports the Android connection route, so omitting one would
- * allow a stale or missing runtime helper to pass the camera source gate.
+ * The Android camera capture ledger must bind the shared connection-evidence
+ * reader it loads before native preparation, so a stale or missing helper
+ * cannot pass the camera source gate.
  */
 export const ANDROID_CAMERA_DETOX_RUNTIME_HELPER_PATHS = Object.freeze([
-  'scripts/testing/detox-android-connection-producer.ts',
-  'scripts/testing/detox-android-qualified-build.ts',
-  'scripts/testing/detox-connection-artifact-root.ts',
   'scripts/testing/detox-connection-evidence.ts',
-  'scripts/testing/detox-connection-ipc.ts',
-  'scripts/testing/detox-integrated-connection-baseline.ts',
-  'scripts/testing/detox-integrated-connection-driver.ts',
-  'scripts/testing/detox-integrated-session-baseline.ts',
-  'scripts/testing/detox-runtime-build-metadata.ts',
-  'scripts/testing/detox-save-retry-child-client.ts',
-  'scripts/testing/detox-save-retry-child-protocol.mjs',
-  'scripts/testing/detox-save-retry-driver.ts',
-  'scripts/testing/detox-save-retry-owned-dispatch.ts',
-  'scripts/testing/detox-save-retry-runtime-finalizer.ts',
 ] as const);
 const SQL_PHASES = [
   'before',

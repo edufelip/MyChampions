@@ -145,7 +145,6 @@ void test('credential interaction diagnostic is a strict iOS Maestro camera opt-
       '--scenario=SCN-camera-denied-android',
       '--mode=integration',
     ],
-    ['--platform=ios', '--engine=detox', '--scenario=SCN-camera-denied-ios', '--mode=integration'],
     ['--platform=ios', '--engine=maestro', '--scenario=SCN-session-ios', '--mode=integration'],
     ['--platform=ios', '--engine=maestro', '--scenario=SCN-camera-denied-ios', '--mode=fixture'],
   ])
@@ -157,6 +156,18 @@ void test('credential interaction diagnostic is a strict iOS Maestro camera opt-
         ]),
       /requires the iOS Maestro SCN-camera-denied-ios integration selection/,
     );
+  // Detox is no longer a native engine; its selection is refused before the opt-in.
+  assert.throws(
+    () =>
+      parseNativePilotInvocationArguments([
+        '--platform=ios',
+        '--engine=detox',
+        '--scenario=SCN-camera-denied-ios',
+        '--mode=integration',
+        '--credential-interaction-diagnostic',
+      ]),
+    /Unsupported native pilot selection/,
+  );
   assert.throws(
     () =>
       parseNativePilotInvocationArguments([

@@ -162,7 +162,6 @@ void test('all production loader callers and the helper ledger expose relocation
   const expectedCallers = [
     'scripts/testing/capture-native-testability.ts',
     'scripts/testing/native-view-evidence.ts',
-    'scripts/testing/native-detox-connection-public-dispatch.ts',
     'scripts/testing/run-native-pilot.ts',
   ];
   for (const relative of expectedCallers) {

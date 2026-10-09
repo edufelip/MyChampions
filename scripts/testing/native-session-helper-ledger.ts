@@ -42,9 +42,6 @@ export const nativeSessionHelperInputPaths = Object.freeze([
   'scripts/testing/run-ios-save-retry-attempt.ts',
   // T15 cold producer bridge and lifecycle owners are hashed as producer inputs;
   // the declaration must bind these files before an owned attempt is selected.
-  'scripts/testing/t15-cold-owned-lifecycle.ts',
-  'scripts/testing/t15-cold-production-runner.ts',
-  'scripts/testing/t15-cold-ios-family-attempt.ts',
   'scripts/testing/native-save-retry-attempt-binding.ts',
   'scripts/testing/native-training-public-evidence.ts',
   'scripts/testing/native-save-retry-public-evidence.ts',
@@ -65,13 +62,6 @@ export const nativeSessionHelperInputPaths = Object.freeze([
   'scripts/testing/native-android-session-public-dispatch.ts',
   'scripts/testing/native-android-session-public-staging.ts',
   'scripts/testing/run-android-session-attempt.ts',
-  'scripts/testing/detox-android-session-producer.ts',
-  'scripts/testing/native-detox-android-session-native-pilot-route.ts',
-  'scripts/testing/native-detox-android-session-public-adapter.ts',
-  'scripts/testing/native-detox-android-session-public-finalization.ts',
-  'scripts/testing/native-detox-android-session-public-staging.ts',
-  'scripts/testing/detox-android-connection-producer.ts',
-  'scripts/testing/verify-owned-android-detox-connection-cleanup.ts',
   'scripts/testing/schema-validation.ts',
   'scripts/testing/validate-native-inventory.mjs',
   'scripts/testing/android-build-identity.ts',
@@ -88,7 +78,6 @@ export const nativeSessionHelperInputPaths = Object.freeze([
   'scripts/testing/native-connection-journey-core.ts',
   'scripts/testing/detox-connection-actionability.ts',
   'scripts/testing/detox-connection-evidence.ts',
-  'scripts/testing/detox-connection-ancestor-safe.py',
   'scripts/testing/detox-native-hierarchy.ts',
   'scripts/testing/native-camera-android-capture-adapter.ts',
   'scripts/testing/native-camera-android-contract.ts',
@@ -130,7 +119,6 @@ export const nativeSessionHelperInputPaths = Object.freeze([
   'scripts/testing/native-build-reuse.ts',
   'scripts/testing/native-ios-incremental-build-cache.ts',
   'scripts/testing/native-runtime-preflight.ts',
-  'scripts/testing/native-detox-connection-public-dispatch.ts',
   'scripts/testing/run-native-pilot.ts',
   'scripts/testing/owned-ios-simulator.ts',
   'scripts/testing/owned-ios-simulator-app.ts',
@@ -148,8 +136,6 @@ export const nativeSessionHelperInputPaths = Object.freeze([
   // V4 iOS Detox dispatch helpers: artifact-root acquisition, result publication,
   // and the protected native-pilot output-root invocation are producer-owned
   // freshness inputs once the reviewed dispatch is composed.
-  'scripts/testing/detox-connection-artifact-root.ts',
-  'scripts/testing/detox-connection-result-writer.ts',
   'scripts/testing/native-pilot-invocation.ts',
   'scripts/testing/testing-repository-identity.ts',
   'scripts/testing/t15-cold-ios-reset-producer.ts',

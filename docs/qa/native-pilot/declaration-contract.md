@@ -18,7 +18,7 @@ can be accepted.
 
 The declaration covers the five BL-018 pilot families (`session`, `training`,
 `connection`, `camera-denied`, and `save-retry`) on iOS and Android with the
-declared Maestro and Detox engine cells and `fixture`/`integration` modes. The
+declared Maestro engine cells and `fixture`/`integration` modes (Detox cells were retired on 2026-10-09). The
 portable inventory is a source and requirement graph. It does not import
 runtime passing evidence, convert a blocked attempt into a pass, or remove an
 unavailable cell from a denominator.
@@ -35,17 +35,6 @@ optional core assertions, broad skips, or retry-until-green behavior to make a
 cell pass. OS permission and credential prompts use their documented native
 controls and require an explicit postcondition before the app assertions
 continue.
-
-## Detox connection action observations
-
-Before selecting an Accept or End action, its unique identity-bound
-`getAttributes()` observation must report `enabled=true`, `visible=true` and
-positive frame width and height. iOS also requires its actual `hittable=true`
-observation. Android does not expose that iOS fact; do not invent it from XML.
-Retain the observed frame separately from the hierarchy bounds. Read-only
-observations may retain disabled, hidden or empty-frame controls, but those
-facts cannot qualify an action. Parsing a hierarchy or matching a semantic ID
-alone does not qualify an action.
 
 ## iOS credential-save prompt
 
@@ -120,7 +109,7 @@ local helper imported by the native capture and journey entry points. The
 selection contract re-reads those canonical paths and rejects a stale
 declaration before any runtime acquisition or evidence read.
 
-For iOS connection, generated owner paths and freshness owner paths also include every input in the explicit `detoxDispatchRuntimeClosure` array. The finished `docs/qa/native-pilot/inventory.json` is itself a runtime input and appears in those path lists. It must not receive a source revision row containing its own byte hash inside the generated inventory; dispatch hashes the finished inventory after generation. This avoids a recursive generated revision while retaining runtime freshness checks.
+The finished `docs/qa/native-pilot/inventory.json` never receives a source revision row containing its own byte hash; that would make the generated revision recursive.
 
 Operational status, attempt chronology, cleanup receipts, failure diagnoses,
 and native/public qualification remain in `testability.md` and private
@@ -142,21 +131,11 @@ Preflight failure or cancellation must still produce a schema-valid receipt when
 
 Schema v1 preserves valid historical receipts that omit `repositoryEvidence` and already contain repository identities. New preflight writers must always publish the explicit evidence status, missing names and reason, using actual bounded producer results. This compatibility rule does not allow missing repository rows in ordinary or passing results, and does not repair invalid historical receipts. Caller-supplied fabricated identity rows cannot establish observed evidence.
 
-## Owned Detox caller composition
-
-The integrated Detox connection caller acquires or adopts its private artifact directory before loading the build or starting the driver. It retains the directory identity for descriptor-backed result and recovery publication. Invalid configured deadlines (outside 30,000–600,000 milliseconds) reject before acquisition. Pre-driver failure retains owned evidence and recovery facts; the driver remains the sole native resource cleanup owner after transfer. Dispatch preserves per-file identities and rechecks its exact runtime closure after the bridge returns. Save/retry child calls stay bounded, drain late replies before teardown, and bind the same `native-save` fault-attempt identity across proxy and driver. Producer ledgers and generated source/owner rows include the new root/result/invocation helpers. These source contracts do not qualify a public/native result; public adapter wiring and actual original UI/API/SQL/cleanup evidence remain required.
-
-Every scenario owner except the generated inventory must have a deterministic source revision row. Freshness owner paths must exactly match the scenario owner paths. The iOS connection selector verifies membership of every explicit Detox dispatch input and its source IDs, then checks declared source bytes before native/backend acquisition. Public preflight receipt preparation remains allowed before this guard; Detox runtime artifact preparation remains after it. Missing/swapped owner paths, revision rows or source links, and changed dependency bytes block selection. The generated inventory is the sole non-recursive source-revision exception.
-
-The shared connection observer's optional sixth argument carries Detox action metadata. The iOS Maestro adapter consumes supported Accept metadata and forwards only the five Maestro arguments, preserving the YAML actions and visibility assertions. It must never pass an action object as the capture's private not-visible selector list. Unsupported action kinds reject before observation.
-
 ## Successful commands without diagnostic output
 
 An owned command may finish successfully without emitting diagnostic bytes. After its bounded wait succeeds with exit zero and no signal, output/census failure or cleanup failure, the command controller writes `owned-command: no diagnostic output` into an otherwise empty private diagnostic log. With split stdout capture, the separate stdout bytes remain unchanged, including binary output and the OS-locale result. Combined stdout/stderr logs retain all original emitted bytes. Failed, cancelled, deadline and unverified-cleanup command logs do not gain this success record. The connection verifier continues to require canonical owned regular single-link `0600` non-empty command logs and bound ownership records; a marker alone establishes no journey assertion or public pass.
 
-Qualified iOS Detox Debug reuse may select the immutable native-pilot build path only through a validated descriptor binding the original build run, exact profile path, binary hash and owned bundle identity. The driver passes that validated descriptor to the checked-in Detox config and rereads identity/hash before execution; ordinary builds clear inherited reuse overrides. Reused iOS Metro ports retain the existing owned loopback allocator range (1024–65535); Android instrumentation retains its 49151 ceiling. Accepting a descriptor is source/build validation, not native journey or public qualification.
-
-Owned native Expo sessions enable the existing development-only `EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX` switch so warning overlays do not intercept normal Maestro/Detox actions. Raw runner diagnostics remain captured; this does not alter the semantic selectors, navigation, expected screen visibility or production logging policy. Web session environment behavior is unchanged. A passing Debug test does not establish bundled-release or device qualification.
+Owned native Expo sessions enable the existing development-only `EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX` switch so warning overlays do not intercept normal Maestro actions. Raw runner diagnostics remain captured; this does not alter the semantic selectors, navigation, expected screen visibility or production logging policy. Web session environment behavior is unchanged. A passing Debug test does not establish bundled-release or device qualification.
 
 ## Native logout owner decision (2026-10-03, 18:58 UTC)
 

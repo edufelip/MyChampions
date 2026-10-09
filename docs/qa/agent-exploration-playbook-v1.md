@@ -7,7 +7,7 @@ that a target, connector, build, fixture, or product journey has run.
 The preparation command is intentionally local and side-effect limited. It
 validates a checked-in charter and an optional caller-supplied context file,
 then writes private templates under `.qa/artifacts/`. It does not start Expo,
-Playwright, Maestro, Detox, an emulator, a simulator, a browser, a server,
+Playwright, Maestro, an emulator, a simulator, a browser, a server,
 Postgres, a connector, or an agent. It does not reset a device, request a
 permission, make an API call, write application data, post an issue, schedule a
 run, or change an external service.

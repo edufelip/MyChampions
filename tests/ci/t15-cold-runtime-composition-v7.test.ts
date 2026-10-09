@@ -223,7 +223,7 @@ void test('cold producer composes through protected child read, handoff and runt
     const invocation: NativePilotInvocation = {
       selection: {
         platform: 'ios',
-        engine: 'detox',
+        engine: 'maestro',
         scenario: 'SCN-connection-ios',
         mode: 'integration',
       },

@@ -34,26 +34,11 @@ export const nativePilotRunIdPattern = /^[a-f0-9]{24}$/;
 
 /**
  * Return the private output namespace used when no caller supplied one.
- *
- * The iOS Detox camera owner is also the cleanup inspector's canonical
- * namespace owner, so its default root must be the exact native-pilot tree.
- * Every other adapter keeps the historical attempts namespace. Explicit
- * caller roots remain caller-owned and are validated by the adapter contract.
+ * Explicit caller roots remain caller-owned and are validated by the adapter
+ * contract.
  */
-export function nativePilotDefaultOutputParent(
-  repositoryRoot: string,
-  selection: NativePilotArguments | undefined,
-): string {
-  const cameraNamespace =
-    selection !== undefined &&
-    selection.platform === 'ios' &&
-    selection.engine === 'detox' &&
-    selection.scenario === 'SCN-camera-denied-ios' &&
-    selection.mode === 'integration';
-  return path.join(
-    path.resolve(repositoryRoot),
-    cameraNamespace ? '.qa/artifacts/native-pilot' : '.qa/artifacts/native-pilot-attempts',
-  );
+export function nativePilotDefaultOutputParent(repositoryRoot: string): string {
+  return path.join(path.resolve(repositoryRoot), '.qa/artifacts/native-pilot-attempts');
 }
 
 export type NativePilotInvocation = {

@@ -17,12 +17,6 @@ import {
 import { lstat, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { readOwnedDetoxConnectionEvidence } from './detox-connection-evidence';
-import { revalidateDetoxRuntimeBuildMetadata } from './detox-runtime-build-metadata';
-import {
-  assertDetoxTrainingPublicFinalizationCandidate,
-  type DetoxTrainingPublicFinalizationCandidate,
-} from './native-detox-training-public-finalization-contract';
 import { requireNativePilotAssertions } from './native-pilot-contract';
 import { readNativeTrainingAttemptBinding } from './native-training-attempt-binding';
 import {
@@ -869,47 +863,6 @@ async function requireNoNativeCensusFailure(root: string) {
   );
 }
 
-async function revalidateTrainingOriginalReceipts(
-  captureRoot: string,
-  candidate: DetoxTrainingPublicFinalizationCandidate,
-  lifecycle: StageLifecycle,
-  repositoryRoot?: string,
-): Promise<void> {
-  for (const receipt of [
-    candidate.originalReceipts.build,
-    candidate.originalReceipts.command,
-  ] as const) {
-    stageFence(lifecycle, `revalidate original ${receipt.fileName}:before`);
-    const observed = await stageAwait(
-      lifecycle,
-      () =>
-        readOwnedDetoxConnectionEvidence(
-          captureRoot,
-          receipt.fileName,
-          16 * 1024 * 1024,
-          lifecycle ? { signal: lifecycle.signal, deadlineAt: lifecycle.deadlineAtMs } : undefined,
-        ),
-      `revalidate original ${receipt.fileName}`,
-    );
-    assert.equal(observed.realpath, receipt.realpath, 'Detox original receipt realpath changed');
-    assert.deepEqual(
-      observed.metadata,
-      receipt.metadata,
-      'Detox original receipt identity changed',
-    );
-    assert.equal(hash(observed.bytes), receipt.sha256, 'Detox original receipt bytes changed');
-    assert.deepEqual(
-      JSON.parse(observed.bytes.toString('utf8')),
-      receipt.value,
-      'Detox original receipt semantics changed',
-    );
-  }
-  if (repositoryRoot)
-    await revalidateDetoxRuntimeBuildMetadata(repositoryRoot, candidate.runtimeMetadata, () =>
-      stageFence(lifecycle, 'revalidate Detox runtime descriptor'),
-    );
-}
-
 type StageContext = {
   captureRoot?: string;
   outputRoot?: string;
@@ -945,7 +898,6 @@ export async function stageNativeTrainingPublicEvidence(options: {
   selection: NativePilotSelection;
   bindings: Binding[];
   /** Present only after the actual owner has produced all seven original receipts. */
-  publicFinalization?: DetoxTrainingPublicFinalizationCandidate;
   lifecycle?: NativeTrainingPublicEvidenceLifecycle;
 }) {
   const context: StageContext = {
@@ -1019,7 +971,6 @@ async function stageNativeTrainingPublicEvidenceCore(
     fixtureRunId: string;
     selection: NativePilotSelection;
     bindings: Binding[];
-    publicFinalization?: DetoxTrainingPublicFinalizationCandidate;
   },
   lifecycle: StageLifecycle,
   context: StageContext,
@@ -1067,29 +1018,6 @@ async function stageNativeTrainingPublicEvidenceCore(
   const ledger = requireNativePilotAssertions(options.selection);
   assert.equal(options.bindings.length, ledger.length);
   assert.equal(new Set(options.bindings.map((row) => row.id)).size, ledger.length);
-  if (options.publicFinalization) {
-    assertDetoxTrainingPublicFinalizationCandidate(options.publicFinalization, {
-      requestedRunId: options.requestedRunId,
-      requestedAttemptId: binding.requestedAttemptId,
-      captureRunId: binding.captureRunId,
-      fixtureRunId: binding.backendRunId,
-    });
-    assert.deepEqual(
-      options.publicFinalization.assertionBindings,
-      options.bindings,
-      'Training public finalization bindings differ from staged bindings',
-    );
-    assert.equal(
-      options.publicFinalization.scenarioHash,
-      options.selection.scenarioHash,
-      'Training public finalization scenario hash differs',
-    );
-    assert.equal(
-      options.publicFinalization.requirementHash,
-      options.selection.requirementHash,
-      'Training public finalization requirement hash differs',
-    );
-  }
   const json = (relative: string): Record<string, unknown> => {
     stageFence(lifecycle, `read ${relative}`);
     const value: unknown = JSON.parse(readNativeEvidence(captureRoot, relative, true).toString());
@@ -1249,13 +1177,6 @@ async function stageNativeTrainingPublicEvidenceCore(
     () => requireNoNativeCensusFailure(outputRoot),
     'recheck output census',
   );
-  if (options.publicFinalization && options.captureRoot)
-    await revalidateTrainingOriginalReceipts(
-      captureRoot,
-      options.publicFinalization,
-      lifecycle,
-      options.repositoryRoot,
-    );
   // Validate every source before creating output. Failed or duplicate copies cannot replace proof.
   const parent = assertArtifactPath(outputRoot, 'evidence');
   await ensureOwnedStageParents(
@@ -1292,34 +1213,16 @@ async function stageNativeTrainingPublicEvidenceCore(
     );
   }
   const manifestPath = `${prefix}/copy-manifest.private.json`;
-  const manifest = options.publicFinalization
-    ? {
-        kind: 'private native training public outcome candidate',
-        status: 'eligible' as const,
-        requestedRunId: binding.requestedRunId,
-        captureRunId: binding.captureRunId,
-        fixtureRunId: binding.backendRunId,
-        nativePassingCases: options.publicFinalization.nativePassingCases,
-        publicPassingCases: options.publicFinalization.publicPassingCases,
-        publicPromotionEligible: options.publicFinalization.publicPromotionEligible,
-        toolVersions: options.publicFinalization.toolVersions,
-        sourceIdentity: options.publicFinalization.sourceIdentity,
-        assertionBindings: options.publicFinalization.assertionBindings,
-        files: [...files].map(([relative, bytes]) => ({
-          path: relative,
-          sha256: hash(bytes),
-        })),
-      }
-    : {
-        kind: 'private native evidence copy, not public outcome',
-        requestedRunId: binding.requestedRunId,
-        captureRunId: binding.captureRunId,
-        fixtureRunId: binding.backendRunId,
-        files: [...files].map(([relative, bytes]) => ({
-          path: relative,
-          sha256: hash(bytes),
-        })),
-      };
+  const manifest = {
+    kind: 'private native evidence copy, not public outcome',
+    requestedRunId: binding.requestedRunId,
+    captureRunId: binding.captureRunId,
+    fixtureRunId: binding.backendRunId,
+    files: [...files].map(([relative, bytes]) => ({
+      path: relative,
+      sha256: hash(bytes),
+    })),
+  };
   const manifestBytes = Buffer.from(JSON.stringify(manifest, null, 2));
   await writeOwnedStageFile(
     outputRoot,
@@ -1331,13 +1234,6 @@ async function stageNativeTrainingPublicEvidenceCore(
     outputRootIdentity,
     context.observedParents,
   );
-  if (options.publicFinalization && options.captureRoot)
-    await revalidateTrainingOriginalReceipts(
-      captureRoot,
-      options.publicFinalization,
-      lifecycle,
-      options.repositoryRoot,
-    );
   await stageAwait(
     lifecycle,
     () => requireNoNativeCensusFailure(captureRoot),
@@ -1377,7 +1273,6 @@ export async function verifyStagedNativeTrainingEvidence(options: {
   fixtureRunId: string;
   /** Present during live finalization; omitted for later portable copy verification. */
   captureRoot?: string;
-  expectedPublicFinalization?: DetoxTrainingPublicFinalizationCandidate;
   lifecycle?: NativeTrainingPublicEvidenceLifecycle;
 }) {
   const root = await stageAwait(
@@ -1411,34 +1306,12 @@ export async function verifyStagedNativeTrainingEvidence(options: {
   assert.equal(hash(bytes), options.copyManifest.sha256, 'Staged native manifest changed');
   const manifest = JSON.parse(bytes.toString()) as {
     kind: string;
-    status?: string;
     requestedRunId: string;
     captureRunId: string;
     fixtureRunId: string;
-    nativePassingCases?: number;
-    publicPassingCases?: number;
-    publicPromotionEligible?: boolean;
-    toolVersions?: Record<string, string>;
-    sourceIdentity?: Record<string, string>;
-    assertionBindings?: Binding[];
     files: { path: string; sha256: string }[];
   };
-  if (manifest.kind === 'private native training public outcome candidate') {
-    assert(
-      options.expectedPublicFinalization,
-      'Public training outcome lacks its finalization candidate',
-    );
-    assert.equal(manifest.status, 'eligible');
-    assert.equal(manifest.nativePassingCases, 7);
-    assert.equal(manifest.publicPassingCases, 7);
-    assert.equal(manifest.publicPromotionEligible, true);
-    assert.deepEqual(manifest.toolVersions, options.expectedPublicFinalization.toolVersions);
-    assert.deepEqual(manifest.sourceIdentity, options.expectedPublicFinalization.sourceIdentity);
-    assert.deepEqual(
-      manifest.assertionBindings,
-      options.expectedPublicFinalization.assertionBindings,
-    );
-  } else assert.equal(manifest.kind, 'private native evidence copy, not public outcome');
+  assert.equal(manifest.kind, 'private native evidence copy, not public outcome');
   assert.equal(manifest.requestedRunId, options.requestedRunId);
   assert.equal(manifest.captureRunId, options.captureRunId);
   assert.equal(manifest.fixtureRunId, options.fixtureRunId);

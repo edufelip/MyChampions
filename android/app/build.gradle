@@ -161,18 +161,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode resolvedVersionCode
         versionName "1.0.0"
-        testBuildType System.getProperty('testBuildType', 'debug')
-        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        missingDimensionStrategy 'detox', 'full'
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
-        def detoxMetroPort = findProperty('detoxMetroPort') ?: System.getenv('DETOX_METRO_PORT') ?: '8081'
-        if (!(detoxMetroPort.toString() ==~ /[0-9]+/) ||
-                detoxMetroPort.toString().toInteger() < 1024 ||
-                detoxMetroPort.toString().toInteger() > 49151) {
-            throw new GradleException('detoxMetroPort must be an unprivileged decimal port')
-        }
-        buildConfigField "String", "DETOX_METRO_HOST", "\"localhost:${detoxMetroPort}\""
     }
     flavorDimensions "env"
     productFlavors {
@@ -281,8 +271,4 @@ dependencies {
     // Android 12+ splash screen API used in MainActivity
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    androidTestImplementation(project(':detox'))
-    androidTestImplementation('androidx.test.ext:junit:1.2.1')
-    androidTestImplementation('androidx.test:runner:1.6.2')
-    androidTestImplementation('androidx.test:rules:1.6.1')
 }

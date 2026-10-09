@@ -99,7 +99,7 @@ function connectionScenario(inventory: Inventory) {
 }
 async function select(inventory: Inventory, root = repositoryRoot) {
   return selectNativePilotScenario(
-    { platform: 'ios', engine: 'detox', scenario: 'SCN-connection-ios', mode: 'integration' },
+    { platform: 'ios', engine: 'maestro', scenario: 'SCN-connection-ios', mode: 'integration' },
     inventory,
     root,
   );
@@ -140,22 +140,6 @@ void test('selection rejects a swapped dispatch owner path before runtime acquis
   scenario.ownerPaths![index] = 'app/auth/sign-in.tsx';
   scenario.freshnessInputs.ownerPaths![index] = 'app/auth/sign-in.tsx';
   await assert.rejects(select(inventory), /omits Detox dispatch owner path|omits producer helper/);
-});
-
-void test('selection rejects omitted or swapped dispatch source IDs', async () => {
-  const omitted = inventoryWithDispatchRows();
-  const omittedScenario = connectionScenario(omitted);
-  omittedScenario.freshnessInputs.sourceIds = omittedScenario.freshnessInputs.sourceIds!.filter(
-    (id) => id !== staticSourceIds[staticDispatchPaths[0]],
-  );
-  await assert.rejects(select(omitted), /Detox dispatch source link is missing/);
-
-  const swapped = inventoryWithDispatchRows();
-  const swappedScenario = connectionScenario(swapped);
-  const sourceIds = swappedScenario.freshnessInputs.sourceIds!;
-  const index = sourceIds.indexOf(staticSourceIds[staticDispatchPaths[0]]);
-  sourceIds[index] = 'SRC-auth-source';
-  await assert.rejects(select(swapped), /Detox dispatch source link is missing/);
 });
 
 void test('selection rejects a removed dispatch revision row', async () => {

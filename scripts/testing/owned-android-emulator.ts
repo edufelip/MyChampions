@@ -39,7 +39,10 @@ const ownedAndroidSystemImagePattern =
 export function resolveOwnedAndroidSystemImage(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): string {
-  const configured = env.MYCHAMPIONS_DETOX_ANDROID_SYSTEM_IMAGE?.trim();
+  // The older MYCHAMPIONS_DETOX_ name is still read so existing runner hosts keep working.
+  const configured = (
+    env.MYCHAMPIONS_ANDROID_SYSTEM_IMAGE ?? env.MYCHAMPIONS_DETOX_ANDROID_SYSTEM_IMAGE
+  )?.trim();
   const systemImage = configured || defaultOwnedAndroidSystemImage;
   if (!ownedAndroidSystemImagePattern.test(systemImage))
     throw new Error('Unsafe or unsupported local Android image');

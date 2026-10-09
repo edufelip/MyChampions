@@ -247,7 +247,7 @@ void test('Android public adapter selects only the exact Maestro camera cell', (
   assert.equal(
     androidCameraPublicExecutionAdapter({
       ...cameraSelection,
-      arguments: { ...cameraSelection.arguments, engine: 'detox' },
+      arguments: { ...cameraSelection.arguments, engine: 'detox' as never },
     }),
     false,
   );

@@ -6,7 +6,7 @@ import { assertArtifactPath, assertPublicReceipt } from './schema-validation';
 
 export type NativePilotArguments = {
   platform: 'ios' | 'android';
-  engine: 'maestro' | 'detox';
+  engine: 'maestro';
   scenario: string;
   mode: 'fixture' | 'integration';
 };
@@ -213,43 +213,6 @@ export function requireNativeTrainingHelperDeclaration(
   return expected;
 }
 
-function detoxDispatchRuntimePaths(repositoryRoot: string): string[] {
-  const source = readFileSync(
-    path.join(repositoryRoot, 'scripts/testing/native-detox-connection-public-dispatch.ts'),
-    'utf8',
-  );
-  const startMarker = 'export const detoxDispatchRuntimeClosure = [';
-  const endMarker = '] as const;';
-  const start = source.indexOf(startMarker);
-  const end = source.indexOf(endMarker, start + startMarker.length);
-  assert(start >= 0 && end >= 0, 'Missing Detox dispatch runtime closure');
-  const paths = [
-    ...source.slice(start + startMarker.length, end).matchAll(/['"]([^'"]+)['"]/g),
-  ].map((match) => match[1]);
-  assert(paths.length > 0, 'Detox dispatch runtime closure is empty');
-  assert.equal(
-    new Set(paths).size,
-    paths.length,
-    'Detox dispatch runtime closure duplicates paths',
-  );
-  for (const relative of paths) {
-    canonicalNativeRepoRelativePath(relative, 'Detox dispatch runtime path');
-    assert(
-      relative.startsWith('scripts/testing/') ||
-        relative.startsWith('scripts/ci/') ||
-        relative === 'localization/en-US.ts' ||
-        relative === 'docs/qa/native-pilot/inventory.json',
-      'Detox dispatch runtime path is outside the declared source roots',
-    );
-    const file = path.join(repositoryRoot, relative);
-    assert(
-      realpathSync(file) === file && lstatSync(file).isFile(),
-      `Missing Detox dispatch runtime input ${relative}`,
-    );
-  }
-  return paths;
-}
-
 function requireScenarioOwnerFreshness(
   repositoryRoot: string,
   scenario: NativePilotSelection['scenario'],
@@ -281,32 +244,6 @@ function requireScenarioOwnerFreshness(
         `Native scenario owner path lacks a source revision: ${relative}`,
       );
   }
-
-  if (scenario.id !== 'SCN-connection-ios') return;
-  const expectedClosure = detoxDispatchRuntimePaths(repositoryRoot);
-  const owners = new Set(ownerPaths);
-  const freshnessOwners = new Set(freshnessOwnerPaths);
-  const linkedIds = new Set(sourceIds);
-  const rowsByPath = new Map<string, { id: string; paths: string[] }[]>();
-  for (const source of sources) {
-    for (const relative of source.paths) {
-      const rows = rowsByPath.get(relative) ?? [];
-      rows.push(source);
-      rowsByPath.set(relative, rows);
-    }
-  }
-  for (const relative of expectedClosure) {
-    assert(owners.has(relative), `Native scenario omits Detox dispatch owner path: ${relative}`);
-    assert(
-      freshnessOwners.has(relative),
-      `Native scenario omits Detox dispatch freshness path: ${relative}`,
-    );
-    if (relative === 'docs/qa/native-pilot/inventory.json') continue;
-    const rows = rowsByPath.get(relative) ?? [];
-    assert(rows.length > 0, `Detox dispatch input lacks a source revision: ${relative}`);
-    for (const row of rows)
-      assert(linkedIds.has(row.id), `Detox dispatch source link is missing: ${row.id}`);
-  }
 }
 
 /** Validate before locks, devices, backend sessions or child acquisition. */
@@ -329,7 +266,7 @@ export function parseNativePilotArguments(argv: readonly string[]): NativePilotA
   const scenario = values.get('scenario')!;
   if (
     (platform !== 'ios' && platform !== 'android') ||
-    (engine !== 'maestro' && engine !== 'detox') ||
+    engine !== 'maestro' ||
     (mode !== 'fixture' && mode !== 'integration') ||
     !/^SCN-[A-Za-z0-9._-]+$/.test(scenario) ||
     !identifier.test(scenario)

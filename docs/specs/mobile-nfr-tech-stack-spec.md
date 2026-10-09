@@ -42,25 +42,25 @@ Define non-functional architecture constraints and technology options for the mo
   - max upload size: `1.5 MB`.
   - max image dimension: `1600 px` on longest side.
 - Localization baseline requires all user-facing strings to ship in `en-US`, `pt-BR`, and `es-ES`.
-- E2E automation baseline uses Detox with Jest runner for mobile smoke coverage.
-  The default Android Detox command builds the secret-free `productionDebug`
-  profile; signed `productionRelease` Detox evidence is an explicit command
-  that requires `CI_VERSION_CODE`, forwards it to Gradle, and retains the
-  private-keystore requirements.
+- Native E2E automation uses Maestro (pinned CLI 2.6.1). The fixture suite lives
+  in `.maestro/suite/<spec>/`, one tagged flow per case, and runs against the
+  secret-free `devDebug` (Android) and `Debug` (iOS) builds; it never needs
+  release signing inputs. The five integrated journeys run through the native
+  pilot against the real server.
 - Selective native CI builds each debug app once. Every isolated fixture phase
   starts a freshly owned Metro process whose explicit runtime E2E values take
   precedence over the app config embedded by the build, including empty values
   that clear the preceding phase. After the listener becomes ready, the executor
   requests and fully consumes the current platform's rewritten Expo development
-  bundle before Detox launches; cold transformation, response, or stream failure
+  bundle before Maestro launches the app; cold transformation, response, or stream failure
   therefore belongs to phase setup rather than a screen assertion.
-- The selected iOS job reserves dedicated non-ephemeral Metro port `18081`,
-  verifies it is free before building, compiles it as React Native's Debug
-  fallback, and routes every app launch to it through the app-level
-  `RCT_jsLocation` argument. The executor uses the same validated
-  `DETOX_METRO_PORT` for prewarming and phase ownership, so an unrelated
+- The protected iOS job reserves dedicated non-ephemeral Metro port `18081`,
+  verifies it is free before building and compiles it into the Debug app
+  (`RCT_METRO_PORT`); Android compiles its port through
+  `reactNativeDevServerPort`. The executor uses the same validated
+  `NATIVE_METRO_PORT` for prewarming and phase ownership, so an unrelated
   developer process on default port `8081` is neither reused nor signalled.
-- The selected Android lane runs `lintDevDebug` before Detox. The manually
+- The protected Android lane runs `lintDevDebug` before the Maestro suite. The manually
   maintained native baseline keeps camera hardware optional because manual
   invite entry remains available, declares Android 13 notification capability
   required by the Expo video playback service, and places
@@ -68,7 +68,7 @@ Define non-functional architecture constraints and technology options for the mo
   violate the API-24 minimum. The lane rejects stale emulator/QEMU/console
   state, preboots `Pixel_10` on the MyChampions slot's `emulator-5556`, bounds
   exact AVD readiness to 120 seconds while revalidating PID/UID/Linux start time
-  plus AVD/port command identity, lets Detox reuse that instance, and verifies
+  plus AVD/port command identity, lets Maestro drive that instance, and verifies
   that no QEMU process, emulator device, or owned port survives teardown.
 
 ## Constraints From Platform Docs
@@ -146,7 +146,7 @@ declared reverse feature dependencies, and TypeScript reverse import consumers.
 It fails closed to the full registered UI matrix for shared-global, tooling,
 native, invalid, unknown, or unresolved changes. D-193 defines the candidate
 exact-head gate: universal fast checks always run; current trusted execution uses web-only
-selection for affected Playwright. Both-platform Detox runs separately through
+selection for affected Playwright. Both-platform Maestro runs separately through
 protected manual, published-release and release/hotfix-push validation. No
 schedule is configured. Full/fail-closed resolver selection remains broader
 than the surfaces actually executed by the trusted workflow. D-195 makes persistent-runner
@@ -171,14 +171,14 @@ collaborator, requires approval for all external workflows, never approves fork
 or untrusted workflow changes, and pauses runners before either constraint is
 relaxed pending private-broker/JIT/ephemeral isolation.
 Contradictory native fixture states execute in scenario-gated fresh-Metro phases,
-each of which fully prewarms its exact platform bundle before Detox launches, and
-the iOS lane keeps its app launch route and compiled fallback on dedicated port
-`18081`. Android instrumentation routes Metro through the configured localhost
-ADB reverse tunnel before React Native starts. Meer and MyChampions use separate
+each of which fully prewarms its exact platform bundle before Maestro launches the
+app, and the iOS lane compiles its Metro port (`18081`) into the Debug app. The
+Android Debug app reaches Metro on the host loopback (`10.0.2.2`) at the port
+compiled through `reactNativeDevServerPort`. Meer and MyChampions use separate
 health-checked Android slots (`emulator-5554`/ADB `5037`/Metro `18081` and
 `emulator-5556`/ADB `5038`/Metro `18082`) with distinct AVD, user, recovery,
 temporary, and lock roots rather than delegating console-port allocation to
-Detox. Successful runs create no GitHub
+the test engine. Successful runs create no GitHub
 Actions artifact or cache.
 
 ## High-Level Architecture (Target)
@@ -218,7 +218,7 @@ Current local server contract: root-level `server/` plus this migration task car
 - Drizzle ORM: https://orm.drizzle.team/
 - Fastlane docs: https://docs.fastlane.tools/
 - GitHub Actions docs: https://docs.github.com/actions
-- Detox docs: https://wix.github.io/Detox/docs/introduction/project-setup/
+- Maestro docs: https://docs.maestro.dev/
 
 
-Testing modernization is tracked under BL-018/D-218 and `docs/qa/testing-strategy-v1.md`. The separate Jest/Expo/RNTL component suite and integrated Postgres browser journeys have recorded local evidence; freshness and scopes are tracked in the task card. The component command is wired into trusted fast-quality before unit checks, with local CI-command and failure-propagation proof. Full quality is still blocked by the recorded password-reset confirmation contract gap; protected hosted component acceptance and Maestro comparison remain pending. Component tests do not establish native/hosted replacement coverage. Retain Detox until each migration cell satisfies the plan evidence gates.
+Testing modernization is tracked under BL-018/D-218 and `docs/qa/testing-strategy-v1.md`. The separate Jest/Expo/RNTL component suite and integrated Postgres browser journeys have recorded local evidence; freshness and scopes are tracked in the task card. The component command is wired into trusted fast-quality before unit checks, with local CI-command and failure-propagation proof. Full quality is still blocked by the recorded password-reset confirmation contract gap; protected hosted component acceptance remains pending. Component tests do not establish native/hosted replacement coverage. Native E2E moved from Detox to Maestro on 2026-10-09 (D-218); Detox is retired.

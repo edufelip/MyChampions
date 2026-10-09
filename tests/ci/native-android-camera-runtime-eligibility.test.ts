@@ -1622,7 +1622,7 @@ void test('Android public SQL eligibility rejects tampered retained provenance a
   }
 });
 
-void test('Android camera eligibility rejects a capture ledger missing the loaded Detox finalizer', async () => {
+void test('Android camera eligibility rejects a capture ledger missing the loaded evidence reader', async () => {
   const value = await fixture();
   try {
     const reportPath = path.join(value.captureRoot, 'capture.private.json');
@@ -1630,7 +1630,7 @@ void test('Android camera eligibility rejects a capture ledger missing the loade
     for (const key of ['helperInputsBefore', 'helperInputsAfter']) {
       const rows = report[key] as readonly { path: string; sha256: string }[];
       report[key] = rows.filter(
-        (row) => row.path !== 'scripts/testing/detox-save-retry-runtime-finalizer.ts',
+        (row) => row.path !== 'scripts/testing/detox-connection-evidence.ts',
       );
     }
     await writeFile(reportPath, JSON.stringify(report) + '\n');
@@ -1650,7 +1650,7 @@ void test('Android camera eligibility rejects a capture ledger missing the loade
         producer: value.producer,
         sourceOnlyTestLabel: 'sealed-source-control:missing-detox-helper',
       }),
-      /Android camera helper inputs omit scripts\/testing\/detox-save-retry-runtime-finalizer\.ts/,
+      /Android camera helper inputs omit scripts\/testing\/detox-connection-evidence\.ts/,
     );
   } finally {
     await rm(value.captureParent, { recursive: true, force: true });

@@ -929,7 +929,7 @@ void test('dispatch rejects invalid selection, label, deadline, and producer env
         ...current.input,
         selection: {
           ...current.input.selection,
-          arguments: { ...current.input.selection.arguments, engine: 'detox' },
+          arguments: { ...current.input.selection.arguments, engine: 'detox' as never },
         },
       }),
       /Android camera selection|maestro/,

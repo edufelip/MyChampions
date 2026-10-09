@@ -247,7 +247,8 @@ function makeSpec(): NativeComparisonSpec {
 function selection(expected: NativeComparisonAttemptExpectation): NativePilotSelection {
   const { platform, engine, scenarioId: scenario } = attemptMeta(expected);
   return {
-    arguments: { platform, engine, scenario, mode: 'integration' },
+    // The dispatcher treats the engine as an opaque label of its fixture matrix.
+    arguments: { platform, engine: engine as 'maestro', scenario, mode: 'integration' },
     scenario: {
       id: scenario,
       platform,

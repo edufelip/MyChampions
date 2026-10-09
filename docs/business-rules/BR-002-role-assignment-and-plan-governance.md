@@ -72,12 +72,11 @@
     selected native builds/tests on self-hosted runners without publishing
     successful build artifacts; bounded failure diagnostics expire after one
     day.
-  - A selected native phase is ready to launch Detox only after its freshly
+  - A selected native phase is ready to launch Maestro only after its freshly
     owned Metro process has returned and fully streamed the exact platform
     development bundle under that phase's runtime fixture environment.
   - The selected iOS job reserves dedicated non-ephemeral Metro port `18081`
-    before building, compiles it as the debug fallback, routes every debug-app
-    launch to that port, and fails closed rather than reusing or terminating an
+    before building, compiles it into the Debug app, and fails closed rather than reusing or terminating an
     unrelated listener.
   - New iOS test-only jobs are default-on. The exact lowercase repository
     variable value `MYCHAMPIONS_ENABLE_IOS_TESTS=false` intentionally skips
@@ -90,8 +89,8 @@
     listeners; boots `Pixel_10` on `emulator-5554`; proves the exact healthy AVD
     and PID/UID/start-time command identity within a bounded wait; and fails if
     any QEMU process, emulator device, or owned ports survive targeted teardown.
-  - Android Detox debug traffic must use the test-owned ADB reverse tunnel;
-    instrumented launches may not depend on the emulator's host-gateway route.
+  - Android native E2E debug traffic uses the Metro port compiled into the
+    Debug app, reached on the emulator's host loopback.
 - `BR-257`: Client-side compression is required before any image/media upload through the MyChampions server upload boundary.
 - `BR-258`: Production monitoring scope in MVP requires a selected crash/ANR provider before release and excludes additional non-crash error-monitoring platforms.
 - `BR-259`: Release updates in MVP are delivered only through App Store/Play Store binaries; OTA update channels are disabled.
@@ -120,7 +119,7 @@
 - `BR-282`: Bulk assignment clones predefined plans into per-student copies; later edits to source predefined plan do not retroactively mutate already assigned student copies.
 - `BR-283`: Bulk assignment flow must allow per-student fine-tuning before final assignment confirmation.
 - `BR-284`: Localization baseline requires every user-facing string key to have `en-US`, `pt-BR`, and `es-ES` values before release readiness.
-- `BR-285`: Critical journey screens covered by Detox smoke tests must expose stable `testID` selectors; selector changes require synchronized updates in E2E tests in the same change.
+- `BR-285`: Critical journey screens covered by Maestro smoke tests must expose stable `testID` selectors; selector changes require synchronized updates in E2E tests in the same change.
 - `BR-286`: AI meal photo analysis result is advisory only; all macro fields pre-filled by AI remain user-editable before any save or log operation.
 - `BR-287`: A captured meal image must be compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission to the MyChampions server analyzer endpoint (per FR-202 / D-061).
 - `BR-288`: The MyChampions server analyzer endpoint must validate the caller's bearer session before forwarding the request to the configured meal-photo analyzer provider; unauthenticated calls must be rejected.

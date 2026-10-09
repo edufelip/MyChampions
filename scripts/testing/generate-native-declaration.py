@@ -56,9 +56,6 @@ SOURCE_PATHS = {
     "android-connection-hierarchy-source": "scripts/testing/native-connection-hierarchy-android.ts",
     "android-connection-public-evidence-source": "scripts/testing/native-connection-public-evidence-android.ts",
     "connection-password-offer-witness-source": "scripts/testing/native-connection-password-offer-witness.ts",
-    "ios-detox-connection-sidecar-source": "scripts/testing/detox-connection-ancestor-safe.py",
-    "detox-artifact-root-source": "scripts/testing/detox-connection-artifact-root.ts",
-    "detox-result-writer-source": "scripts/testing/detox-connection-result-writer.ts",
     "native-pilot-invocation-source": "scripts/testing/native-pilot-invocation.ts",
     "testing-repository-identity-source": "scripts/testing/testing-repository-identity.ts",
     "ios-cold-reset-producer-source": "scripts/testing/t15-cold-ios-reset-producer.ts",
@@ -66,39 +63,12 @@ SOURCE_PATHS = {
     "ios-cold-reset-handoff-source": "scripts/testing/t15-cold-reset-handoff.ts",
     "ios-cold-runtime-link-source": "scripts/testing/t15-cold-runtime-link.ts",
     "t15-cold-dispatcher-source": "scripts/testing/t15-cold-dispatcher.ts",
-    "t15-cold-owned-lifecycle-source": "scripts/testing/t15-cold-owned-lifecycle.ts",
-    "t15-cold-production-runner-source": "scripts/testing/t15-cold-production-runner.ts",
-    "t15-cold-ios-family-attempt-source": "scripts/testing/t15-cold-ios-family-attempt.ts",
     "t15-cold-android-maestro-build-reuse-source": "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
-    "t15-cold-android-maestro-family-attempt-source": "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-    "t15-cold-android-maestro-public-finalizer-source": "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-    "t15-cold-android-maestro-public-consumer-source": "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
     "native-comparison-source": "scripts/testing/compare-native-pilot.ts",
-    "ios-detox-connection-public-bridge-source": "scripts/testing/native-detox-connection-public-bridge.ts",
-    "ios-detox-connection-public-dispatch-source": "scripts/testing/native-detox-connection-public-dispatch.ts",
-    "ios-detox-connection-public-staging-source": "scripts/testing/native-detox-connection-public-staging.ts",
-    "ios-detox-training-public-dispatch-source": "scripts/testing/native-detox-training-public-dispatch.ts",
-    "ios-detox-training-public-finalization-source": "scripts/testing/native-detox-training-public-finalization.ts",
-    "native-detox-training-public-finalization-contract-source": "scripts/testing/native-detox-training-public-finalization-contract.ts",
-    "detox-training-public-types-source": "scripts/testing/native-detox-training-public-types.ts",
-    "native-detox-dispatch-lifecycle-source": "scripts/testing/native-detox-dispatch-lifecycle.ts",
-    "android-detox-connection-public-dispatch-source": "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-    "android-detox-connection-public-staging-source": "scripts/testing/native-detox-connection-android-public-staging.ts",
-    "android-detox-connection-producer-source": "scripts/testing/detox-android-connection-producer.ts",
-    "android-detox-connection-cleanup-source": "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-    "android-detox-session-producer-source": "scripts/testing/detox-android-session-producer.ts",
-    "android-detox-session-adapter-source": "scripts/testing/native-detox-android-session-public-adapter.ts",
-    "android-detox-session-route-source": "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-    "android-detox-session-finalization-source": "scripts/testing/native-detox-android-session-public-finalization.ts",
-    "android-detox-session-staging-source": "scripts/testing/native-detox-android-session-public-staging.ts",
     "native-connection-engine-contract-source": "scripts/testing/native-connection-engine-contract.ts",
     # Detox runtime qualification metadata and producer/verifier are explicit
     # declaration inputs. Runtime closure discovery alone is not a source row,
     # so freshness must bind these exact files to the iOS Detox scenario.
-    "ios-detox-connection-runtime-dispatch-source": "scripts/testing/native-detox-connection-runtime-dispatch.ts",
-    "ios-detox-connection-runtime-producer-source": "scripts/testing/native-detox-connection-runtime-producer.ts",
-    "ios-detox-connection-runtime-verification-source": "scripts/testing/native-detox-connection-runtime-verification.ts",
-    "detox-runtime-build-metadata-source": "scripts/testing/detox-runtime-build-metadata.ts",
     "android-connection-terminal-projection-source": "scripts/testing/run-ios-training-attempt.ts",
     "android-runner-slot-source": "scripts/ci/android-runner-slot.ts",
     "connection-view-verifier-source": "scripts/testing/native-view-evidence.ts",
@@ -202,20 +172,7 @@ SOURCE_PATHS = {
     # Private iOS Detox camera route. These inputs are declared so a native run
     # cannot bypass freshness, descriptor-safe staging, outer verification or
     # the four-assertion terminal.
-    "ios-detox-camera-contract-source": "scripts/testing/native-detox-camera-ios-contract.ts",
-    "ios-detox-camera-evidence-source": "scripts/testing/native-detox-camera-ios-evidence.ts",
-    "ios-detox-camera-ipc-source": "scripts/testing/native-detox-camera-ios-ipc.ts",
-    "ios-detox-camera-owner-source": "scripts/testing/native-detox-camera-ios-owner.ts",
-    "ios-detox-camera-producer-source": "scripts/testing/native-detox-camera-ios-producer.ts",
-    "ios-detox-camera-stage-source": "scripts/testing/native-detox-camera-ios-stage.ts",
-    "ios-detox-camera-current-owner-source": "scripts/testing/native-detox-camera-ios-current-owner.ts",
-    "ios-detox-camera-inputs-source": "scripts/testing/native-detox-camera-ios-inputs.ts",
-    "ios-detox-camera-verifier-source": "scripts/testing/native-detox-camera-ios-verifier.ts",
-    "ios-detox-camera-runner-source": "scripts/testing/run-ios-detox-camera-attempt.ts",
     "ios-detox-camera-public-runner-source": "scripts/testing/run-native-pilot.ts",
-    "ios-detox-camera-e2e-source": "e2e/detox-ios-camera-route.e2e.test.js",
-    "ios-detox-camera-detox-config-source": "detox.camera.private.config.js",
-    "ios-detox-camera-jest-config-source": "jest.detox-camera.private.config.js",
     "camera-adapter": "features/platform/qr-scanner-adapter.ts",
     "camera-permissions": "ios/mychampions/Info.plist",
     "camera-copy": "localization/en-US.ts",
@@ -253,26 +210,9 @@ DETOX_DISPATCH_STATIC_SOURCE_PATHS = {
     "detox-dispatch-android-session-storage-producer-source": "scripts/testing/detox-android-session-storage-producer.ts",
     "detox-dispatch-connection-actionability-source": "scripts/testing/detox-connection-actionability.ts",
     "detox-dispatch-connection-evidence-source": "scripts/testing/detox-connection-evidence.ts",
-    "detox-dispatch-connection-ipc-source": "scripts/testing/detox-connection-ipc.ts",
-    "detox-dispatch-connection-lifecycle-source": "scripts/testing/detox-connection-lifecycle.ts",
-    "detox-dispatch-integrated-connection-baseline-source": "scripts/testing/detox-integrated-connection-baseline.ts",
-    "detox-dispatch-integrated-connection-driver-source": "scripts/testing/detox-integrated-connection-driver.ts",
-    "detox-dispatch-integrated-session-baseline-source": "scripts/testing/detox-integrated-session-baseline.ts",
-    "detox-dispatch-android-qualified-build-source": "scripts/testing/detox-android-qualified-build.ts",
     "detox-dispatch-native-hierarchy-source": "scripts/testing/detox-native-hierarchy.ts",
     "detox-dispatch-session-cache-observation-source": "scripts/testing/detox-session-cache-observation.ts",
-    "detox-dispatch-session-cancel-evidence-source": "scripts/testing/detox-session-cancel-evidence.ts",
-    "detox-dispatch-session-final-transport-source": "scripts/testing/detox-session-final-transport.ts",
-    "detox-dispatch-training-child-client-source": "scripts/testing/detox-training-child-client.ts",
-    "detox-dispatch-training-child-protocol-source": "scripts/testing/detox-training-child-protocol.mjs",
-    "detox-dispatch-training-journey-source": "scripts/testing/detox-training-journey.ts",
-    "detox-dispatch-training-owned-dispatch-source": "scripts/testing/detox-training-owned-dispatch.ts",
     "detox-dispatch-native-android-session-adapter-source": "scripts/testing/native-android-session-adapter.ts",
-    "detox-dispatch-android-session-producer-source": "scripts/testing/detox-android-session-producer.ts",
-    "detox-dispatch-android-session-adapter-source": "scripts/testing/native-detox-android-session-public-adapter.ts",
-    "detox-dispatch-android-session-route-source": "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-    "detox-dispatch-android-session-finalization-source": "scripts/testing/native-detox-android-session-public-finalization.ts",
-    "detox-dispatch-android-session-staging-source": "scripts/testing/native-detox-android-session-public-staging.ts",
 }
 SOURCE_PATHS.update(DETOX_DISPATCH_STATIC_SOURCE_PATHS)
 
@@ -280,17 +220,7 @@ SOURCE_PATHS.update(DETOX_DISPATCH_STATIC_SOURCE_PATHS)
 # Bind every discovered owner path to an actual source revision so the public
 # selector cannot accept an owner that is absent from the generated declaration.
 IOS_CAMERA_RUNTIME_CLOSURE_SOURCE_PATHS = {
-    "detox-dispatch-save-retry-child-client-source": "scripts/testing/detox-save-retry-child-client.ts",
-    "detox-dispatch-save-retry-child-protocol-source": "scripts/testing/detox-save-retry-child-protocol.mjs",
-    "detox-dispatch-save-retry-driver-source": "scripts/testing/detox-save-retry-driver.ts",
-    "detox-dispatch-save-retry-owned-dispatch-source": "scripts/testing/detox-save-retry-owned-dispatch.ts",
-    "detox-dispatch-save-retry-runtime-finalizer-source": "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-    "ios-camera-runtime-session-native-pilot-route-source": "scripts/testing/native-detox-session-native-pilot-route.ts",
-    "ios-camera-runtime-session-public-adapter-source": "scripts/testing/native-detox-session-public-adapter.ts",
-    "ios-camera-runtime-session-public-staging-source": "scripts/testing/native-detox-session-public-staging.ts",
     "ios-camera-runtime-pilot-preflight-source": "scripts/testing/native-pilot-preflight.ts",
-    "ios-camera-runtime-remote-service-helper-source": "scripts/testing/ios-detox-camera-remote-service-helper.ts",
-    "ios-camera-runtime-remote-service-route-source": "scripts/testing/native-detox-camera-ios-remote-service-route.ts",
 }
 SOURCE_PATHS.update(IOS_CAMERA_RUNTIME_CLOSURE_SOURCE_PATHS)
 
@@ -299,32 +229,12 @@ SOURCE_PATHS.update(IOS_CAMERA_RUNTIME_CLOSURE_SOURCE_PATHS)
 # revision, regardless of the selected engine/platform.
 SESSION_COLD_RUNTIME_SOURCE_PATHS = {
     "android-camera-identity-source": "scripts/testing/native-detox-camera-android-identity.ts",
-    "android-cold-reset-producer-source": "scripts/testing/t15-cold-android-reset-producer.ts",
-    "android-session-cold-route-source": "scripts/testing/t15-detox-android-session-cold-route.ts",
-    "android-session-normalization-source": "scripts/testing/t15-detox-android-session-normalization.ts",
-    "android-session-public-receipt-bridge-source": "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-    "android-session-reset-preparation-source": "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-    "detox-cold-lifecycle-source": "scripts/testing/t15-detox-cold-lifecycle.ts",
 }
 SOURCE_PATHS.update(SESSION_COLD_RUNTIME_SOURCE_PATHS)
 
 # The public runner imports this camera route on both platforms. Bind every
 # discovered owner explicitly; missing revisions remain a generation error.
 ANDROID_DETOX_CAMERA_RUNTIME_SOURCE_PATHS = {
-    "android-camera-runtime-detox-child-source": "e2e/detox-android-camera-denied.e2e.test.js",
-    "android-camera-runtime-detox-instrumentation-source": "android/app/src/androidTest/java/com/eduardo880/mychampions/DetoxTest.java",
-    "android-camera-runtime-permission-bridge-source": "android/app/src/androidTest/java/com/edufelip/mychampions/DetoxCameraPermissionBridge.java",
-    "android-camera-runtime-android-detox-camera-cold-reset-boundary-source": "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-    "android-camera-runtime-native-detox-camera-android-bridge-source": "scripts/testing/native-detox-camera-android-bridge.ts",
-    "android-camera-runtime-native-detox-camera-android-contract-source": "scripts/testing/native-detox-camera-android-contract.ts",
-    "android-camera-runtime-native-detox-camera-android-native-pilot-route-source": "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-    "android-camera-runtime-native-detox-camera-android-owned-session-source": "scripts/testing/native-detox-camera-android-owned-session.ts",
-    "android-camera-runtime-native-detox-camera-android-producer-source": "scripts/testing/native-detox-camera-android-producer.ts",
-    "android-camera-runtime-native-detox-camera-android-public-dispatch-source": "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-    "android-camera-runtime-native-detox-camera-android-public-finalizer-source": "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-    "android-camera-runtime-native-detox-camera-android-q-adapter-source": "scripts/testing/native-detox-camera-android-q-adapter.ts",
-    "android-camera-runtime-native-detox-camera-android-reset-independent-source": "scripts/testing/native-detox-camera-android-reset-independent.ts",
-    "android-camera-runtime-native-detox-camera-android-reset-source": "scripts/testing/native-detox-camera-android-reset.ts",
 }
 SOURCE_PATHS.update(ANDROID_DETOX_CAMERA_RUNTIME_SOURCE_PATHS)
 
@@ -507,13 +417,6 @@ NATIVE_CLOSURE_ENTRY_POINTS = {
         "android": [
             "scripts/testing/capture-android-testability.ts",
             "scripts/testing/run-android-session-attempt.ts",
-            "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-            "scripts/testing/native-detox-android-session-public-adapter.ts",
-            "scripts/testing/native-detox-android-session-public-finalization.ts",
-            "scripts/testing/native-detox-android-session-public-staging.ts",
-            "scripts/testing/detox-android-session-producer.ts",
-            "scripts/testing/detox-android-connection-producer.ts",
-            "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
         ],
     },
     # Camera uses the real iOS adapter/evidence path and the Android candidate
@@ -524,21 +427,7 @@ NATIVE_CLOSURE_ENTRY_POINTS = {
             "scripts/testing/capture-native-testability.ts",
             "scripts/testing/run-ios-camera-attempt.ts",
             "scripts/testing/run-native-pilot.ts",
-            "scripts/testing/run-ios-detox-camera-attempt.ts",
-            "scripts/testing/native-detox-camera-ios-contract.ts",
-            "scripts/testing/native-detox-camera-ios-evidence.ts",
-            "scripts/testing/native-detox-camera-ios-ipc.ts",
-            "scripts/testing/native-detox-camera-ios-owner.ts",
-            "scripts/testing/native-detox-camera-ios-producer.ts",
-            "scripts/testing/native-detox-camera-ios-stage.ts",
-            "scripts/testing/native-detox-camera-ios-current-owner.ts",
-            "scripts/testing/native-detox-camera-ios-inputs.ts",
-            "scripts/testing/native-detox-camera-ios-verifier.ts",
             "scripts/testing/detox-connection-evidence.ts",
-            "scripts/testing/detox-connection-ancestor-safe.py",
-            "e2e/detox-ios-camera-route.e2e.test.js",
-            "detox.camera.private.config.js",
-            "jest.detox-camera.private.config.js",
         ],
         "android": [
             "scripts/testing/capture-android-testability.ts",
@@ -588,7 +477,6 @@ NATIVE_AUXILIARY_INPUTS = {
     # The iOS Detox connection writer launches this Python sidecar by path;
     # it is not discoverable through the TypeScript local-import parser.
     ("connection", "ios"): [
-        "scripts/testing/detox-connection-ancestor-safe.py",
     ],
 }
 
@@ -775,50 +663,12 @@ def capture_helper_paths(platform):
     return values
 
 
-def detox_dispatch_runtime_paths():
-    relative = "scripts/testing/native-detox-connection-public-dispatch.ts"
-    source = (ROOT / relative).read_text()
-    match = re.search(r"export const detoxDispatchRuntimeClosure = \[([\s\S]*?)\] as const;", source)
-    if not match:
-        raise RuntimeError("Missing explicit Detox dispatch runtime closure")
-    paths = re.findall(r"'([^']+)'", match.group(1))
-    if not paths or len(paths) != len(set(paths)):
-        raise RuntimeError("Duplicate or empty Detox dispatch runtime closure")
-    for relative in paths:
-        if relative.startswith("/") or ".." in relative.split("/") or not (ROOT / relative).is_file():
-            raise RuntimeError(f"Missing or unsafe Detox dispatch runtime input: {relative}")
-    return paths
-
-
-
-def detox_training_dispatch_runtime_paths():
-    relative = "scripts/testing/native-detox-training-public-dispatch.ts"
-    source = (ROOT / relative).read_text()
-    match = re.search(r"export const detoxTrainingDispatchRuntimeClosure = \[([\s\S]*?)\] as const;", source)
-    if not match:
-        raise RuntimeError("Missing explicit Detox training dispatch runtime closure")
-    paths = re.findall(r"'([^']+)'", match.group(1))
-    if not paths or len(paths) != len(set(paths)):
-        raise RuntimeError("Duplicate or empty Detox training dispatch runtime closure")
-    for relative in paths:
-        if relative.startswith("/") or ".." in relative.split("/") or not (ROOT / relative).is_file():
-            raise RuntimeError(f"Missing or unsafe Detox training runtime input: {relative}")
-    return paths
-
 def scenario_owner_paths(owner_keys, family, platform):
     keys = unique_paths(owner_keys.split())
     paths = [SOURCE_PATHS[key] for key in keys]
     if family in NATIVE_CLOSURE_ENTRY_POINTS:
         paths.extend(native_source_closure(family, platform))
     paths.extend(capture_helper_paths(platform))
-    if (family, platform) == ("connection", "ios"):
-        # The generated inventory is a runtime input, so its path belongs here.
-        # It is deliberately not a SOURCE_PATHS row: embedding its own byte hash
-        # into the generated JSON would create a recursive revision. Runtime
-        # dispatch hashes the finished inventory after generation.
-        paths.extend(detox_dispatch_runtime_paths())
-    if (family, platform) == ("training", "ios"):
-        paths.extend(detox_training_dispatch_runtime_paths())
     return unique_paths(paths)
 
 
@@ -858,7 +708,7 @@ def main():
             row["conditions"] = {"platforms": ["ios"]}
     flows, scenarios = [], []
     for family, (entry, steps, src, roles, owners, requirements) in FAMILIES.items():
-        owners += " host-preflight-source pilot-contract-source public-runner-source runner-wrapper-source node-wrapper-source declaration-source owned-process-group-source owned-native-command-source public-receipt-schema-source schema-validator-source native-cleanup-evidence-source detox-artifact-root-source detox-result-writer-source native-pilot-invocation-source"
+        owners += " host-preflight-source pilot-contract-source public-runner-source runner-wrapper-source node-wrapper-source declaration-source owned-process-group-source owned-native-command-source public-receipt-schema-source schema-validator-source native-cleanup-evidence-source   native-pilot-invocation-source"
         if family == "session":
             owners += " session-profile-checkpoints-source connection-snapshot-source connection-snapshot-schema-source native-auth-observation-source connection-view-verifier-source fixture-source proxy-source"
         if family == "training":
@@ -875,7 +725,7 @@ def main():
             # explicit so declaration freshness cannot omit string-backed inputs.
             scenario_owners = owners + " android-session-checkpoint-copy-source session-helper-ledger-source session-public-finalization-source session-public-dependency-source session-public-staging-source testing-repository-identity-source"
             if platform == "ios":
-                scenario_owners += " ios-cold-reset-producer-source ios-cold-reset-child-consumer-source ios-cold-reset-handoff-source ios-cold-runtime-link-source t15-cold-dispatcher-source t15-cold-owned-lifecycle-source t15-cold-production-runner-source t15-cold-ios-family-attempt-source native-comparison-source"
+                scenario_owners += " ios-cold-reset-producer-source ios-cold-reset-child-consumer-source ios-cold-reset-handoff-source ios-cold-runtime-link-source t15-cold-dispatcher-source    native-comparison-source"
                 # The iOS capture producer hashes its complete script closure, including
                 # the shared Android input-reader/runner dependencies imported by owned
                 # lifecycle helpers. Keep these freshness inputs explicit even though no
@@ -886,18 +736,14 @@ def main():
                 if family == "save-retry":
                     scenario_owners += " ios-save-retry-adapter-source save-retry-public-evidence-source ios-training-adapter-source"
                 if family == "connection":
-                    scenario_owners += " connection-password-offer-witness-source ios-detox-connection-public-bridge-source ios-detox-connection-public-dispatch-source ios-detox-connection-public-staging-source"
+                    scenario_owners += " connection-password-offer-witness-source   "
                     scenario_owners += " ios-t16-owned-entrypoint-source t16-owned-bootstrap-source t16-owned-runtime-source t16-owned-mcp-connector-source t16-owned-exploration-controller-source t16-outer-cleanup-binding-source t16-owned-production-entrypoint-source t16-owned-package-source exploration-preparation-source exploration-budget-policy-source t16-owned-mcp-stdio-source"
-                    dispatch_paths = set(detox_dispatch_runtime_paths())
-                    scenario_owners += " " + " ".join(
-                        key for key, relative in SOURCE_PATHS.items() if relative in dispatch_paths
-                    )
                 if family == "session":
                     scenario_owners += " ios-session-adapter-source"
                 if family == "camera-denied":
                     scenario_owners += " ios-camera-adapter-source camera-submission-evidence-source"
-                    scenario_owners += " ios-detox-camera-contract-source ios-detox-camera-evidence-source ios-detox-camera-ipc-source ios-detox-camera-owner-source ios-detox-camera-producer-source ios-detox-camera-stage-source ios-detox-camera-current-owner-source ios-detox-camera-inputs-source ios-detox-camera-verifier-source ios-detox-camera-runner-source ios-detox-camera-public-runner-source ios-detox-camera-e2e-source ios-detox-camera-detox-config-source ios-detox-camera-jest-config-source"
-                    scenario_owners += " detox-dispatch-integrated-session-baseline-source detox-dispatch-connection-evidence-source detox-dispatch-native-hierarchy-source owned-native-command-source camera-observer proxy-source fixture-source"
+                    scenario_owners += "           ios-detox-camera-public-runner-source   "
+                    scenario_owners += "  detox-dispatch-connection-evidence-source detox-dispatch-native-hierarchy-source owned-native-command-source camera-observer proxy-source fixture-source"
             else:
                 scenario_owners += " android-capture-source android-driver-diagnostics-source android-driver-startup-sampling-source android-build-identity-source native-build-identity-source native-build-reuse-source android-emulator-owner-source android-port-owner-source adb-owner-source android-cleanup-source native-runtime-preflight-source android-connection-adapter-source android-connection-hierarchy-source android-connection-public-evidence-source android-runner-slot-source android-input-reader-source android-input-reader-java-source android-input-reader-manifest-source save-retry-observer inventory-validator-source"
                 if family == "camera-denied":
@@ -905,7 +751,7 @@ def main():
                 if family == "save-retry":
                     scenario_owners += " android-save-retry-adapter-source android-save-retry-public-evidence-source"
                 if family == "connection":
-                    scenario_owners += " android-connection-terminal-projection-source android-detox-connection-public-dispatch-source android-detox-connection-public-staging-source android-detox-connection-producer-source android-detox-connection-cleanup-source native-connection-engine-contract-source detox-dispatch-integrated-connection-driver-source detox-dispatch-android-qualified-build-source"
+                    scenario_owners += " android-connection-terminal-projection-source     native-connection-engine-contract-source  "
                 if family == "training":
                     scenario_owners += " android-training-adapter-source training-public-evidence-source"
             owner_keys = unique_paths(scenario_owners.split())

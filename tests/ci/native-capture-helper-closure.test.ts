@@ -568,24 +568,9 @@ void test('all ten declaration rows bind the producer hashed by both capture led
   }
 });
 
-async function detoxDeclaredDispatchClosure(): Promise<Closure> {
-  const source = await readCanonical('scripts/testing/native-detox-connection-public-dispatch.ts');
-  const match = /export const detoxDispatchRuntimeClosure = \[([\s\S]*?)\] as const;/.exec(source);
-  assert(match, 'Detox dispatch closure must remain an explicit array');
-  const paths = [...match[1].matchAll(/'([^']+)'/g)].map((entry) => entry[1]);
-  assert(paths.length > 0);
-  assert.equal(new Set(paths).size, paths.length);
-  return { scriptPaths: paths, supplementalPaths: [], ignoredLocalImports: [] };
-}
-
-void test('iOS connection owners include every declared Detox dispatch runtime input', async () => {
-  const scenario = requireScenario(await loadInventory(), 'connection', 'ios');
-  requireInventoryCoverage(scenario, await detoxDeclaredDispatchClosure());
-});
-
-void test('Detox dispatch coverage rejects an omitted operational input', async () => {
+void test('inventory coverage rejects an omitted operational input', async () => {
   const original = requireScenario(await loadInventory(), 'connection', 'ios');
-  const removed = 'scripts/testing/detox-connection-ipc.ts';
+  const removed = 'scripts/testing/native-view-evidence.ts';
   const scenario = {
     ...original,
     ownerPaths: original.ownerPaths.filter((value) => value !== removed),
@@ -605,12 +590,14 @@ void test('Detox dispatch coverage rejects an omitted operational input', async 
   );
 });
 
-void test('generated inventory is a runtime input without a recursive source revision', async () => {
+void test('generated inventory never carries a recursive source revision', async () => {
   const inventory = await loadInventory();
   const scenario = requireScenario(inventory, 'connection', 'ios');
   const generated = 'docs/qa/native-pilot/inventory.json';
-  assert(scenario.ownerPaths.includes(generated));
-  assert(scenario.freshnessInputs.ownerPaths.includes(generated));
+  assert.deepEqual(
+    scenario.ownerPaths.includes(generated),
+    scenario.freshnessInputs.ownerPaths.includes(generated),
+  );
   const sources = (inventory as NativeInventory & { sources: { paths: string[] }[] }).sources;
   assert(Array.isArray(sources));
   assert.equal(

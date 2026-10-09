@@ -77,7 +77,7 @@
 - If the same mounted screen instance transitions from an already-hydrated edit target into create mode (`/nutrition/custom-meals/new`) — e.g. a `replace`/deep-link navigation rather than a fresh screen push — the previously hydrated meal's form fields, `savedMealId`, validation/save errors, attach-photo toggle, AI photo-analysis state, and image-upload state are all reset instead of leaking into what renders as a fresh create form (ET-100 follow-up hardening).
 
 ## Native Validation Notes
-- Deterministic Detox coverage runs the source-sheet state and synthetic successful-upload state in separate fresh-Metro phases. The source-sheet phase explicitly clears the success fixture; the success phase bypasses the native picker and validates the preview. An authenticated run without a valid `sheet|success` runner scenario fails closed.
+- Deterministic Maestro coverage runs the source-sheet state and synthetic successful-upload state in separate fresh-Metro phases (`image-upload-sheet` and `image-upload-success` tags). The source-sheet phase explicitly clears the success fixture; the success phase bypasses the native picker and validates the preview. A CI phase with no flow for its tag fails closed.
 
 ## Copy Draft (Initial)
 - Title: `Create custom meal`

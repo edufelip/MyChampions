@@ -58,7 +58,7 @@
 - The QR dialog supports Escape, keyboard focus containment, and focus restoration on web.
 - Known invite failures must show reason-specific actionable copy.
 - Accessibility baseline applies for text scaling, focus order, contrast, and readable status semantics.
-- Deterministic native validation launches a fresh unsynchronized app instance for each manual-code, QR, and unbind case so relationship fixtures and Detox idling resources cannot leak between cases.
+- Deterministic native validation launches a fresh, clean-state app instance for each manual-code, QR, and unbind case so relationship fixtures cannot leak between cases.
 
 ## Copy Draft (Initial)
 - Intro: `Have a professional? Enter their invite code.`

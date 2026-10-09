@@ -141,7 +141,7 @@ Publish first only to an explicitly approved test audience. The evidence package
 - RevenueCat screenshots showing the paywall-to-offering bindings.
 - Package mapping screenshots for both platforms and both entitlements.
 - Light/dark and supported-locale previews.
-- Detox purchase success, cancellation, failure, duplicate-tap, close, and restore selectors.
+- Maestro purchase success, cancellation, failure, duplicate-tap, close, and restore flows.
 - App Store and Google Play sandbox purchase/reinstall/restore evidence using unique customers.
 - RevenueCat customer events and MyChampions server snapshots proving the unrelated entitlement and alternate users stayed inactive.
 
@@ -151,8 +151,8 @@ Publish first only to an explicitly approved test audience. The evidence package
 |---|---|---|---|---|
 | PW-01 | RevenueCat preview | Professional and student paywalls in all three locales, light/dark, smallest/largest supported phones | Copy, dynamic price/period slots, close, restore, Terms, and Privacy remain visible and reachable | Provider screenshots plus accessibility review |
 | PW-02 | Provider mapping audit | Inspect both offerings for every provider app | Monthly/annual packages match the package table; every product attaches to only its intended entitlement | RevenueCat product/entitlement/offering screenshots |
-| PW-03 | Deterministic Detox | Open each locked app surface and dismiss with close | Correct offering opens; dismissal grants nothing; source surface remains usable | Detox selectors/logs |
-| PW-04 | Deterministic Detox | Cancellation, store error, network error, repeated purchase tap | No grant; no duplicate purchase; retry, restore, and close remain available | Detox selectors/logs |
+| PW-03 | Deterministic Maestro | Open each locked app surface and dismiss with close | Correct offering opens; dismissal grants nothing; source surface remains usable | Maestro flows/logs |
+| PW-04 | Deterministic Maestro | Cancellation, store error, network error, repeated purchase tap | No grant; no duplicate purchase; retry, restore, and close remain available | Maestro flows/logs |
 | PW-05 | Test Store | Buy professional, then buy student with a separate unique user | First user becomes professional-only; second becomes student-only; server snapshots agree | RevenueCat events, runner logs, server snapshots |
 | PW-06 | App Store sandbox | Buy, cancel/fail, reinstall, and explicitly restore monthly and annual packages with unique users | StoreKit receipt restore returns only the purchased entitlement | Video/screenshots, RevenueCat events, server snapshots |
 | PW-07 | Google Play sandbox | Buy, cancel/fail, reinstall, and explicitly restore monthly and annual base plans with licensed testers | Play purchase-token restore returns only the purchased entitlement | Internal-track video/screenshots, RevenueCat events, server snapshots |

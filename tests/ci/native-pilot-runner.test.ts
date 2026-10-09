@@ -20,9 +20,7 @@ import {
   nativePilotCleanupStatus,
   nativePilotExecutionAdapter,
   nativeCameraPublicEvidenceBindings,
-  resolveIosDetoxConnectionDeadlineMs,
   readRepositorySourcesBestEffort,
-  runIosDetoxConnectionAttemptForPublicDispatch,
   runIosCameraAttemptForPublicDispatch,
   resolveIosCameraDiagnosticOption,
   resolveNativePilotTerminalDecision,
@@ -114,7 +112,7 @@ void test('native dispatch admits only reviewed integration cells', () => {
     }),
     'android-save-retry',
   );
-  assert.equal(nativePilotExecutionAdapter({ ...base, engine: 'detox' }), null);
+  assert.equal(nativePilotExecutionAdapter({ ...base, engine: 'detox' as never }), null);
   assert.equal(nativePilotExecutionAdapter({ ...base, mode: 'fixture' }), null);
   assert.equal(nativePilotExecutionAdapter({ ...base, platform: 'android' }), null);
   for (const platform of ['ios', 'android'] as const) {
@@ -126,10 +124,10 @@ void test('native dispatch admits only reviewed integration cells', () => {
       nativePilotExecutionAdapter({
         ...base,
         platform,
-        engine: 'detox',
+        engine: 'detox' as never,
         scenario: `SCN-training-${platform}`,
       }),
-      platform === 'ios' ? 'ios-detox-training' : null,
+      null,
     );
     assert.equal(
       nativePilotExecutionAdapter({
@@ -143,10 +141,10 @@ void test('native dispatch admits only reviewed integration cells', () => {
       nativePilotExecutionAdapter({
         ...base,
         platform,
-        engine: 'detox',
+        engine: 'detox' as never,
         scenario: `SCN-session-${platform}`,
       }),
-      platform === 'ios' ? 'ios-detox-session' : 'android-detox-session',
+      null,
     );
     assert.equal(
       nativePilotExecutionAdapter({
@@ -173,7 +171,7 @@ void test('native dispatch admits only reviewed integration cells', () => {
     mode: 'integration',
   } as const;
   assert.equal(nativePilotExecutionAdapter(camera), 'camera');
-  assert.equal(nativePilotExecutionAdapter({ ...camera, engine: 'detox' }), 'ios-detox-camera');
+  assert.equal(nativePilotExecutionAdapter({ ...camera, engine: 'detox' as never }), null);
   assert.equal(nativePilotExecutionAdapter({ ...camera, mode: 'fixture' }), null);
   assert.equal(
     nativePilotExecutionAdapter({
@@ -194,10 +192,7 @@ void test('connection dispatch accepts only the matching integrated Maestro plat
       mode: 'integration',
     } as const;
     assert.equal(nativePilotExecutionAdapter(args), 'connection');
-    assert.equal(
-      nativePilotExecutionAdapter({ ...args, engine: 'detox' }),
-      platform === 'ios' ? 'ios-detox-connection' : 'android-detox-connection',
-    );
+    assert.equal(nativePilotExecutionAdapter({ ...args, engine: 'detox' as never }), null);
     assert.equal(nativePilotExecutionAdapter({ ...args, mode: 'fixture' }), null);
     assert.equal(
       nativePilotExecutionAdapter({
@@ -207,79 +202,6 @@ void test('connection dispatch accepts only the matching integrated Maestro plat
       null,
     );
   }
-});
-
-void test('iOS Detox public adapter forwards the owned dispatcher seam with exact identity', async () => {
-  const runId = 'a'.repeat(24);
-  const selection = {
-    arguments: {
-      platform: 'ios',
-      engine: 'detox',
-      scenario: 'SCN-connection-ios',
-      mode: 'integration',
-    },
-  } as NativePilotSelection;
-  const options = {
-    repositoryRoot: repository,
-    serverRoot: path.join(repository, '../server'),
-    artifactRoot: path.join(repository, '.qa/artifacts/native-pilot-attempts', runId),
-    requestedRunId: runId,
-    requestedAttemptId: `${runId}:first`,
-    selection,
-    signal: new AbortController().signal,
-    deadlineMs: 30_000,
-    buildRunId: 'b'.repeat(24),
-    parentEnv: {},
-  } satisfies Parameters<typeof runIosDetoxConnectionAttemptForPublicDispatch>[0];
-  let calls = 0;
-  const sentinel = { kind: 'private-detox-result' };
-  const result = await runIosDetoxConnectionAttemptForPublicDispatch(options, (received) => {
-    calls += 1;
-    assert.deepEqual(received, options);
-    return Promise.resolve(sentinel as never);
-  });
-  assert.equal(calls, 1);
-  assert.deepEqual(result, sentinel);
-  assert.throws(
-    () =>
-      runIosDetoxConnectionAttemptForPublicDispatch({ ...options, buildRunId: 'invalid' }, () =>
-        Promise.resolve(sentinel as never),
-      ),
-    /buildRunId/,
-  );
-  assert.throws(
-    () =>
-      runIosDetoxConnectionAttemptForPublicDispatch(
-        {
-          ...options,
-          selection: { ...selection, arguments: { ...selection.arguments, engine: 'maestro' } },
-        },
-        () => Promise.resolve(sentinel as never),
-      ),
-    /deepEqual|Expected values/,
-  );
-});
-
-void test('iOS Detox deadline cannot enter the dispatcher below its owned minimum', () => {
-  assert.equal(
-    resolveIosDetoxConnectionDeadlineMs({
-      runStartedMs: 1_000,
-      nowMs: 2_000,
-      wholeRunMs: 120_000,
-      stepMs: 600_000,
-    }),
-    119_000,
-  );
-  assert.throws(
-    () =>
-      resolveIosDetoxConnectionDeadlineMs({
-        runStartedMs: 1_000,
-        nowMs: 91_001,
-        wholeRunMs: 120_000,
-        stepMs: 600_000,
-      }),
-    /30-second bridge bound/,
-  );
 });
 
 void test('camera public dispatch forwards only the reviewed iOS selection to an injected runner', async () => {
@@ -328,7 +250,7 @@ void test('camera public dispatch forwards only the reviewed iOS selection to an
         requested: true,
         selection: {
           ...selection,
-          arguments: { ...selection.arguments, engine: 'detox' },
+          arguments: { ...selection.arguments, engine: 'detox' as never },
         },
       }),
     /requires the iOS Maestro camera integration selection/,

@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "70d2a84a8fbad3ae7e8a606f0ef51423b0c7735d",
+    "commit": "bafa0f1914006d73e7e28dbe68ff56ee0fe90158",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -75,7 +75,7 @@
       "paths": [
         "docs/screens/v2/SC-211-relationship-management.md"
       ],
-      "revision": "39d5b1b8356d3ef88964a2c41202e1b7f711c6afda9ec743b451d7120f14cd9b"
+      "revision": "76bed6afe8078645668cf55425880e36ff7f8023624879f6831d27090450f467"
     },
     {
       "id": "SRC-pro-doc",
@@ -111,7 +111,7 @@
       "paths": [
         "docs/acceptance-criteria/AC-002-role-journeys-and-plan-ownership.md"
       ],
-      "revision": "8e50ed49fa440a78f3c64b8b3b99b3f247a3e9c08b377984d224188db99a4ad8"
+      "revision": "c457d0acda5ff3b432b73f28fdd978f04cddc1aaf28be58e4b5ee2dc8e7f3214"
     },
     {
       "id": "SRC-rules",
@@ -120,7 +120,7 @@
       "paths": [
         "docs/business-rules/BR-002-role-assignment-and-plan-governance.md"
       ],
-      "revision": "a8563c3f42d96f6fcdb794e435ca04915d33ea70c0f810bdc5767f19a09bd3b9"
+      "revision": "4cc3aaf320e64733fac5dc0c44b38c5f6ba71fb32506eca596a06d5844a17cb7"
     },
     {
       "id": "SRC-test-cases",
@@ -129,7 +129,7 @@
       "paths": [
         "docs/test-cases/TC-002-role-and-assignment-controls.md"
       ],
-      "revision": "0cf3956d431379e0518e415f3d88225d65e78c5b0ad587800f776ec555d70cdf"
+      "revision": "ae7f62bee761ae45301329be0cd8415793dc7fcb75e7453a9984daaf46ef7c42"
     },
     {
       "id": "SRC-plan",
@@ -147,7 +147,7 @@
       "paths": [
         "docs/qa/native-pilot/declaration-contract.md"
       ],
-      "revision": "446eec8ab3bbb74581944d2898044718a621488a645a0ac932a3908fbccc304d"
+      "revision": "f9b1505f07dbd2bc9013b948450394bd34e8e08e87a082552adf5847f2e6df91"
     },
     {
       "id": "SRC-auth-source",
@@ -165,7 +165,7 @@
       "paths": [
         "features/auth/server-auth-source.ts"
       ],
-      "revision": "c05ae4001084b94e4ec37751e2b3437c748b9ad30f0bae07fc7a12ae995a7542"
+      "revision": "b0b2a1b4a28a103991bce532c23d00d057510da58aaea11080a588ae23cf07b9"
     },
     {
       "id": "SRC-account-source",
@@ -318,7 +318,7 @@
       "paths": [
         "scripts/testing/native-connection-public-evidence-core.ts"
       ],
-      "revision": "465c3f2f6dd142aff1a17a24cbec7eb94200ca744aa4789eb5ef3b4d8c83030d"
+      "revision": "6ccd5d523521e12fcb61eaa18f1fb61d2168e89102679ce9e784adaa9c606266"
     },
     {
       "id": "SRC-ios-connection-adapter-source",
@@ -399,7 +399,7 @@
       "paths": [
         "package.json"
       ],
-      "revision": "5a9ae18872f4fc48d0e3481ba506296ef672e5139f18ed9d58468e44f51b1cb9"
+      "revision": "0c42a87c6d91ff3216917ca12c6ba303cde8602c923123c1d700898f75d15e8b"
     },
     {
       "id": "SRC-exploration-preparation-source",
@@ -465,40 +465,13 @@
       "revision": "d0a7b24ecc9a56fc4e9493b1ec43985596e07dcd609285171150daee795465e1"
     },
     {
-      "id": "SRC-ios-detox-connection-sidecar-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-connection-ancestor-safe.py",
-      "paths": [
-        "scripts/testing/detox-connection-ancestor-safe.py"
-      ],
-      "revision": "7c34f6502aa9eeeb5b4d3587e6c3e2b353688a70d8179a629987e0a7110581f1"
-    },
-    {
-      "id": "SRC-detox-artifact-root-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-connection-artifact-root.ts",
-      "paths": [
-        "scripts/testing/detox-connection-artifact-root.ts"
-      ],
-      "revision": "027d0379b508eab8bb7ebc3420fec9a7a193d05f36a9fbf3205c4ae062eb914a"
-    },
-    {
-      "id": "SRC-detox-result-writer-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-connection-result-writer.ts",
-      "paths": [
-        "scripts/testing/detox-connection-result-writer.ts"
-      ],
-      "revision": "a96cffc5da0eb9e04a0295c24a6c40f1a740679e02baf942dd6b9f852ce7e920"
-    },
-    {
       "id": "SRC-native-pilot-invocation-source",
       "kind": "source",
       "ref": "scripts/testing/native-pilot-invocation.ts",
       "paths": [
         "scripts/testing/native-pilot-invocation.ts"
       ],
-      "revision": "433f331b4590606fc623532eb26aa7c6eb761b5f606be6f69ed823eccece90f7"
+      "revision": "95b647c2bf7d13a10966def5a46caef3b8d2105d3b930c955bcb891452f3bfd3"
     },
     {
       "id": "SRC-testing-repository-identity-source",
@@ -555,33 +528,6 @@
       "revision": "085d4ae484d1403b0b005e17f8b02ad5b88addac2200b5a3635f923c7f6331a9"
     },
     {
-      "id": "SRC-t15-cold-owned-lifecycle-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-cold-owned-lifecycle.ts",
-      "paths": [
-        "scripts/testing/t15-cold-owned-lifecycle.ts"
-      ],
-      "revision": "64e6afbb9c5d6750a30cde0a95c841810f7ec20c921609276dadca7de7dfde30"
-    },
-    {
-      "id": "SRC-t15-cold-production-runner-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-cold-production-runner.ts",
-      "paths": [
-        "scripts/testing/t15-cold-production-runner.ts"
-      ],
-      "revision": "3ce3ad676926e23e043017e22079a6eabf6dee4ce8ae0e4518c57a393944c1a9"
-    },
-    {
-      "id": "SRC-t15-cold-ios-family-attempt-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-cold-ios-family-attempt.ts",
-      "paths": [
-        "scripts/testing/t15-cold-ios-family-attempt.ts"
-      ],
-      "revision": "e91ae34cc4ad57abc4f51ffa70768ff314e2165b6ae9320a1b5c1bed56549248"
-    },
-    {
       "id": "SRC-t15-cold-android-maestro-build-reuse-source",
       "kind": "source",
       "ref": "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
@@ -589,33 +535,6 @@
         "scripts/testing/t15-cold-android-maestro-build-reuse.ts"
       ],
       "revision": "ebb491f237739371aa2a7afaa183206ee54a12e978fec853707d5a04f5420de3"
-    },
-    {
-      "id": "SRC-t15-cold-android-maestro-family-attempt-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-      "paths": [
-        "scripts/testing/t15-cold-android-maestro-family-attempt.ts"
-      ],
-      "revision": "9fb82ef0b5a219c2a19890868dd89ace39b72a1d64a8e6258475d7139acd0537"
-    },
-    {
-      "id": "SRC-t15-cold-android-maestro-public-finalizer-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-      "paths": [
-        "scripts/testing/t15-cold-android-maestro-public-finalizer.ts"
-      ],
-      "revision": "4399e21f50d2444a411d1ec519bac43099e17642331a3a8c2c11245be4aae2bf"
-    },
-    {
-      "id": "SRC-t15-cold-android-maestro-public-consumer-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-      "paths": [
-        "scripts/testing/t15-cold-android-maestro-public-consumer.ts"
-      ],
-      "revision": "c891972718dc53fc7d071be2606e860dc3ce663cc0c5879af3548793bad35828"
     },
     {
       "id": "SRC-native-comparison-source",
@@ -627,159 +546,6 @@
       "revision": "8c27bc8537713fec9deaa55e164c97ee02ab2f6b9d0f932fc77c7ef4b8d8fa7a"
     },
     {
-      "id": "SRC-ios-detox-connection-public-bridge-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-public-bridge.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-public-bridge.ts"
-      ],
-      "revision": "06ea68911848df3da57c220e6caf675af0c3b6815142e8c413e10f28ea00bec1"
-    },
-    {
-      "id": "SRC-ios-detox-connection-public-dispatch-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-public-dispatch.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-public-dispatch.ts"
-      ],
-      "revision": "0c94f489489b975206968b5b3bc9fab05d15cd26cb2364335a5c7c590a9c4a59"
-    },
-    {
-      "id": "SRC-ios-detox-connection-public-staging-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-public-staging.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-public-staging.ts"
-      ],
-      "revision": "932f45fea088889b260dbdf5fb0fa072cc9717acec9b3ae4ace1f46b4cccb17f"
-    },
-    {
-      "id": "SRC-ios-detox-training-public-dispatch-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-training-public-dispatch.ts",
-      "paths": [
-        "scripts/testing/native-detox-training-public-dispatch.ts"
-      ],
-      "revision": "fad40c5a4bf7f6a3765b0e1ef67a4071ad33c6bd95814bbc4de1a9f22c9c7679"
-    },
-    {
-      "id": "SRC-ios-detox-training-public-finalization-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-training-public-finalization.ts",
-      "paths": [
-        "scripts/testing/native-detox-training-public-finalization.ts"
-      ],
-      "revision": "497a1c1fd61d8968ba8f5e12fdd2b7391c96837496e018859ff5bcab21d96d20"
-    },
-    {
-      "id": "SRC-native-detox-training-public-finalization-contract-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-training-public-finalization-contract.ts",
-      "paths": [
-        "scripts/testing/native-detox-training-public-finalization-contract.ts"
-      ],
-      "revision": "65e7fbe60ef9e0fa4aa899ecac93561f5dd7a1bb59b990a1de6af18cc03d2d29"
-    },
-    {
-      "id": "SRC-detox-training-public-types-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-training-public-types.ts",
-      "paths": [
-        "scripts/testing/native-detox-training-public-types.ts"
-      ],
-      "revision": "9467fe89ac232f5c3c204888156b9e76a087967e9ffe01010f9ef3caeec2180f"
-    },
-    {
-      "id": "SRC-native-detox-dispatch-lifecycle-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-dispatch-lifecycle.ts",
-      "paths": [
-        "scripts/testing/native-detox-dispatch-lifecycle.ts"
-      ],
-      "revision": "aad892e739828513d1c333d6823a865361c0e1ef7d90182c450b143cc77ac8c6"
-    },
-    {
-      "id": "SRC-android-detox-connection-public-dispatch-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-android-public-dispatch.ts"
-      ],
-      "revision": "726e27374292e1b71e2a3512f354c0ed40ecf26b53d5dbabaad902c8429f8aff"
-    },
-    {
-      "id": "SRC-android-detox-connection-public-staging-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-android-public-staging.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-android-public-staging.ts"
-      ],
-      "revision": "22d44a0217a7405579ed815af972378b9fa8b9f9b5a3ffd99b320ae912637685"
-    },
-    {
-      "id": "SRC-android-detox-connection-producer-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-android-connection-producer.ts",
-      "paths": [
-        "scripts/testing/detox-android-connection-producer.ts"
-      ],
-      "revision": "a1241181640b3a5006407059c411f6fbba621fedc281956d2278c917c3b938f4"
-    },
-    {
-      "id": "SRC-android-detox-connection-cleanup-source",
-      "kind": "source",
-      "ref": "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-      "paths": [
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts"
-      ],
-      "revision": "108a4017e29d044d1425133542817ea1dc0878b9053fad0ac86ee3e15a8858ec"
-    },
-    {
-      "id": "SRC-android-detox-session-producer-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-android-session-producer.ts",
-      "paths": [
-        "scripts/testing/detox-android-session-producer.ts"
-      ],
-      "revision": "85acca5fec18ef3fb9069a799ffc5b8fa34b3b1e7954c5d4d094f48cdc478170"
-    },
-    {
-      "id": "SRC-android-detox-session-adapter-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-public-adapter.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-public-adapter.ts"
-      ],
-      "revision": "0c9185690e61f9f0f45b000acf4f1ecc5fa9a1ee88fb84b1c62bef76138705f7"
-    },
-    {
-      "id": "SRC-android-detox-session-route-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts"
-      ],
-      "revision": "284f0f9df9a95a34bc5a5717a7defef31aef5dcb632e3afe998f191f4867b8d9"
-    },
-    {
-      "id": "SRC-android-detox-session-finalization-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-public-finalization.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-public-finalization.ts"
-      ],
-      "revision": "362b683f7393540bd82ae1669b31135fc1e25c54dac4aa1f298509ac483a3585"
-    },
-    {
-      "id": "SRC-android-detox-session-staging-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-public-staging.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-public-staging.ts"
-      ],
-      "revision": "38dc609d4714d3cbbd51b82c52f70bb665568fba604e5c410623ff51d179d0d6"
-    },
-    {
       "id": "SRC-native-connection-engine-contract-source",
       "kind": "source",
       "ref": "scripts/testing/native-connection-engine-contract.ts",
@@ -787,42 +553,6 @@
         "scripts/testing/native-connection-engine-contract.ts"
       ],
       "revision": "95776cab81368e0ffad4517c5460f5a795354bc589f6659b706db061df6450ee"
-    },
-    {
-      "id": "SRC-ios-detox-connection-runtime-dispatch-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-runtime-dispatch.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-runtime-dispatch.ts"
-      ],
-      "revision": "14746d5cd20961b45b90390af9be7f32ce20971c56ed9f612345d458939f76ad"
-    },
-    {
-      "id": "SRC-ios-detox-connection-runtime-producer-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-runtime-producer.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-runtime-producer.ts"
-      ],
-      "revision": "0427e83153324e5b9ce7b327deaf0516d562dd7ed002bf51decb799abf58508b"
-    },
-    {
-      "id": "SRC-ios-detox-connection-runtime-verification-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-connection-runtime-verification.ts",
-      "paths": [
-        "scripts/testing/native-detox-connection-runtime-verification.ts"
-      ],
-      "revision": "a636904c366f7f458dd1239a3b54b9ca4bb9eea7750124dbadde4eea1ffdc90c"
-    },
-    {
-      "id": "SRC-detox-runtime-build-metadata-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-runtime-build-metadata.ts",
-      "paths": [
-        "scripts/testing/detox-runtime-build-metadata.ts"
-      ],
-      "revision": "97f26fa64356533a73f51b6756331995310b780fffc321d9a7dc415eaa40f536"
     },
     {
       "id": "SRC-android-connection-terminal-projection-source",
@@ -840,7 +570,7 @@
       "paths": [
         "scripts/ci/android-runner-slot.ts"
       ],
-      "revision": "2cfbfcf6e0480613f8457fb814d0d547ca1f9a7ae298f5471b2286cef99ee96a"
+      "revision": "53db2363f5c7a9b72431dbc9eb7113d2cfcbcb69d3af01ea0213ee2e50df834e"
     },
     {
       "id": "SRC-connection-view-verifier-source",
@@ -921,7 +651,7 @@
       "paths": [
         "scripts/testing/native-pilot-contract.ts"
       ],
-      "revision": "67fbc34094fec0db1ef857985f031d73494ec59e41b1d1e6c4c391030e65f0f3"
+      "revision": "8c506b18a980866ddcf6bc0827c427c8aa4cbe927904251c2a49d1a6ad61c79f"
     },
     {
       "id": "SRC-native-runtime-preflight-source",
@@ -966,7 +696,7 @@
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "7c41b57cd59265d7e5b4934b383f56c0542bab3e888e0334145cbaf273b5e7bb"
+      "revision": "1cc82eb9552c62fb4a45ef55a30c7ab289604ec57956263c36d0f117c9159ee9"
     },
     {
       "id": "SRC-runner-wrapper-source",
@@ -1173,7 +903,7 @@
       "paths": [
         "scripts/testing/generate-native-declaration.py"
       ],
-      "revision": "a6ef71b9d5efb47c5b8195170ee8e0e2e556275be824fd6523904c42b404f7d7"
+      "revision": "3094c2b5094565eb9a1c385349dfb35bfa1dc412dce28a3edc908d1ad4f5d2cb"
     },
     {
       "id": "SRC-maestro-training-driver",
@@ -1308,7 +1038,7 @@
       "paths": [
         "scripts/testing/native-training-public-evidence.ts"
       ],
-      "revision": "471f75df7cc943bf75d635ed3b55c62a72ad3eff667c64d3fa2b51629e3a821a"
+      "revision": "10f0146d8a5ed2e69778197fee3890450d8a7441a3bc1d5fca92fe7e075a3fc5"
     },
     {
       "id": "SRC-ios-capture-source",
@@ -1326,7 +1056,7 @@
       "paths": [
         "scripts/testing/capture-android-testability.ts"
       ],
-      "revision": "68d04fe81297370c7ac6fd7142829e74a806e839896c6a869d328e50772161f3"
+      "revision": "0662ee17bcd14a9573f0e30189b8e98654981293c8d6679c73e6edd6fb2dabea"
     },
     {
       "id": "SRC-android-session-checkpoint-copy-source",
@@ -1398,7 +1128,7 @@
       "paths": [
         "scripts/testing/owned-android-emulator.ts"
       ],
-      "revision": "7b94414b407b6ff1ba9756742b1d5278fd36ac4af8fc7b58daa772bc36dab4bf"
+      "revision": "1f9deb24b0fb218fc81212ac6f2927b50239b9cafef3dd402bffad35a93b1e85"
     },
     {
       "id": "SRC-android-port-owner-source",
@@ -1596,7 +1326,7 @@
       "paths": [
         "scripts/testing/native-android-camera-runtime-eligibility.ts"
       ],
-      "revision": "5b3f2ca201be3f80b976dce28e3b6ac58177db7b495a2236cce1f4f8a5d394ef"
+      "revision": "a30bc6e3494861f1e9dc796328977952c81893083495e026fb736319d4b38634"
     },
     {
       "id": "SRC-android-camera-runtime-receipt-source",
@@ -1635,130 +1365,13 @@
       "revision": "41dab66cce59705412550c21fdc5a30983b41b1d4c1907a1c5998b1e96d9e46f"
     },
     {
-      "id": "SRC-ios-detox-camera-contract-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-contract.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-contract.ts"
-      ],
-      "revision": "e084946eed8b195d5a8684d3cd88c8dcea5727d6c5377a6e8da6f3f3aafef4b3"
-    },
-    {
-      "id": "SRC-ios-detox-camera-evidence-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-evidence.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-evidence.ts"
-      ],
-      "revision": "78386cdc43ede0d02bf735e9f4588b467751483f09add3168dbccf2a59982d3d"
-    },
-    {
-      "id": "SRC-ios-detox-camera-ipc-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-ipc.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-ipc.ts"
-      ],
-      "revision": "301b8ea3315833811bd4f662fe0c76945ed8b1b713c555adf16e52399aae5fb0"
-    },
-    {
-      "id": "SRC-ios-detox-camera-owner-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-owner.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-owner.ts"
-      ],
-      "revision": "a193ff81f6f1de9cfe42e59057fb46579fb162fd4374f81e60809debb9164185"
-    },
-    {
-      "id": "SRC-ios-detox-camera-producer-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-producer.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-producer.ts"
-      ],
-      "revision": "e8258d71ea3d18fc64dc84d8fee9c2b8bed4939539dbfa5df3ac0340131bbf8c"
-    },
-    {
-      "id": "SRC-ios-detox-camera-stage-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-stage.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-stage.ts"
-      ],
-      "revision": "0dd3063ce02873c7c34e549c5eab4d1a696d517c2de8d5f2bbcec5f0d39e7ece"
-    },
-    {
-      "id": "SRC-ios-detox-camera-current-owner-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-current-owner.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-current-owner.ts"
-      ],
-      "revision": "b05262023b06e0dc87b0733d91af76bf711ef4464d8135051fb6833ad37210e8"
-    },
-    {
-      "id": "SRC-ios-detox-camera-inputs-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-inputs.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-inputs.ts"
-      ],
-      "revision": "8ae30fc009685070e0680e057f60fafe5d63b4658703eb7500ccf6c9f2317395"
-    },
-    {
-      "id": "SRC-ios-detox-camera-verifier-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-verifier.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-verifier.ts"
-      ],
-      "revision": "e1714ac6c2992021337676e6cfcde9cf88410ee8c69ae8be464109d5802c4db3"
-    },
-    {
-      "id": "SRC-ios-detox-camera-runner-source",
-      "kind": "source",
-      "ref": "scripts/testing/run-ios-detox-camera-attempt.ts",
-      "paths": [
-        "scripts/testing/run-ios-detox-camera-attempt.ts"
-      ],
-      "revision": "f5982ff4a565df4b33f6a7543985c8bd3df6160ae6b355d490d874c04d0a5bcf"
-    },
-    {
       "id": "SRC-ios-detox-camera-public-runner-source",
       "kind": "source",
       "ref": "scripts/testing/run-native-pilot.ts",
       "paths": [
         "scripts/testing/run-native-pilot.ts"
       ],
-      "revision": "7c41b57cd59265d7e5b4934b383f56c0542bab3e888e0334145cbaf273b5e7bb"
-    },
-    {
-      "id": "SRC-ios-detox-camera-e2e-source",
-      "kind": "source",
-      "ref": "e2e/detox-ios-camera-route.e2e.test.js",
-      "paths": [
-        "e2e/detox-ios-camera-route.e2e.test.js"
-      ],
-      "revision": "d8b251d35a9df4f63757fe435d9106c7e3fad35d8e98f2887451cdb015d4764c"
-    },
-    {
-      "id": "SRC-ios-detox-camera-detox-config-source",
-      "kind": "source",
-      "ref": "detox.camera.private.config.js",
-      "paths": [
-        "detox.camera.private.config.js"
-      ],
-      "revision": "51d90080e64936e98c0376e1bd9e60f101bdb2ba73dbe6ff6200090306d3a119"
-    },
-    {
-      "id": "SRC-ios-detox-camera-jest-config-source",
-      "kind": "source",
-      "ref": "jest.detox-camera.private.config.js",
-      "paths": [
-        "jest.detox-camera.private.config.js"
-      ],
-      "revision": "39664b0e857041cc257c2d8889e2adcf401a2c082a6c308268de423b68e69904"
+      "revision": "1cc82eb9552c62fb4a45ef55a30c7ab289604ec57956263c36d0f117c9159ee9"
     },
     {
       "id": "SRC-camera-adapter",
@@ -1929,7 +1542,7 @@
       "paths": [
         "scripts/testing/native-session-helper-ledger.ts"
       ],
-      "revision": "dc8d3fb3eeaf134c69a247ff83181a03bd6e7aa55d7c134200af59d2df3b84e9"
+      "revision": "25132f8c819fab5cc78b9751acd5ca0f5dd93fefdb7530fd050f57b53cf331b1"
     },
     {
       "id": "SRC-session-public-finalization-source",
@@ -2031,60 +1644,6 @@
       "revision": "e51b048ae5d20adae4ca69a41be632aa991dbc27ee1eefcd58920ef4e29852d9"
     },
     {
-      "id": "SRC-detox-dispatch-connection-ipc-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-connection-ipc.ts",
-      "paths": [
-        "scripts/testing/detox-connection-ipc.ts"
-      ],
-      "revision": "ba09dfda4d9ede4a9e8b2503a4947d97c57c34af283242cd0b67463c02851b43"
-    },
-    {
-      "id": "SRC-detox-dispatch-connection-lifecycle-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-connection-lifecycle.ts",
-      "paths": [
-        "scripts/testing/detox-connection-lifecycle.ts"
-      ],
-      "revision": "c08c366d5dd703313fdece960b052d6c5dac909d22ae6e06dce644ceaff21efa"
-    },
-    {
-      "id": "SRC-detox-dispatch-integrated-connection-baseline-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-integrated-connection-baseline.ts",
-      "paths": [
-        "scripts/testing/detox-integrated-connection-baseline.ts"
-      ],
-      "revision": "ec4130884a2bba1de045e5c1f5707501229b52b0364b30055e04a70ebc9fb395"
-    },
-    {
-      "id": "SRC-detox-dispatch-integrated-connection-driver-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-integrated-connection-driver.ts",
-      "paths": [
-        "scripts/testing/detox-integrated-connection-driver.ts"
-      ],
-      "revision": "8aba6f96b43966f5f50c1cd45afc1f4c9c71f84161ddf83d6be88223da7cb51c"
-    },
-    {
-      "id": "SRC-detox-dispatch-integrated-session-baseline-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-integrated-session-baseline.ts",
-      "paths": [
-        "scripts/testing/detox-integrated-session-baseline.ts"
-      ],
-      "revision": "4f0adb34f40af46c3b12649ae2252a72d582ee18d3b200de7eb280842040b93c"
-    },
-    {
-      "id": "SRC-detox-dispatch-android-qualified-build-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-android-qualified-build.ts",
-      "paths": [
-        "scripts/testing/detox-android-qualified-build.ts"
-      ],
-      "revision": "b3014839180ce77a34115d5238991314bef86a16cd0e5f200e438d9b1c424017"
-    },
-    {
       "id": "SRC-detox-dispatch-native-hierarchy-source",
       "kind": "source",
       "ref": "scripts/testing/detox-native-hierarchy.ts",
@@ -2103,60 +1662,6 @@
       "revision": "0bd2592f64e69054400442641370481995b3443c2d9d5b9beb858be33b8b80ea"
     },
     {
-      "id": "SRC-detox-dispatch-session-cancel-evidence-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-session-cancel-evidence.ts",
-      "paths": [
-        "scripts/testing/detox-session-cancel-evidence.ts"
-      ],
-      "revision": "681a1846eabe27755a4dc52f501a7c7e8c028db31e6d784eecf2c86aabc2d525"
-    },
-    {
-      "id": "SRC-detox-dispatch-session-final-transport-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-session-final-transport.ts",
-      "paths": [
-        "scripts/testing/detox-session-final-transport.ts"
-      ],
-      "revision": "5480f0c6165ea9278ec0ae3f981844ed408c5f04f19478d46a9731a26614a7ef"
-    },
-    {
-      "id": "SRC-detox-dispatch-training-child-client-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-training-child-client.ts",
-      "paths": [
-        "scripts/testing/detox-training-child-client.ts"
-      ],
-      "revision": "0bf82d4637525a48c9fb1302816a1cc28f26e68870bfa222de7142b03fe643cf"
-    },
-    {
-      "id": "SRC-detox-dispatch-training-child-protocol-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-training-child-protocol.mjs",
-      "paths": [
-        "scripts/testing/detox-training-child-protocol.mjs"
-      ],
-      "revision": "8e5f2ddfa1497ad2bf98afe2c227eb5b1edc85f5253d021de776a0ba8994ff02"
-    },
-    {
-      "id": "SRC-detox-dispatch-training-journey-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-training-journey.ts",
-      "paths": [
-        "scripts/testing/detox-training-journey.ts"
-      ],
-      "revision": "79f39f1f57c1eb8e32c0f7bc14d414ad37f15bae55142b3abafc252a0e52275a"
-    },
-    {
-      "id": "SRC-detox-dispatch-training-owned-dispatch-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-training-owned-dispatch.ts",
-      "paths": [
-        "scripts/testing/detox-training-owned-dispatch.ts"
-      ],
-      "revision": "e14c969fddbc67e3acffdc60157a926e185595f98a3dc138e881fff26d6365c7"
-    },
-    {
       "id": "SRC-detox-dispatch-native-android-session-adapter-source",
       "kind": "source",
       "ref": "scripts/testing/native-android-session-adapter.ts",
@@ -2164,123 +1669,6 @@
         "scripts/testing/native-android-session-adapter.ts"
       ],
       "revision": "7dd0fcc3600d1973a9bf4421a10ec16d0383e36959948851485794748663726d"
-    },
-    {
-      "id": "SRC-detox-dispatch-android-session-producer-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-android-session-producer.ts",
-      "paths": [
-        "scripts/testing/detox-android-session-producer.ts"
-      ],
-      "revision": "85acca5fec18ef3fb9069a799ffc5b8fa34b3b1e7954c5d4d094f48cdc478170"
-    },
-    {
-      "id": "SRC-detox-dispatch-android-session-adapter-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-public-adapter.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-public-adapter.ts"
-      ],
-      "revision": "0c9185690e61f9f0f45b000acf4f1ecc5fa9a1ee88fb84b1c62bef76138705f7"
-    },
-    {
-      "id": "SRC-detox-dispatch-android-session-route-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts"
-      ],
-      "revision": "284f0f9df9a95a34bc5a5717a7defef31aef5dcb632e3afe998f191f4867b8d9"
-    },
-    {
-      "id": "SRC-detox-dispatch-android-session-finalization-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-public-finalization.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-public-finalization.ts"
-      ],
-      "revision": "362b683f7393540bd82ae1669b31135fc1e25c54dac4aa1f298509ac483a3585"
-    },
-    {
-      "id": "SRC-detox-dispatch-android-session-staging-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-android-session-public-staging.ts",
-      "paths": [
-        "scripts/testing/native-detox-android-session-public-staging.ts"
-      ],
-      "revision": "38dc609d4714d3cbbd51b82c52f70bb665568fba604e5c410623ff51d179d0d6"
-    },
-    {
-      "id": "SRC-detox-dispatch-save-retry-child-client-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-save-retry-child-client.ts",
-      "paths": [
-        "scripts/testing/detox-save-retry-child-client.ts"
-      ],
-      "revision": "d81258d409fe1bbe1b2caf2ac38c6de92eeecab3bd4aae0f4fcdf32f4214a348"
-    },
-    {
-      "id": "SRC-detox-dispatch-save-retry-child-protocol-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-save-retry-child-protocol.mjs",
-      "paths": [
-        "scripts/testing/detox-save-retry-child-protocol.mjs"
-      ],
-      "revision": "b51e52602e36b000e319a0efefb83593525a8dad37fe61a28ed3bcd577f4b87f"
-    },
-    {
-      "id": "SRC-detox-dispatch-save-retry-driver-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-save-retry-driver.ts",
-      "paths": [
-        "scripts/testing/detox-save-retry-driver.ts"
-      ],
-      "revision": "2963f1f5a8ad09767581023046145ece4ec6de027631fb509d6ed46dc2543f17"
-    },
-    {
-      "id": "SRC-detox-dispatch-save-retry-owned-dispatch-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-save-retry-owned-dispatch.ts",
-      "paths": [
-        "scripts/testing/detox-save-retry-owned-dispatch.ts"
-      ],
-      "revision": "029239f9d5736b605212561850cedc54b24effcb2c9cb502334c1ab5bac97ba1"
-    },
-    {
-      "id": "SRC-detox-dispatch-save-retry-runtime-finalizer-source",
-      "kind": "source",
-      "ref": "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-      "paths": [
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts"
-      ],
-      "revision": "c95fee849adda2a7bdfacb8a4b9cdb6d4d250b39f2abc00999cc669a8d376c89"
-    },
-    {
-      "id": "SRC-ios-camera-runtime-session-native-pilot-route-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-session-native-pilot-route.ts",
-      "paths": [
-        "scripts/testing/native-detox-session-native-pilot-route.ts"
-      ],
-      "revision": "12d4eb320fcfeb62fbe41741e6619a84e3e898093ef7538fb353a3562eb2ee14"
-    },
-    {
-      "id": "SRC-ios-camera-runtime-session-public-adapter-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-session-public-adapter.ts",
-      "paths": [
-        "scripts/testing/native-detox-session-public-adapter.ts"
-      ],
-      "revision": "f59e0525240a36ecdb96d5eba4516a76fae07fd7c05fbacf6b01816605581edb"
-    },
-    {
-      "id": "SRC-ios-camera-runtime-session-public-staging-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-session-public-staging.ts",
-      "paths": [
-        "scripts/testing/native-detox-session-public-staging.ts"
-      ],
-      "revision": "422819caf5df36b7365ddac0f03140ff689bf2367c53d52b39e77396c72d2525"
     },
     {
       "id": "SRC-ios-camera-runtime-pilot-preflight-source",
@@ -2292,24 +1680,6 @@
       "revision": "e2ece653775816bdf031175d06a558772c86eeefe1112a9828c14a77874788f3"
     },
     {
-      "id": "SRC-ios-camera-runtime-remote-service-helper-source",
-      "kind": "source",
-      "ref": "scripts/testing/ios-detox-camera-remote-service-helper.ts",
-      "paths": [
-        "scripts/testing/ios-detox-camera-remote-service-helper.ts"
-      ],
-      "revision": "49aace8fb9502b2d18ee51c203fcfc6def6028e324f04922c1426b258afc79fd"
-    },
-    {
-      "id": "SRC-ios-camera-runtime-remote-service-route-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-ios-remote-service-route.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-ios-remote-service-route.ts"
-      ],
-      "revision": "a843b39cef33f7e092e41f4b7f0dc226648bf1ce88f5f18dee28fb4d2538ebde"
-    },
-    {
       "id": "SRC-android-camera-identity-source",
       "kind": "source",
       "ref": "scripts/testing/native-detox-camera-android-identity.ts",
@@ -2317,186 +1687,6 @@
         "scripts/testing/native-detox-camera-android-identity.ts"
       ],
       "revision": "c8b6725e44adc8509ab02472a76367b91d0aa816e5b03c9d6a2bb22abf4254a4"
-    },
-    {
-      "id": "SRC-android-cold-reset-producer-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-cold-android-reset-producer.ts",
-      "paths": [
-        "scripts/testing/t15-cold-android-reset-producer.ts"
-      ],
-      "revision": "32be79c7942d88dbb949f5ae77b4d52cf707f87afde9c0162a8c048020c2759d"
-    },
-    {
-      "id": "SRC-android-session-cold-route-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-detox-android-session-cold-route.ts",
-      "paths": [
-        "scripts/testing/t15-detox-android-session-cold-route.ts"
-      ],
-      "revision": "b900b10f64149210f438e47be5d736eec30a67a1225aee9d309083fed81ad7d4"
-    },
-    {
-      "id": "SRC-android-session-normalization-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-detox-android-session-normalization.ts",
-      "paths": [
-        "scripts/testing/t15-detox-android-session-normalization.ts"
-      ],
-      "revision": "6a63fcfb100da091b7f75d7d12c463bcec435d4daebad88ae524d0d5a694d211"
-    },
-    {
-      "id": "SRC-android-session-public-receipt-bridge-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-      "paths": [
-        "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts"
-      ],
-      "revision": "6eb54133e993eb05a166e6bd5e12f74b0927eff0a212156b5bbea80daa9adc73"
-    },
-    {
-      "id": "SRC-android-session-reset-preparation-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-      "paths": [
-        "scripts/testing/t15-detox-android-session-reset-preparation.ts"
-      ],
-      "revision": "76aa1f033e0ea9efb5508ec2201687d823f52ab0eb9f4ab76a1ae86da5072251"
-    },
-    {
-      "id": "SRC-detox-cold-lifecycle-source",
-      "kind": "source",
-      "ref": "scripts/testing/t15-detox-cold-lifecycle.ts",
-      "paths": [
-        "scripts/testing/t15-detox-cold-lifecycle.ts"
-      ],
-      "revision": "0df81f2ab5b4c06734f58a7c3184f0314498b3ff669037baf197685709f7c71f"
-    },
-    {
-      "id": "SRC-android-camera-runtime-detox-child-source",
-      "kind": "source",
-      "ref": "e2e/detox-android-camera-denied.e2e.test.js",
-      "paths": [
-        "e2e/detox-android-camera-denied.e2e.test.js"
-      ],
-      "revision": "e2c80a947a511282f0313f5e47ef7bf38a574dc592e0bcbf60257bdb8beef93d"
-    },
-    {
-      "id": "SRC-android-camera-runtime-detox-instrumentation-source",
-      "kind": "source",
-      "ref": "android/app/src/androidTest/java/com/eduardo880/mychampions/DetoxTest.java",
-      "paths": [
-        "android/app/src/androidTest/java/com/eduardo880/mychampions/DetoxTest.java"
-      ],
-      "revision": "c2068718527f76c81d19232d2e842cb14151bd0d8fafa72efcee84df21d3614d"
-    },
-    {
-      "id": "SRC-android-camera-runtime-permission-bridge-source",
-      "kind": "source",
-      "ref": "android/app/src/androidTest/java/com/edufelip/mychampions/DetoxCameraPermissionBridge.java",
-      "paths": [
-        "android/app/src/androidTest/java/com/edufelip/mychampions/DetoxCameraPermissionBridge.java"
-      ],
-      "revision": "0e8d179bb4d82019829a2677d1fe6286b745b6a604a605ab88cf418ba686c0e4"
-    },
-    {
-      "id": "SRC-android-camera-runtime-android-detox-camera-cold-reset-boundary-source",
-      "kind": "source",
-      "ref": "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-      "paths": [
-        "scripts/testing/android-detox-camera-cold-reset-boundary.ts"
-      ],
-      "revision": "94299cedbff69e01c19b4456b11321b6a34ff2d786374f334087394d326a4d8c"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-bridge-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-bridge.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-bridge.ts"
-      ],
-      "revision": "b172cdc2fd62671f1205edc1eb7f2fb1c8a8fc1b35dc62c53c566b5da396bd89"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-contract-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-contract.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-contract.ts"
-      ],
-      "revision": "44355e60af9feec58c1c8863fcb62cfaf50d5c44beea94bbd43b2dd7a32307b0"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-native-pilot-route-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-native-pilot-route.ts"
-      ],
-      "revision": "10e438879dfe1940e3a4ffc6c6032784d2b256daaffa22de03a6805947dec775"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-owned-session-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-owned-session.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-owned-session.ts"
-      ],
-      "revision": "39f2e9e9aa4cc6dd03967ccf7f6f75125134b0982fa8eddade3141d73e1c969e"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-producer-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-producer.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-producer.ts"
-      ],
-      "revision": "9a4bb80b5d6483caef97528acc1ca1e94b812de11d60b57b6d709f77c8c18de6"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-public-dispatch-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-public-dispatch.ts"
-      ],
-      "revision": "fe120682249bb3bf0eeffc65d272deed4ff65a46cf8228ea88372cfeebf5cd1c"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-public-finalizer-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-public-finalizer.ts"
-      ],
-      "revision": "6ee48e62bb52d643d964646d9d647ca5c5046479220e8ce2b0967d5d0fb829ee"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-q-adapter-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-q-adapter.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-q-adapter.ts"
-      ],
-      "revision": "9efc32465d200bb2de23a25c2acea53b1bac75949664c361675d30957ff24c43"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-reset-independent-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-reset-independent.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-reset-independent.ts"
-      ],
-      "revision": "34dad4039c540355ca962a7c70438e4858f7150259af80c1c51d0ace3e5f3537"
-    },
-    {
-      "id": "SRC-android-camera-runtime-native-detox-camera-android-reset-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-detox-camera-android-reset.ts",
-      "paths": [
-        "scripts/testing/native-detox-camera-android-reset.ts"
-      ],
-      "revision": "d427d08a6aae98262cc9ee56dd2bf108cff50358c6e67b5b79493f0f485cf804"
     }
   ],
   "views": [
@@ -3569,8 +2759,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-session-profile-checkpoints.ts",
         "scripts/testing/native-connection-snapshot.ts",
@@ -3590,9 +2778,6 @@
         "scripts/testing/t15-cold-reset-handoff.ts",
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/compare-native-pilot.ts",
         "scripts/testing/capture-native-testability.ts",
         "scripts/testing/owned-ios-simulator.ts",
@@ -3682,14 +2867,6 @@
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
         "scripts/testing/run-android-session-attempt.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
         ".maestro/flows/camera-denied-android.yaml",
         "scripts/testing/native-connection-public-evidence.ts",
         "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
@@ -3703,8 +2880,7 @@
         "scripts/testing/prepare-exploration.ts",
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
-        "scripts/testing/run-ios-camera-attempt.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts"
+        "scripts/testing/run-ios-camera-attempt.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -3726,8 +2902,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-session-profile-checkpoints-source",
           "SRC-connection-snapshot-source",
@@ -3747,9 +2921,6 @@
           "SRC-ios-cold-reset-handoff-source",
           "SRC-ios-cold-runtime-link-source",
           "SRC-t15-cold-dispatcher-source",
-          "SRC-t15-cold-owned-lifecycle-source",
-          "SRC-t15-cold-production-runner-source",
-          "SRC-t15-cold-ios-family-attempt-source",
           "SRC-native-comparison-source",
           "SRC-ios-capture-source",
           "SRC-ios-simulator-owner-source",
@@ -3856,8 +3027,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-session-profile-checkpoints.ts",
           "scripts/testing/native-connection-snapshot.ts",
@@ -3877,9 +3046,6 @@
           "scripts/testing/t15-cold-reset-handoff.ts",
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/compare-native-pilot.ts",
           "scripts/testing/capture-native-testability.ts",
           "scripts/testing/owned-ios-simulator.ts",
@@ -3969,14 +3135,6 @@
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
           "scripts/testing/run-android-session-attempt.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
           ".maestro/flows/camera-denied-android.yaml",
           "scripts/testing/native-connection-public-evidence.ts",
           "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
@@ -3990,8 +3148,7 @@
           "scripts/testing/prepare-exploration.ts",
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
-          "scripts/testing/run-ios-camera-attempt.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts"
+          "scripts/testing/run-ios-camera-attempt.ts"
         ]
       },
       "receiptIds": [],
@@ -4200,8 +3357,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-session-profile-checkpoints.ts",
         "scripts/testing/native-connection-snapshot.ts",
@@ -4247,18 +3402,6 @@
         "scripts/testing/native-connection-password-offer-witness.ts",
         "scripts/testing/t15-cold-ios-reset-producer.ts",
         "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
-        "scripts/testing/compare-native-pilot.ts",
-        "scripts/testing/native-detox-dispatch-lifecycle.ts",
-        "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
-        "scripts/testing/native-connection-engine-contract.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
         "scripts/testing/run-ios-training-attempt.ts",
         "scripts/testing/native-ios-incremental-build-cache.ts",
         "scripts/testing/ios-credential-entry-diagnostic.ts",
@@ -4309,33 +3452,9 @@
         "scripts/testing/detox-android-session-storage-producer.ts",
         "scripts/testing/detox-connection-actionability.ts",
         "scripts/testing/detox-connection-evidence.ts",
-        "scripts/testing/detox-connection-ipc.ts",
-        "scripts/testing/detox-connection-lifecycle.ts",
-        "scripts/testing/detox-integrated-connection-baseline.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-integrated-session-baseline.ts",
-        "scripts/testing/detox-android-qualified-build.ts",
         "scripts/testing/detox-native-hierarchy.ts",
         "scripts/testing/detox-session-cache-observation.ts",
-        "scripts/testing/detox-session-cancel-evidence.ts",
-        "scripts/testing/detox-session-final-transport.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts",
-        "scripts/testing/detox-training-owned-dispatch.ts",
         "scripts/testing/native-android-session-adapter.ts",
-        "scripts/testing/detox-save-retry-child-client.ts",
-        "scripts/testing/detox-save-retry-child-protocol.mjs",
-        "scripts/testing/detox-save-retry-driver.ts",
-        "scripts/testing/detox-save-retry-owned-dispatch.ts",
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-        "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/t15-cold-android-reset-producer.ts",
-        "scripts/testing/t15-detox-android-session-normalization.ts",
-        "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-        "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-        "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-        "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
         "scripts/testing/run-android-camera-public-attempt.ts",
         "scripts/testing/native-android-camera-runtime-finalizer.ts",
         "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -4349,16 +3468,13 @@
         "scripts/testing/run-android-camera-attempt-core.ts",
         "scripts/testing/run-android-camera-attempt.ts",
         "scripts/testing/native-connection-public-evidence.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
         "scripts/testing/run-android-training-attempt.ts",
         "scripts/testing/run-android-save-retry-attempt.ts",
         "scripts/testing/native-android-save-retry-public-evidence.ts",
         "scripts/testing/native-training-public-evidence.ts",
-        "scripts/testing/native-detox-training-public-finalization-contract.ts",
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/run-ios-save-retry-attempt.ts",
         "scripts/testing/native-save-retry-public-evidence.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
         "scripts/testing/run-ios-session-attempt.ts",
         "scripts/testing/run-ios-connection-attempt.ts",
         "scripts/testing/run-ios-camera-attempt.ts",
@@ -4366,9 +3482,7 @@
         "scripts/testing/t15-cold-reset-handoff.ts",
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
+        "scripts/testing/compare-native-pilot.ts",
         "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
         "scripts/testing/t16b-owned-maestro-bootstrap.ts",
         "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -4380,37 +3494,9 @@
         "scripts/testing/prepare-exploration.ts",
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
-        "scripts/testing/native-detox-training-public-types.ts",
-        "scripts/testing/native-detox-connection-runtime-producer.ts",
-        "scripts/testing/native-detox-connection-runtime-verification.ts",
-        "scripts/testing/native-detox-connection-public-staging.ts",
-        "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-        "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-        "scripts/testing/native-detox-camera-android-owned-session.ts",
-        "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-        "scripts/testing/native-detox-camera-android-bridge.ts",
-        "scripts/testing/native-detox-camera-android-contract.ts",
-        "scripts/testing/native-detox-camera-android-q-adapter.ts",
-        "scripts/testing/native-detox-camera-android-reset-independent.ts",
-        "scripts/testing/native-detox-camera-android-reset.ts",
-        "scripts/testing/native-detox-camera-android-producer.ts",
-        "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-        "scripts/testing/native-detox-camera-ios-verifier.ts",
-        "scripts/testing/native-detox-camera-ios-contract.ts",
-        "scripts/testing/native-detox-camera-ios-evidence.ts",
-        "scripts/testing/native-detox-camera-ios-owner.ts",
-        "scripts/testing/native-detox-camera-ios-producer.ts",
-        "scripts/testing/native-detox-camera-ios-ipc.ts",
-        "scripts/testing/native-detox-camera-ios-stage.ts",
-        "scripts/testing/native-detox-connection-android-public-staging.ts",
-        "scripts/testing/native-detox-session-public-adapter.ts",
-        "scripts/testing/native-detox-session-public-staging.ts",
-        "scripts/testing/native-pilot-preflight.ts",
-        "scripts/testing/native-detox-camera-ios-current-owner.ts",
-        "scripts/testing/native-detox-camera-ios-inputs.ts",
-        "scripts/testing/t15-detox-android-session-cold-route.ts",
-        "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-        "scripts/testing/t15-detox-cold-lifecycle.ts"
+        "scripts/testing/native-detox-camera-android-identity.ts",
+        "scripts/testing/native-connection-engine-contract.ts",
+        "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -4432,8 +3518,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-session-profile-checkpoints-source",
           "SRC-connection-snapshot-source",
@@ -4479,18 +3563,6 @@
           "SRC-connection-password-offer-witness-source",
           "SRC-ios-cold-reset-producer-source",
           "SRC-t15-cold-android-maestro-build-reuse-source",
-          "SRC-native-comparison-source",
-          "SRC-native-detox-dispatch-lifecycle-source",
-          "SRC-android-detox-connection-public-dispatch-source",
-          "SRC-android-detox-connection-producer-source",
-          "SRC-android-detox-connection-cleanup-source",
-          "SRC-android-detox-session-producer-source",
-          "SRC-android-detox-session-adapter-source",
-          "SRC-android-detox-session-route-source",
-          "SRC-android-detox-session-finalization-source",
-          "SRC-android-detox-session-staging-source",
-          "SRC-native-connection-engine-contract-source",
-          "SRC-detox-runtime-build-metadata-source",
           "SRC-android-connection-terminal-projection-source",
           "SRC-ios-incremental-build-cache-source",
           "SRC-ios-credential-entry-diagnostic-source",
@@ -4543,35 +3615,9 @@
           "SRC-detox-dispatch-android-session-storage-producer-source",
           "SRC-detox-dispatch-connection-actionability-source",
           "SRC-detox-dispatch-connection-evidence-source",
-          "SRC-detox-dispatch-connection-ipc-source",
-          "SRC-detox-dispatch-connection-lifecycle-source",
-          "SRC-detox-dispatch-integrated-connection-baseline-source",
-          "SRC-detox-dispatch-integrated-connection-driver-source",
-          "SRC-detox-dispatch-integrated-session-baseline-source",
-          "SRC-detox-dispatch-android-qualified-build-source",
           "SRC-detox-dispatch-native-hierarchy-source",
           "SRC-detox-dispatch-session-cache-observation-source",
-          "SRC-detox-dispatch-session-cancel-evidence-source",
-          "SRC-detox-dispatch-session-final-transport-source",
-          "SRC-detox-dispatch-training-child-client-source",
-          "SRC-detox-dispatch-training-child-protocol-source",
-          "SRC-detox-dispatch-training-journey-source",
-          "SRC-detox-dispatch-training-owned-dispatch-source",
-          "SRC-detox-dispatch-native-android-session-adapter-source",
-          "SRC-detox-dispatch-android-session-producer-source",
-          "SRC-detox-dispatch-android-session-adapter-source",
-          "SRC-detox-dispatch-android-session-route-source",
-          "SRC-detox-dispatch-android-session-finalization-source",
-          "SRC-detox-dispatch-android-session-staging-source",
-          "SRC-detox-dispatch-save-retry-child-client-source",
-          "SRC-detox-dispatch-save-retry-child-protocol-source",
-          "SRC-detox-dispatch-save-retry-driver-source",
-          "SRC-detox-dispatch-save-retry-owned-dispatch-source",
-          "SRC-detox-dispatch-save-retry-runtime-finalizer-source",
-          "SRC-android-camera-identity-source",
-          "SRC-android-cold-reset-producer-source",
-          "SRC-android-session-normalization-source",
-          "SRC-android-session-reset-preparation-source"
+          "SRC-detox-dispatch-native-android-session-adapter-source"
         ],
         "requirementPaths": [
           "docs/screens/v2/SC-217-auth-sign-in.md",
@@ -4594,8 +3640,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-session-profile-checkpoints.ts",
           "scripts/testing/native-connection-snapshot.ts",
@@ -4641,18 +3685,6 @@
           "scripts/testing/native-connection-password-offer-witness.ts",
           "scripts/testing/t15-cold-ios-reset-producer.ts",
           "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
-          "scripts/testing/compare-native-pilot.ts",
-          "scripts/testing/native-detox-dispatch-lifecycle.ts",
-          "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
-          "scripts/testing/native-connection-engine-contract.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
           "scripts/testing/run-ios-training-attempt.ts",
           "scripts/testing/native-ios-incremental-build-cache.ts",
           "scripts/testing/ios-credential-entry-diagnostic.ts",
@@ -4703,33 +3735,9 @@
           "scripts/testing/detox-android-session-storage-producer.ts",
           "scripts/testing/detox-connection-actionability.ts",
           "scripts/testing/detox-connection-evidence.ts",
-          "scripts/testing/detox-connection-ipc.ts",
-          "scripts/testing/detox-connection-lifecycle.ts",
-          "scripts/testing/detox-integrated-connection-baseline.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-integrated-session-baseline.ts",
-          "scripts/testing/detox-android-qualified-build.ts",
           "scripts/testing/detox-native-hierarchy.ts",
           "scripts/testing/detox-session-cache-observation.ts",
-          "scripts/testing/detox-session-cancel-evidence.ts",
-          "scripts/testing/detox-session-final-transport.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts",
-          "scripts/testing/detox-training-owned-dispatch.ts",
           "scripts/testing/native-android-session-adapter.ts",
-          "scripts/testing/detox-save-retry-child-client.ts",
-          "scripts/testing/detox-save-retry-child-protocol.mjs",
-          "scripts/testing/detox-save-retry-driver.ts",
-          "scripts/testing/detox-save-retry-owned-dispatch.ts",
-          "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-          "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/t15-cold-android-reset-producer.ts",
-          "scripts/testing/t15-detox-android-session-normalization.ts",
-          "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-          "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-          "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-          "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
           "scripts/testing/run-android-camera-public-attempt.ts",
           "scripts/testing/native-android-camera-runtime-finalizer.ts",
           "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -4743,16 +3751,13 @@
           "scripts/testing/run-android-camera-attempt-core.ts",
           "scripts/testing/run-android-camera-attempt.ts",
           "scripts/testing/native-connection-public-evidence.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
           "scripts/testing/run-android-training-attempt.ts",
           "scripts/testing/run-android-save-retry-attempt.ts",
           "scripts/testing/native-android-save-retry-public-evidence.ts",
           "scripts/testing/native-training-public-evidence.ts",
-          "scripts/testing/native-detox-training-public-finalization-contract.ts",
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/run-ios-save-retry-attempt.ts",
           "scripts/testing/native-save-retry-public-evidence.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
           "scripts/testing/run-ios-session-attempt.ts",
           "scripts/testing/run-ios-connection-attempt.ts",
           "scripts/testing/run-ios-camera-attempt.ts",
@@ -4760,9 +3765,7 @@
           "scripts/testing/t15-cold-reset-handoff.ts",
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
+          "scripts/testing/compare-native-pilot.ts",
           "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
           "scripts/testing/t16b-owned-maestro-bootstrap.ts",
           "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -4774,37 +3777,9 @@
           "scripts/testing/prepare-exploration.ts",
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
-          "scripts/testing/native-detox-training-public-types.ts",
-          "scripts/testing/native-detox-connection-runtime-producer.ts",
-          "scripts/testing/native-detox-connection-runtime-verification.ts",
-          "scripts/testing/native-detox-connection-public-staging.ts",
-          "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-          "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-          "scripts/testing/native-detox-camera-android-owned-session.ts",
-          "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-          "scripts/testing/native-detox-camera-android-bridge.ts",
-          "scripts/testing/native-detox-camera-android-contract.ts",
-          "scripts/testing/native-detox-camera-android-q-adapter.ts",
-          "scripts/testing/native-detox-camera-android-reset-independent.ts",
-          "scripts/testing/native-detox-camera-android-reset.ts",
-          "scripts/testing/native-detox-camera-android-producer.ts",
-          "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-          "scripts/testing/native-detox-camera-ios-verifier.ts",
-          "scripts/testing/native-detox-camera-ios-contract.ts",
-          "scripts/testing/native-detox-camera-ios-evidence.ts",
-          "scripts/testing/native-detox-camera-ios-owner.ts",
-          "scripts/testing/native-detox-camera-ios-producer.ts",
-          "scripts/testing/native-detox-camera-ios-ipc.ts",
-          "scripts/testing/native-detox-camera-ios-stage.ts",
-          "scripts/testing/native-detox-connection-android-public-staging.ts",
-          "scripts/testing/native-detox-session-public-adapter.ts",
-          "scripts/testing/native-detox-session-public-staging.ts",
-          "scripts/testing/native-pilot-preflight.ts",
-          "scripts/testing/native-detox-camera-ios-current-owner.ts",
-          "scripts/testing/native-detox-camera-ios-inputs.ts",
-          "scripts/testing/t15-detox-android-session-cold-route.ts",
-          "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-          "scripts/testing/t15-detox-cold-lifecycle.ts"
+          "scripts/testing/native-detox-camera-android-identity.ts",
+          "scripts/testing/native-connection-engine-contract.ts",
+          "scripts/testing/native-pilot-preflight.ts"
         ]
       },
       "receiptIds": [],
@@ -5022,8 +3997,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-training-journey.ts",
         "scripts/testing/native-training-pilot-evidence.ts",
@@ -5044,9 +4017,6 @@
         "scripts/testing/t15-cold-reset-handoff.ts",
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/compare-native-pilot.ts",
         "scripts/testing/capture-native-testability.ts",
         "scripts/testing/owned-ios-simulator.ts",
@@ -5119,16 +4089,8 @@
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
         "scripts/testing/run-android-session-attempt.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
         "scripts/testing/native-connection-journey.ts",
         "scripts/testing/detox-connection-evidence.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
         "scripts/testing/native-camera-android-capture-adapter.ts",
         "scripts/testing/native-camera-android-contract.ts",
         "scripts/testing/native-camera-android-observation.ts",
@@ -5153,25 +4115,10 @@
         "scripts/testing/owned-maestro-mcp-stdio.ts",
         "scripts/testing/schemas/connection-snapshot-v1.schema.json",
         "scripts/testing/run-ios-camera-attempt.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
         "scripts/testing/capture-android-testability.ts",
         "scripts/testing/native-android-driver-diagnostics.ts",
         "scripts/testing/native-android-driver-startup-sampling.ts",
-        "scripts/testing/native-connection-hierarchy-android.ts",
-        "docs/qa/native-pilot/inventory.json",
-        "scripts/testing/native-detox-training-public-dispatch.ts",
-        "scripts/testing/native-detox-training-public-finalization.ts",
-        "scripts/testing/detox-training-owned-dispatch.ts",
-        "scripts/testing/native-detox-training-public-finalization-contract.ts",
-        "scripts/testing/native-detox-dispatch-lifecycle.ts",
-        "scripts/testing/native-detox-training-public-types.ts",
-        "scripts/testing/native-detox-connection-public-bridge.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-integrated-session-baseline.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts"
+        "scripts/testing/native-connection-hierarchy-android.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -5194,8 +4141,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-training-journey-source",
           "SRC-training-evidence-source",
@@ -5216,9 +4161,6 @@
           "SRC-ios-cold-reset-handoff-source",
           "SRC-ios-cold-runtime-link-source",
           "SRC-t15-cold-dispatcher-source",
-          "SRC-t15-cold-owned-lifecycle-source",
-          "SRC-t15-cold-production-runner-source",
-          "SRC-t15-cold-ios-family-attempt-source",
           "SRC-native-comparison-source",
           "SRC-ios-capture-source",
           "SRC-ios-simulator-owner-source",
@@ -5302,8 +4244,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-training-journey.ts",
           "scripts/testing/native-training-pilot-evidence.ts",
@@ -5324,9 +4264,6 @@
           "scripts/testing/t15-cold-reset-handoff.ts",
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/compare-native-pilot.ts",
           "scripts/testing/capture-native-testability.ts",
           "scripts/testing/owned-ios-simulator.ts",
@@ -5399,16 +4336,8 @@
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
           "scripts/testing/run-android-session-attempt.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
           "scripts/testing/native-connection-journey.ts",
           "scripts/testing/detox-connection-evidence.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
           "scripts/testing/native-camera-android-capture-adapter.ts",
           "scripts/testing/native-camera-android-contract.ts",
           "scripts/testing/native-camera-android-observation.ts",
@@ -5433,25 +4362,10 @@
           "scripts/testing/owned-maestro-mcp-stdio.ts",
           "scripts/testing/schemas/connection-snapshot-v1.schema.json",
           "scripts/testing/run-ios-camera-attempt.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
           "scripts/testing/capture-android-testability.ts",
           "scripts/testing/native-android-driver-diagnostics.ts",
           "scripts/testing/native-android-driver-startup-sampling.ts",
-          "scripts/testing/native-connection-hierarchy-android.ts",
-          "docs/qa/native-pilot/inventory.json",
-          "scripts/testing/native-detox-training-public-dispatch.ts",
-          "scripts/testing/native-detox-training-public-finalization.ts",
-          "scripts/testing/detox-training-owned-dispatch.ts",
-          "scripts/testing/native-detox-training-public-finalization-contract.ts",
-          "scripts/testing/native-detox-dispatch-lifecycle.ts",
-          "scripts/testing/native-detox-training-public-types.ts",
-          "scripts/testing/native-detox-connection-public-bridge.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-integrated-session-baseline.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts"
+          "scripts/testing/native-connection-hierarchy-android.ts"
         ]
       },
       "receiptIds": [],
@@ -5682,8 +4596,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-training-journey.ts",
         "scripts/testing/native-training-pilot-evidence.ts",
@@ -5778,10 +4690,6 @@
         "scripts/testing/detox-native-hierarchy.ts",
         "scripts/testing/detox-session-cache-observation.ts",
         "scripts/testing/native-android-session-adapter.ts",
-        "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-        "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-        "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-        "scripts/testing/t15-cold-android-reset-producer.ts",
         "scripts/testing/run-android-camera-public-attempt.ts",
         "scripts/testing/native-android-camera-runtime-finalizer.ts",
         "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -5796,11 +4704,8 @@
         "scripts/testing/run-android-camera-attempt.ts",
         "scripts/testing/schemas/connection-snapshot-v1.schema.json",
         "scripts/testing/native-connection-public-evidence.ts",
-        "scripts/testing/native-detox-dispatch-lifecycle.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
         "scripts/testing/run-android-save-retry-attempt.ts",
         "scripts/testing/native-android-save-retry-public-evidence.ts",
-        "scripts/testing/native-detox-training-public-finalization-contract.ts",
         "scripts/testing/run-ios-training-attempt.ts",
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
@@ -5808,26 +4713,7 @@
         "scripts/testing/verify-owned-ios-cleanup.ts",
         "scripts/testing/run-ios-save-retry-attempt.ts",
         "scripts/testing/native-save-retry-public-evidence.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
         "scripts/testing/partial-backend-boundary.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/detox-android-qualified-build.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
-        "scripts/testing/detox-connection-ipc.ts",
-        "scripts/testing/detox-integrated-connection-baseline.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-integrated-session-baseline.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
-        "scripts/testing/detox-save-retry-child-client.ts",
-        "scripts/testing/detox-save-retry-child-protocol.mjs",
-        "scripts/testing/detox-save-retry-driver.ts",
-        "scripts/testing/detox-save-retry-owned-dispatch.ts",
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts",
         "scripts/testing/run-ios-session-attempt.ts",
         "scripts/testing/run-ios-connection-attempt.ts",
         "scripts/testing/run-ios-camera-attempt.ts",
@@ -5836,9 +4722,6 @@
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
         "scripts/testing/compare-native-pilot.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
         "scripts/testing/t16b-owned-maestro-bootstrap.ts",
         "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -5850,48 +4733,9 @@
         "scripts/testing/prepare-exploration.ts",
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
-        "scripts/testing/native-detox-training-public-types.ts",
-        "scripts/testing/detox-session-cancel-evidence.ts",
-        "scripts/testing/detox-session-final-transport.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/t15-detox-android-session-reset-preparation.ts",
         "scripts/testing/native-connection-engine-contract.ts",
-        "scripts/testing/detox-connection-lifecycle.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts",
-        "scripts/testing/native-detox-connection-runtime-producer.ts",
-        "scripts/testing/native-detox-connection-runtime-verification.ts",
-        "scripts/testing/native-detox-connection-public-staging.ts",
-        "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-        "scripts/testing/t15-detox-android-session-normalization.ts",
-        "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-        "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-        "scripts/testing/native-detox-camera-android-owned-session.ts",
-        "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-        "scripts/testing/native-detox-camera-android-bridge.ts",
-        "scripts/testing/native-detox-camera-android-contract.ts",
-        "scripts/testing/native-detox-camera-android-q-adapter.ts",
-        "scripts/testing/native-detox-camera-android-reset-independent.ts",
-        "scripts/testing/native-detox-camera-android-reset.ts",
-        "scripts/testing/native-detox-camera-android-producer.ts",
-        "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-        "scripts/testing/native-detox-camera-ios-verifier.ts",
-        "scripts/testing/native-detox-camera-ios-contract.ts",
-        "scripts/testing/native-detox-camera-ios-evidence.ts",
-        "scripts/testing/native-detox-camera-ios-owner.ts",
-        "scripts/testing/native-detox-camera-ios-producer.ts",
-        "scripts/testing/native-detox-camera-ios-ipc.ts",
-        "scripts/testing/native-detox-camera-ios-stage.ts",
-        "scripts/testing/native-detox-connection-android-public-staging.ts",
-        "scripts/testing/native-detox-session-public-adapter.ts",
-        "scripts/testing/native-detox-session-public-staging.ts",
-        "scripts/testing/native-pilot-preflight.ts",
-        "scripts/testing/native-detox-camera-ios-current-owner.ts",
-        "scripts/testing/native-detox-camera-ios-inputs.ts",
-        "scripts/testing/t15-detox-android-session-cold-route.ts",
-        "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-        "scripts/testing/t15-detox-cold-lifecycle.ts"
+        "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -5914,8 +4758,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-training-journey-source",
           "SRC-training-evidence-source",
@@ -6034,8 +4876,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-training-journey.ts",
           "scripts/testing/native-training-pilot-evidence.ts",
@@ -6130,10 +4970,6 @@
           "scripts/testing/detox-native-hierarchy.ts",
           "scripts/testing/detox-session-cache-observation.ts",
           "scripts/testing/native-android-session-adapter.ts",
-          "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-          "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-          "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-          "scripts/testing/t15-cold-android-reset-producer.ts",
           "scripts/testing/run-android-camera-public-attempt.ts",
           "scripts/testing/native-android-camera-runtime-finalizer.ts",
           "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -6148,11 +4984,8 @@
           "scripts/testing/run-android-camera-attempt.ts",
           "scripts/testing/schemas/connection-snapshot-v1.schema.json",
           "scripts/testing/native-connection-public-evidence.ts",
-          "scripts/testing/native-detox-dispatch-lifecycle.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
           "scripts/testing/run-android-save-retry-attempt.ts",
           "scripts/testing/native-android-save-retry-public-evidence.ts",
-          "scripts/testing/native-detox-training-public-finalization-contract.ts",
           "scripts/testing/run-ios-training-attempt.ts",
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
@@ -6160,26 +4993,7 @@
           "scripts/testing/verify-owned-ios-cleanup.ts",
           "scripts/testing/run-ios-save-retry-attempt.ts",
           "scripts/testing/native-save-retry-public-evidence.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
           "scripts/testing/partial-backend-boundary.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/detox-android-qualified-build.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
-          "scripts/testing/detox-connection-ipc.ts",
-          "scripts/testing/detox-integrated-connection-baseline.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-integrated-session-baseline.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
-          "scripts/testing/detox-save-retry-child-client.ts",
-          "scripts/testing/detox-save-retry-child-protocol.mjs",
-          "scripts/testing/detox-save-retry-driver.ts",
-          "scripts/testing/detox-save-retry-owned-dispatch.ts",
-          "scripts/testing/detox-save-retry-runtime-finalizer.ts",
           "scripts/testing/run-ios-session-attempt.ts",
           "scripts/testing/run-ios-connection-attempt.ts",
           "scripts/testing/run-ios-camera-attempt.ts",
@@ -6188,9 +5002,6 @@
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
           "scripts/testing/compare-native-pilot.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
           "scripts/testing/t16b-owned-maestro-bootstrap.ts",
           "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -6202,48 +5013,9 @@
           "scripts/testing/prepare-exploration.ts",
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
-          "scripts/testing/native-detox-training-public-types.ts",
-          "scripts/testing/detox-session-cancel-evidence.ts",
-          "scripts/testing/detox-session-final-transport.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/t15-detox-android-session-reset-preparation.ts",
           "scripts/testing/native-connection-engine-contract.ts",
-          "scripts/testing/detox-connection-lifecycle.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts",
-          "scripts/testing/native-detox-connection-runtime-producer.ts",
-          "scripts/testing/native-detox-connection-runtime-verification.ts",
-          "scripts/testing/native-detox-connection-public-staging.ts",
-          "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-          "scripts/testing/t15-detox-android-session-normalization.ts",
-          "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-          "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-          "scripts/testing/native-detox-camera-android-owned-session.ts",
-          "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-          "scripts/testing/native-detox-camera-android-bridge.ts",
-          "scripts/testing/native-detox-camera-android-contract.ts",
-          "scripts/testing/native-detox-camera-android-q-adapter.ts",
-          "scripts/testing/native-detox-camera-android-reset-independent.ts",
-          "scripts/testing/native-detox-camera-android-reset.ts",
-          "scripts/testing/native-detox-camera-android-producer.ts",
-          "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-          "scripts/testing/native-detox-camera-ios-verifier.ts",
-          "scripts/testing/native-detox-camera-ios-contract.ts",
-          "scripts/testing/native-detox-camera-ios-evidence.ts",
-          "scripts/testing/native-detox-camera-ios-owner.ts",
-          "scripts/testing/native-detox-camera-ios-producer.ts",
-          "scripts/testing/native-detox-camera-ios-ipc.ts",
-          "scripts/testing/native-detox-camera-ios-stage.ts",
-          "scripts/testing/native-detox-connection-android-public-staging.ts",
-          "scripts/testing/native-detox-session-public-adapter.ts",
-          "scripts/testing/native-detox-session-public-staging.ts",
-          "scripts/testing/native-pilot-preflight.ts",
-          "scripts/testing/native-detox-camera-ios-current-owner.ts",
-          "scripts/testing/native-detox-camera-ios-inputs.ts",
-          "scripts/testing/t15-detox-android-session-cold-route.ts",
-          "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-          "scripts/testing/t15-detox-cold-lifecycle.ts"
+          "scripts/testing/native-pilot-preflight.ts"
         ]
       },
       "receiptIds": [],
@@ -6500,8 +5272,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-android-session-checkpoint-copy.ts",
         "scripts/testing/native-session-helper-ledger.ts",
@@ -6514,9 +5284,6 @@
         "scripts/testing/t15-cold-reset-handoff.ts",
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/compare-native-pilot.ts",
         "scripts/testing/capture-native-testability.ts",
         "scripts/testing/owned-ios-simulator.ts",
@@ -6538,9 +5305,6 @@
         "scripts/testing/native-save-retry-observation.ts",
         "scripts/testing/validate-native-inventory.mjs",
         "scripts/testing/native-connection-password-offer-witness.ts",
-        "scripts/testing/native-detox-connection-public-bridge.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
-        "scripts/testing/native-detox-connection-public-staging.ts",
         "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
         "scripts/testing/t16b-owned-maestro-bootstrap.ts",
         "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -6554,11 +5318,9 @@
         "scripts/testing/owned-maestro-mcp-stdio.ts",
         "scripts/testing/native-session-profile-checkpoints.ts",
         "scripts/testing/native-connection-hierarchy-android.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
-        "scripts/testing/native-detox-connection-runtime-dispatch.ts",
-        "scripts/testing/native-detox-connection-runtime-producer.ts",
-        "scripts/testing/native-detox-connection-runtime-verification.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
+        "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
+        "scripts/testing/run-ios-training-attempt.ts",
+        "scripts/testing/native-ios-incremental-build-cache.ts",
         "scripts/testing/ios-credential-entry-diagnostic.ts",
         "scripts/testing/ios-credential-entry-owned-seam.ts",
         "scripts/testing/ios-locale-capture-wiring.ts",
@@ -6577,21 +5339,25 @@
         "scripts/testing/native-training-pilot-evidence.ts",
         "scripts/testing/native-training-attempt-binding.ts",
         "scripts/testing/verify-owned-android-cleanup.ts",
+        "scripts/testing/partial-backend-boundary.ts",
         "scripts/testing/native-training-attempt-outcome.ts",
         "scripts/testing/capture-android-testability.ts",
         "scripts/testing/native-android-driver-diagnostics.ts",
         "scripts/testing/native-android-driver-startup-sampling.ts",
         "scripts/testing/native-camera-observation.ts",
         "scripts/testing/native-camera-android-capture-adapter.ts",
+        "scripts/testing/native-camera-android-saved-flow.ts",
         "scripts/testing/native-camera-android-contract.ts",
         "scripts/testing/native-camera-android-observation.ts",
         "scripts/testing/native-camera-android-producer.ts",
         "scripts/testing/native-camera-android-runtime-locale.ts",
         "scripts/testing/native-camera-android-sql-source.ts",
+        "scripts/testing/native-camera-submission-evidence.ts",
         "localization/en-US.ts",
         "scripts/testing/native-training-observation.ts",
         "scripts/testing/native-android-session-public-contract.ts",
         "scripts/testing/native-android-session-public-dependency.ts",
+        "scripts/testing/ios-session-post-tap-diagnostic.ts",
         "scripts/testing/native-training-discard-observation.ts",
         "scripts/testing/native-training-edit-observation.ts",
         "scripts/testing/native-training-load-observation.ts",
@@ -6599,32 +5365,9 @@
         "scripts/testing/detox-android-session-storage-producer.ts",
         "scripts/testing/detox-connection-actionability.ts",
         "scripts/testing/detox-connection-evidence.ts",
-        "scripts/testing/detox-connection-ipc.ts",
-        "scripts/testing/detox-connection-lifecycle.ts",
-        "scripts/testing/detox-integrated-connection-baseline.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-integrated-session-baseline.ts",
         "scripts/testing/detox-native-hierarchy.ts",
         "scripts/testing/detox-session-cache-observation.ts",
-        "scripts/testing/detox-session-cancel-evidence.ts",
-        "scripts/testing/detox-session-final-transport.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts",
-        "scripts/testing/detox-training-owned-dispatch.ts",
         "scripts/testing/native-android-session-adapter.ts",
-        "scripts/testing/detox-save-retry-child-client.ts",
-        "scripts/testing/detox-save-retry-child-protocol.mjs",
-        "scripts/testing/detox-save-retry-driver.ts",
-        "scripts/testing/detox-save-retry-owned-dispatch.ts",
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-        "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
-        "scripts/testing/run-ios-training-attempt.ts",
-        "scripts/testing/native-ios-incremental-build-cache.ts",
-        "scripts/testing/partial-backend-boundary.ts",
-        "scripts/testing/native-camera-android-saved-flow.ts",
-        "scripts/testing/native-camera-submission-evidence.ts",
-        "scripts/testing/ios-session-post-tap-diagnostic.ts",
         "scripts/testing/run-ios-save-retry-attempt.ts",
         "scripts/testing/native-save-retry-attempt-binding.ts",
         "scripts/testing/native-training-public-evidence.ts",
@@ -6633,16 +5376,8 @@
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
         "scripts/testing/run-android-session-attempt.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
         ".maestro/flows/camera-denied-android.yaml",
-        "scripts/testing/run-ios-camera-attempt.ts",
-        "docs/qa/native-pilot/inventory.json"
+        "scripts/testing/run-ios-camera-attempt.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -6688,8 +5423,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-android-session-checkpoint-copy-source",
           "SRC-session-helper-ledger-source",
@@ -6702,9 +5435,6 @@
           "SRC-ios-cold-reset-handoff-source",
           "SRC-ios-cold-runtime-link-source",
           "SRC-t15-cold-dispatcher-source",
-          "SRC-t15-cold-owned-lifecycle-source",
-          "SRC-t15-cold-production-runner-source",
-          "SRC-t15-cold-ios-family-attempt-source",
           "SRC-native-comparison-source",
           "SRC-ios-capture-source",
           "SRC-ios-simulator-owner-source",
@@ -6726,9 +5456,6 @@
           "SRC-save-retry-observer",
           "SRC-inventory-validator-source",
           "SRC-connection-password-offer-witness-source",
-          "SRC-ios-detox-connection-public-bridge-source",
-          "SRC-ios-detox-connection-public-dispatch-source",
-          "SRC-ios-detox-connection-public-staging-source",
           "SRC-ios-t16-owned-entrypoint-source",
           "SRC-t16-owned-bootstrap-source",
           "SRC-t16-owned-runtime-source",
@@ -6742,11 +5469,9 @@
           "SRC-t16-owned-mcp-stdio-source",
           "SRC-session-profile-checkpoints-source",
           "SRC-android-connection-hierarchy-source",
-          "SRC-ios-detox-connection-sidecar-source",
-          "SRC-ios-detox-connection-runtime-dispatch-source",
-          "SRC-ios-detox-connection-runtime-producer-source",
-          "SRC-ios-detox-connection-runtime-verification-source",
-          "SRC-detox-runtime-build-metadata-source",
+          "SRC-t15-cold-android-maestro-build-reuse-source",
+          "SRC-android-connection-terminal-projection-source",
+          "SRC-ios-incremental-build-cache-source",
           "SRC-ios-credential-entry-diagnostic-source",
           "SRC-ios-credential-entry-owned-seam-source",
           "SRC-ios-locale-capture-wiring-source",
@@ -6766,21 +5491,26 @@
           "SRC-training-view-verifier-source",
           "SRC-training-attempt-source",
           "SRC-android-cleanup-source",
+          "SRC-partial-backend-boundary-source",
+          "SRC-ios-training-adapter-source",
           "SRC-training-attempt-outcome-source",
           "SRC-android-capture-source",
           "SRC-android-driver-diagnostics-source",
           "SRC-android-driver-startup-sampling-source",
           "SRC-camera-observer",
           "SRC-android-camera-capture-adapter-source",
+          "SRC-android-camera-saved-flow-source",
           "SRC-android-camera-contract-source",
           "SRC-android-camera-observation-source",
           "SRC-android-camera-producer-source",
           "SRC-android-camera-runtime-locale-source",
           "SRC-android-camera-sql-source",
+          "SRC-camera-submission-evidence-source",
           "SRC-camera-copy",
           "SRC-training-draft-observer-source",
           "SRC-android-session-public-contract-source",
           "SRC-android-session-public-dependency-source",
+          "SRC-ios-session-post-tap-diagnostic-source",
           "SRC-discard-observer",
           "SRC-edit-observer",
           "SRC-load-observer",
@@ -6788,33 +5518,9 @@
           "SRC-detox-dispatch-android-session-storage-producer-source",
           "SRC-detox-dispatch-connection-actionability-source",
           "SRC-detox-dispatch-connection-evidence-source",
-          "SRC-detox-dispatch-connection-ipc-source",
-          "SRC-detox-dispatch-connection-lifecycle-source",
-          "SRC-detox-dispatch-integrated-connection-baseline-source",
-          "SRC-detox-dispatch-integrated-connection-driver-source",
-          "SRC-detox-dispatch-integrated-session-baseline-source",
           "SRC-detox-dispatch-native-hierarchy-source",
           "SRC-detox-dispatch-session-cache-observation-source",
-          "SRC-detox-dispatch-session-cancel-evidence-source",
-          "SRC-detox-dispatch-session-final-transport-source",
-          "SRC-detox-dispatch-training-child-client-source",
-          "SRC-detox-dispatch-training-child-protocol-source",
-          "SRC-detox-dispatch-training-journey-source",
-          "SRC-detox-dispatch-training-owned-dispatch-source",
-          "SRC-detox-dispatch-native-android-session-adapter-source",
-          "SRC-detox-dispatch-save-retry-child-client-source",
-          "SRC-detox-dispatch-save-retry-child-protocol-source",
-          "SRC-detox-dispatch-save-retry-driver-source",
-          "SRC-detox-dispatch-save-retry-owned-dispatch-source",
-          "SRC-detox-dispatch-save-retry-runtime-finalizer-source",
-          "SRC-t15-cold-android-maestro-build-reuse-source",
-          "SRC-android-connection-terminal-projection-source",
-          "SRC-ios-incremental-build-cache-source",
-          "SRC-partial-backend-boundary-source",
-          "SRC-ios-training-adapter-source",
-          "SRC-android-camera-saved-flow-source",
-          "SRC-camera-submission-evidence-source",
-          "SRC-ios-session-post-tap-diagnostic-source"
+          "SRC-detox-dispatch-native-android-session-adapter-source"
         ],
         "requirementPaths": [
           "docs/screens/v2/SC-211-relationship-management.md",
@@ -6861,8 +5567,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-android-session-checkpoint-copy.ts",
           "scripts/testing/native-session-helper-ledger.ts",
@@ -6875,9 +5579,6 @@
           "scripts/testing/t15-cold-reset-handoff.ts",
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/compare-native-pilot.ts",
           "scripts/testing/capture-native-testability.ts",
           "scripts/testing/owned-ios-simulator.ts",
@@ -6899,9 +5600,6 @@
           "scripts/testing/native-save-retry-observation.ts",
           "scripts/testing/validate-native-inventory.mjs",
           "scripts/testing/native-connection-password-offer-witness.ts",
-          "scripts/testing/native-detox-connection-public-bridge.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
-          "scripts/testing/native-detox-connection-public-staging.ts",
           "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
           "scripts/testing/t16b-owned-maestro-bootstrap.ts",
           "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -6915,11 +5613,9 @@
           "scripts/testing/owned-maestro-mcp-stdio.ts",
           "scripts/testing/native-session-profile-checkpoints.ts",
           "scripts/testing/native-connection-hierarchy-android.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
-          "scripts/testing/native-detox-connection-runtime-dispatch.ts",
-          "scripts/testing/native-detox-connection-runtime-producer.ts",
-          "scripts/testing/native-detox-connection-runtime-verification.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
+          "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
+          "scripts/testing/run-ios-training-attempt.ts",
+          "scripts/testing/native-ios-incremental-build-cache.ts",
           "scripts/testing/ios-credential-entry-diagnostic.ts",
           "scripts/testing/ios-credential-entry-owned-seam.ts",
           "scripts/testing/ios-locale-capture-wiring.ts",
@@ -6938,21 +5634,25 @@
           "scripts/testing/native-training-pilot-evidence.ts",
           "scripts/testing/native-training-attempt-binding.ts",
           "scripts/testing/verify-owned-android-cleanup.ts",
+          "scripts/testing/partial-backend-boundary.ts",
           "scripts/testing/native-training-attempt-outcome.ts",
           "scripts/testing/capture-android-testability.ts",
           "scripts/testing/native-android-driver-diagnostics.ts",
           "scripts/testing/native-android-driver-startup-sampling.ts",
           "scripts/testing/native-camera-observation.ts",
           "scripts/testing/native-camera-android-capture-adapter.ts",
+          "scripts/testing/native-camera-android-saved-flow.ts",
           "scripts/testing/native-camera-android-contract.ts",
           "scripts/testing/native-camera-android-observation.ts",
           "scripts/testing/native-camera-android-producer.ts",
           "scripts/testing/native-camera-android-runtime-locale.ts",
           "scripts/testing/native-camera-android-sql-source.ts",
+          "scripts/testing/native-camera-submission-evidence.ts",
           "localization/en-US.ts",
           "scripts/testing/native-training-observation.ts",
           "scripts/testing/native-android-session-public-contract.ts",
           "scripts/testing/native-android-session-public-dependency.ts",
+          "scripts/testing/ios-session-post-tap-diagnostic.ts",
           "scripts/testing/native-training-discard-observation.ts",
           "scripts/testing/native-training-edit-observation.ts",
           "scripts/testing/native-training-load-observation.ts",
@@ -6960,32 +5660,9 @@
           "scripts/testing/detox-android-session-storage-producer.ts",
           "scripts/testing/detox-connection-actionability.ts",
           "scripts/testing/detox-connection-evidence.ts",
-          "scripts/testing/detox-connection-ipc.ts",
-          "scripts/testing/detox-connection-lifecycle.ts",
-          "scripts/testing/detox-integrated-connection-baseline.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-integrated-session-baseline.ts",
           "scripts/testing/detox-native-hierarchy.ts",
           "scripts/testing/detox-session-cache-observation.ts",
-          "scripts/testing/detox-session-cancel-evidence.ts",
-          "scripts/testing/detox-session-final-transport.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts",
-          "scripts/testing/detox-training-owned-dispatch.ts",
           "scripts/testing/native-android-session-adapter.ts",
-          "scripts/testing/detox-save-retry-child-client.ts",
-          "scripts/testing/detox-save-retry-child-protocol.mjs",
-          "scripts/testing/detox-save-retry-driver.ts",
-          "scripts/testing/detox-save-retry-owned-dispatch.ts",
-          "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-          "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
-          "scripts/testing/run-ios-training-attempt.ts",
-          "scripts/testing/native-ios-incremental-build-cache.ts",
-          "scripts/testing/partial-backend-boundary.ts",
-          "scripts/testing/native-camera-android-saved-flow.ts",
-          "scripts/testing/native-camera-submission-evidence.ts",
-          "scripts/testing/ios-session-post-tap-diagnostic.ts",
           "scripts/testing/run-ios-save-retry-attempt.ts",
           "scripts/testing/native-save-retry-attempt-binding.ts",
           "scripts/testing/native-training-public-evidence.ts",
@@ -6994,16 +5671,8 @@
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
           "scripts/testing/run-android-session-attempt.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
           ".maestro/flows/camera-denied-android.yaml",
-          "scripts/testing/run-ios-camera-attempt.ts",
-          "docs/qa/native-pilot/inventory.json"
+          "scripts/testing/run-ios-camera-attempt.ts"
         ]
       },
       "receiptIds": [],
@@ -7336,8 +6005,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-android-session-checkpoint-copy.ts",
         "scripts/testing/native-session-helper-ledger.ts",
@@ -7365,13 +6032,7 @@
         "scripts/testing/native-save-retry-observation.ts",
         "scripts/testing/validate-native-inventory.mjs",
         "scripts/testing/run-ios-training-attempt.ts",
-        "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-        "scripts/testing/native-detox-connection-android-public-staging.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
         "scripts/testing/native-connection-engine-contract.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-android-qualified-build.ts",
         "scripts/testing/native-session-profile-checkpoints.ts",
         "scripts/testing/native-connection-password-offer-witness.ts",
         "scripts/testing/t15-cold-ios-reset-producer.ts",
@@ -7426,10 +6087,6 @@
         "scripts/testing/detox-native-hierarchy.ts",
         "scripts/testing/detox-session-cache-observation.ts",
         "scripts/testing/native-android-session-adapter.ts",
-        "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-        "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-        "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-        "scripts/testing/t15-cold-android-reset-producer.ts",
         "scripts/testing/run-android-camera-public-attempt.ts",
         "scripts/testing/native-android-camera-runtime-finalizer.ts",
         "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -7442,33 +6099,15 @@
         ".maestro/flows/camera-denied-android.yaml",
         "scripts/testing/run-android-camera-attempt-core.ts",
         "scripts/testing/run-android-camera-attempt.ts",
-        "scripts/testing/native-detox-dispatch-lifecycle.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
         "scripts/testing/run-android-training-attempt.ts",
         "scripts/testing/run-android-save-retry-attempt.ts",
         "scripts/testing/native-android-save-retry-public-evidence.ts",
         "scripts/testing/native-training-public-evidence.ts",
-        "scripts/testing/native-detox-training-public-finalization-contract.ts",
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
         "scripts/testing/run-android-session-attempt.ts",
         "scripts/testing/run-ios-save-retry-attempt.ts",
         "scripts/testing/native-save-retry-public-evidence.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
-        "scripts/testing/detox-connection-ipc.ts",
-        "scripts/testing/detox-integrated-connection-baseline.ts",
-        "scripts/testing/detox-integrated-session-baseline.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
-        "scripts/testing/detox-save-retry-child-client.ts",
-        "scripts/testing/detox-save-retry-child-protocol.mjs",
-        "scripts/testing/detox-save-retry-driver.ts",
-        "scripts/testing/detox-save-retry-owned-dispatch.ts",
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts",
         "scripts/testing/run-ios-session-attempt.ts",
         "scripts/testing/run-ios-connection-attempt.ts",
         "scripts/testing/run-ios-camera-attempt.ts",
@@ -7477,9 +6116,6 @@
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
         "scripts/testing/compare-native-pilot.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
         "scripts/testing/t16b-owned-maestro-bootstrap.ts",
         "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -7491,45 +6127,8 @@
         "scripts/testing/prepare-exploration.ts",
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
-        "scripts/testing/native-detox-training-public-types.ts",
-        "scripts/testing/detox-session-cancel-evidence.ts",
-        "scripts/testing/detox-session-final-transport.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-        "scripts/testing/detox-connection-lifecycle.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts",
-        "scripts/testing/native-detox-connection-runtime-producer.ts",
-        "scripts/testing/native-detox-connection-runtime-verification.ts",
-        "scripts/testing/native-detox-connection-public-staging.ts",
-        "scripts/testing/t15-detox-android-session-normalization.ts",
-        "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-        "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-        "scripts/testing/native-detox-camera-android-owned-session.ts",
-        "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-        "scripts/testing/native-detox-camera-android-bridge.ts",
-        "scripts/testing/native-detox-camera-android-contract.ts",
-        "scripts/testing/native-detox-camera-android-q-adapter.ts",
-        "scripts/testing/native-detox-camera-android-reset-independent.ts",
-        "scripts/testing/native-detox-camera-android-reset.ts",
-        "scripts/testing/native-detox-camera-android-producer.ts",
-        "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-        "scripts/testing/native-detox-camera-ios-verifier.ts",
-        "scripts/testing/native-detox-camera-ios-contract.ts",
-        "scripts/testing/native-detox-camera-ios-evidence.ts",
-        "scripts/testing/native-detox-camera-ios-owner.ts",
-        "scripts/testing/native-detox-camera-ios-producer.ts",
-        "scripts/testing/native-detox-camera-ios-ipc.ts",
-        "scripts/testing/native-detox-camera-ios-stage.ts",
-        "scripts/testing/native-detox-session-public-adapter.ts",
-        "scripts/testing/native-detox-session-public-staging.ts",
-        "scripts/testing/native-pilot-preflight.ts",
-        "scripts/testing/native-detox-camera-ios-current-owner.ts",
-        "scripts/testing/native-detox-camera-ios-inputs.ts",
-        "scripts/testing/t15-detox-android-session-cold-route.ts",
-        "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-        "scripts/testing/t15-detox-cold-lifecycle.ts"
+        "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -7575,8 +6174,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-android-session-checkpoint-copy-source",
           "SRC-session-helper-ledger-source",
@@ -7604,13 +6201,7 @@
           "SRC-save-retry-observer",
           "SRC-inventory-validator-source",
           "SRC-android-connection-terminal-projection-source",
-          "SRC-android-detox-connection-public-dispatch-source",
-          "SRC-android-detox-connection-public-staging-source",
-          "SRC-android-detox-connection-producer-source",
-          "SRC-android-detox-connection-cleanup-source",
           "SRC-native-connection-engine-contract-source",
-          "SRC-detox-dispatch-integrated-connection-driver-source",
-          "SRC-detox-dispatch-android-qualified-build-source",
           "SRC-session-profile-checkpoints-source",
           "SRC-connection-password-offer-witness-source",
           "SRC-ios-cold-reset-producer-source",
@@ -7713,8 +6304,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-android-session-checkpoint-copy.ts",
           "scripts/testing/native-session-helper-ledger.ts",
@@ -7742,13 +6331,7 @@
           "scripts/testing/native-save-retry-observation.ts",
           "scripts/testing/validate-native-inventory.mjs",
           "scripts/testing/run-ios-training-attempt.ts",
-          "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-          "scripts/testing/native-detox-connection-android-public-staging.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
           "scripts/testing/native-connection-engine-contract.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-android-qualified-build.ts",
           "scripts/testing/native-session-profile-checkpoints.ts",
           "scripts/testing/native-connection-password-offer-witness.ts",
           "scripts/testing/t15-cold-ios-reset-producer.ts",
@@ -7803,10 +6386,6 @@
           "scripts/testing/detox-native-hierarchy.ts",
           "scripts/testing/detox-session-cache-observation.ts",
           "scripts/testing/native-android-session-adapter.ts",
-          "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-          "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-          "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-          "scripts/testing/t15-cold-android-reset-producer.ts",
           "scripts/testing/run-android-camera-public-attempt.ts",
           "scripts/testing/native-android-camera-runtime-finalizer.ts",
           "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -7819,33 +6398,15 @@
           ".maestro/flows/camera-denied-android.yaml",
           "scripts/testing/run-android-camera-attempt-core.ts",
           "scripts/testing/run-android-camera-attempt.ts",
-          "scripts/testing/native-detox-dispatch-lifecycle.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
           "scripts/testing/run-android-training-attempt.ts",
           "scripts/testing/run-android-save-retry-attempt.ts",
           "scripts/testing/native-android-save-retry-public-evidence.ts",
           "scripts/testing/native-training-public-evidence.ts",
-          "scripts/testing/native-detox-training-public-finalization-contract.ts",
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
           "scripts/testing/run-android-session-attempt.ts",
           "scripts/testing/run-ios-save-retry-attempt.ts",
           "scripts/testing/native-save-retry-public-evidence.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
-          "scripts/testing/detox-connection-ipc.ts",
-          "scripts/testing/detox-integrated-connection-baseline.ts",
-          "scripts/testing/detox-integrated-session-baseline.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
-          "scripts/testing/detox-save-retry-child-client.ts",
-          "scripts/testing/detox-save-retry-child-protocol.mjs",
-          "scripts/testing/detox-save-retry-driver.ts",
-          "scripts/testing/detox-save-retry-owned-dispatch.ts",
-          "scripts/testing/detox-save-retry-runtime-finalizer.ts",
           "scripts/testing/run-ios-session-attempt.ts",
           "scripts/testing/run-ios-connection-attempt.ts",
           "scripts/testing/run-ios-camera-attempt.ts",
@@ -7854,9 +6415,6 @@
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
           "scripts/testing/compare-native-pilot.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
           "scripts/testing/t16b-owned-maestro-bootstrap.ts",
           "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -7868,45 +6426,8 @@
           "scripts/testing/prepare-exploration.ts",
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
-          "scripts/testing/native-detox-training-public-types.ts",
-          "scripts/testing/detox-session-cancel-evidence.ts",
-          "scripts/testing/detox-session-final-transport.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-          "scripts/testing/detox-connection-lifecycle.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts",
-          "scripts/testing/native-detox-connection-runtime-producer.ts",
-          "scripts/testing/native-detox-connection-runtime-verification.ts",
-          "scripts/testing/native-detox-connection-public-staging.ts",
-          "scripts/testing/t15-detox-android-session-normalization.ts",
-          "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-          "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-          "scripts/testing/native-detox-camera-android-owned-session.ts",
-          "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-          "scripts/testing/native-detox-camera-android-bridge.ts",
-          "scripts/testing/native-detox-camera-android-contract.ts",
-          "scripts/testing/native-detox-camera-android-q-adapter.ts",
-          "scripts/testing/native-detox-camera-android-reset-independent.ts",
-          "scripts/testing/native-detox-camera-android-reset.ts",
-          "scripts/testing/native-detox-camera-android-producer.ts",
-          "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-          "scripts/testing/native-detox-camera-ios-verifier.ts",
-          "scripts/testing/native-detox-camera-ios-contract.ts",
-          "scripts/testing/native-detox-camera-ios-evidence.ts",
-          "scripts/testing/native-detox-camera-ios-owner.ts",
-          "scripts/testing/native-detox-camera-ios-producer.ts",
-          "scripts/testing/native-detox-camera-ios-ipc.ts",
-          "scripts/testing/native-detox-camera-ios-stage.ts",
-          "scripts/testing/native-detox-session-public-adapter.ts",
-          "scripts/testing/native-detox-session-public-staging.ts",
-          "scripts/testing/native-pilot-preflight.ts",
-          "scripts/testing/native-detox-camera-ios-current-owner.ts",
-          "scripts/testing/native-detox-camera-ios-inputs.ts",
-          "scripts/testing/t15-detox-android-session-cold-route.ts",
-          "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-          "scripts/testing/t15-detox-cold-lifecycle.ts"
+          "scripts/testing/native-pilot-preflight.ts"
         ]
       },
       "receiptIds": [],
@@ -8197,8 +6718,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-android-session-checkpoint-copy.ts",
         "scripts/testing/native-session-helper-ledger.ts",
@@ -8211,9 +6730,6 @@
         "scripts/testing/t15-cold-reset-handoff.ts",
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/compare-native-pilot.ts",
         "scripts/testing/capture-native-testability.ts",
         "scripts/testing/owned-ios-simulator.ts",
@@ -8237,20 +6753,6 @@
         "scripts/testing/validate-native-inventory.mjs",
         "scripts/testing/run-ios-camera-attempt.ts",
         "scripts/testing/native-camera-submission-evidence.ts",
-        "scripts/testing/native-detox-camera-ios-contract.ts",
-        "scripts/testing/native-detox-camera-ios-evidence.ts",
-        "scripts/testing/native-detox-camera-ios-ipc.ts",
-        "scripts/testing/native-detox-camera-ios-owner.ts",
-        "scripts/testing/native-detox-camera-ios-producer.ts",
-        "scripts/testing/native-detox-camera-ios-stage.ts",
-        "scripts/testing/native-detox-camera-ios-current-owner.ts",
-        "scripts/testing/native-detox-camera-ios-inputs.ts",
-        "scripts/testing/native-detox-camera-ios-verifier.ts",
-        "scripts/testing/run-ios-detox-camera-attempt.ts",
-        "e2e/detox-ios-camera-route.e2e.test.js",
-        "detox.camera.private.config.js",
-        "jest.detox-camera.private.config.js",
-        "scripts/testing/detox-integrated-session-baseline.ts",
         "scripts/testing/detox-connection-evidence.ts",
         "scripts/testing/detox-native-hierarchy.ts",
         "scripts/testing/native-camera-observation.ts",
@@ -8280,30 +6782,7 @@
         "scripts/testing/native-connection-hierarchy-android.ts",
         "scripts/testing/native-connection-public-evidence-android.ts",
         "scripts/testing/native-connection-password-offer-witness.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
         "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
-        "scripts/testing/native-detox-connection-public-bridge.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
-        "scripts/testing/native-detox-connection-public-staging.ts",
-        "scripts/testing/native-detox-training-public-dispatch.ts",
-        "scripts/testing/native-detox-training-public-finalization.ts",
-        "scripts/testing/native-detox-training-public-finalization-contract.ts",
-        "scripts/testing/native-detox-training-public-types.ts",
-        "scripts/testing/native-detox-dispatch-lifecycle.ts",
-        "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-        "scripts/testing/native-detox-connection-android-public-staging.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
-        "scripts/testing/native-connection-engine-contract.ts",
-        "scripts/testing/native-detox-connection-runtime-dispatch.ts",
-        "scripts/testing/native-detox-connection-runtime-producer.ts",
-        "scripts/testing/native-detox-connection-runtime-verification.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
         "scripts/testing/run-ios-training-attempt.ts",
         "scripts/testing/native-view-evidence.ts",
         "scripts/testing/native-ios-incremental-build-cache.ts",
@@ -8369,48 +6848,9 @@
         "scripts/testing/android-session-charter.ts",
         "scripts/testing/detox-android-session-storage-producer.ts",
         "scripts/testing/detox-connection-actionability.ts",
-        "scripts/testing/detox-connection-ipc.ts",
-        "scripts/testing/detox-connection-lifecycle.ts",
-        "scripts/testing/detox-integrated-connection-baseline.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-android-qualified-build.ts",
         "scripts/testing/detox-session-cache-observation.ts",
-        "scripts/testing/detox-session-cancel-evidence.ts",
-        "scripts/testing/detox-session-final-transport.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts",
-        "scripts/testing/detox-training-owned-dispatch.ts",
         "scripts/testing/native-android-session-adapter.ts",
-        "scripts/testing/detox-save-retry-child-client.ts",
-        "scripts/testing/detox-save-retry-child-protocol.mjs",
-        "scripts/testing/detox-save-retry-driver.ts",
-        "scripts/testing/detox-save-retry-owned-dispatch.ts",
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-        "scripts/testing/native-detox-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-session-public-adapter.ts",
-        "scripts/testing/native-detox-session-public-staging.ts",
         "scripts/testing/native-pilot-preflight.ts",
-        "scripts/testing/ios-detox-camera-remote-service-helper.ts",
-        "scripts/testing/native-detox-camera-ios-remote-service-route.ts",
-        "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/t15-cold-android-reset-producer.ts",
-        "scripts/testing/t15-detox-android-session-cold-route.ts",
-        "scripts/testing/t15-detox-android-session-normalization.ts",
-        "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-        "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-        "scripts/testing/t15-detox-cold-lifecycle.ts",
-        "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-        "scripts/testing/native-detox-camera-android-bridge.ts",
-        "scripts/testing/native-detox-camera-android-contract.ts",
-        "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-        "scripts/testing/native-detox-camera-android-owned-session.ts",
-        "scripts/testing/native-detox-camera-android-producer.ts",
-        "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-        "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-        "scripts/testing/native-detox-camera-android-q-adapter.ts",
-        "scripts/testing/native-detox-camera-android-reset-independent.ts",
-        "scripts/testing/native-detox-camera-android-reset.ts",
         "scripts/testing/native-android-session-public-dispatch.ts",
         ".maestro/flows/camera-denied-android.yaml",
         "scripts/testing/run-t16-owned-exploration.ts",
@@ -8434,8 +6874,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-android-session-checkpoint-copy-source",
           "SRC-session-helper-ledger-source",
@@ -8448,9 +6886,6 @@
           "SRC-ios-cold-reset-handoff-source",
           "SRC-ios-cold-runtime-link-source",
           "SRC-t15-cold-dispatcher-source",
-          "SRC-t15-cold-owned-lifecycle-source",
-          "SRC-t15-cold-production-runner-source",
-          "SRC-t15-cold-ios-family-attempt-source",
           "SRC-native-comparison-source",
           "SRC-ios-capture-source",
           "SRC-ios-simulator-owner-source",
@@ -8474,21 +6909,7 @@
           "SRC-inventory-validator-source",
           "SRC-ios-camera-adapter-source",
           "SRC-camera-submission-evidence-source",
-          "SRC-ios-detox-camera-contract-source",
-          "SRC-ios-detox-camera-evidence-source",
-          "SRC-ios-detox-camera-ipc-source",
-          "SRC-ios-detox-camera-owner-source",
-          "SRC-ios-detox-camera-producer-source",
-          "SRC-ios-detox-camera-stage-source",
-          "SRC-ios-detox-camera-current-owner-source",
-          "SRC-ios-detox-camera-inputs-source",
-          "SRC-ios-detox-camera-verifier-source",
-          "SRC-ios-detox-camera-runner-source",
           "SRC-ios-detox-camera-public-runner-source",
-          "SRC-ios-detox-camera-e2e-source",
-          "SRC-ios-detox-camera-detox-config-source",
-          "SRC-ios-detox-camera-jest-config-source",
-          "SRC-detox-dispatch-integrated-session-baseline-source",
           "SRC-detox-dispatch-connection-evidence-source",
           "SRC-detox-dispatch-native-hierarchy-source",
           "SRC-camera-observer",
@@ -8518,30 +6939,7 @@
           "SRC-android-connection-hierarchy-source",
           "SRC-android-connection-public-evidence-source",
           "SRC-connection-password-offer-witness-source",
-          "SRC-ios-detox-connection-sidecar-source",
           "SRC-t15-cold-android-maestro-build-reuse-source",
-          "SRC-ios-detox-connection-public-bridge-source",
-          "SRC-ios-detox-connection-public-dispatch-source",
-          "SRC-ios-detox-connection-public-staging-source",
-          "SRC-ios-detox-training-public-dispatch-source",
-          "SRC-ios-detox-training-public-finalization-source",
-          "SRC-native-detox-training-public-finalization-contract-source",
-          "SRC-detox-training-public-types-source",
-          "SRC-native-detox-dispatch-lifecycle-source",
-          "SRC-android-detox-connection-public-dispatch-source",
-          "SRC-android-detox-connection-public-staging-source",
-          "SRC-android-detox-connection-producer-source",
-          "SRC-android-detox-connection-cleanup-source",
-          "SRC-android-detox-session-producer-source",
-          "SRC-android-detox-session-adapter-source",
-          "SRC-android-detox-session-route-source",
-          "SRC-android-detox-session-finalization-source",
-          "SRC-android-detox-session-staging-source",
-          "SRC-native-connection-engine-contract-source",
-          "SRC-ios-detox-connection-runtime-dispatch-source",
-          "SRC-ios-detox-connection-runtime-producer-source",
-          "SRC-ios-detox-connection-runtime-verification-source",
-          "SRC-detox-runtime-build-metadata-source",
           "SRC-android-connection-terminal-projection-source",
           "SRC-connection-view-verifier-source",
           "SRC-ios-incremental-build-cache-source",
@@ -8609,53 +7007,9 @@
           "SRC-detox-dispatch-android-session-charter-source",
           "SRC-detox-dispatch-android-session-storage-producer-source",
           "SRC-detox-dispatch-connection-actionability-source",
-          "SRC-detox-dispatch-connection-ipc-source",
-          "SRC-detox-dispatch-connection-lifecycle-source",
-          "SRC-detox-dispatch-integrated-connection-baseline-source",
-          "SRC-detox-dispatch-integrated-connection-driver-source",
-          "SRC-detox-dispatch-android-qualified-build-source",
           "SRC-detox-dispatch-session-cache-observation-source",
-          "SRC-detox-dispatch-session-cancel-evidence-source",
-          "SRC-detox-dispatch-session-final-transport-source",
-          "SRC-detox-dispatch-training-child-client-source",
-          "SRC-detox-dispatch-training-child-protocol-source",
-          "SRC-detox-dispatch-training-journey-source",
-          "SRC-detox-dispatch-training-owned-dispatch-source",
           "SRC-detox-dispatch-native-android-session-adapter-source",
-          "SRC-detox-dispatch-android-session-producer-source",
-          "SRC-detox-dispatch-android-session-adapter-source",
-          "SRC-detox-dispatch-android-session-route-source",
-          "SRC-detox-dispatch-android-session-finalization-source",
-          "SRC-detox-dispatch-android-session-staging-source",
-          "SRC-detox-dispatch-save-retry-child-client-source",
-          "SRC-detox-dispatch-save-retry-child-protocol-source",
-          "SRC-detox-dispatch-save-retry-driver-source",
-          "SRC-detox-dispatch-save-retry-owned-dispatch-source",
-          "SRC-detox-dispatch-save-retry-runtime-finalizer-source",
-          "SRC-ios-camera-runtime-session-native-pilot-route-source",
-          "SRC-ios-camera-runtime-session-public-adapter-source",
-          "SRC-ios-camera-runtime-session-public-staging-source",
-          "SRC-ios-camera-runtime-pilot-preflight-source",
-          "SRC-ios-camera-runtime-remote-service-helper-source",
-          "SRC-ios-camera-runtime-remote-service-route-source",
-          "SRC-android-camera-identity-source",
-          "SRC-android-cold-reset-producer-source",
-          "SRC-android-session-cold-route-source",
-          "SRC-android-session-normalization-source",
-          "SRC-android-session-public-receipt-bridge-source",
-          "SRC-android-session-reset-preparation-source",
-          "SRC-detox-cold-lifecycle-source",
-          "SRC-android-camera-runtime-android-detox-camera-cold-reset-boundary-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-bridge-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-contract-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-native-pilot-route-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-owned-session-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-producer-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-public-dispatch-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-public-finalizer-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-q-adapter-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-reset-independent-source",
-          "SRC-android-camera-runtime-native-detox-camera-android-reset-source"
+          "SRC-ios-camera-runtime-pilot-preflight-source"
         ],
         "requirementPaths": [
           "docs/screens/v2/SC-211-relationship-management.md",
@@ -8675,8 +7029,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-android-session-checkpoint-copy.ts",
           "scripts/testing/native-session-helper-ledger.ts",
@@ -8689,9 +7041,6 @@
           "scripts/testing/t15-cold-reset-handoff.ts",
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/compare-native-pilot.ts",
           "scripts/testing/capture-native-testability.ts",
           "scripts/testing/owned-ios-simulator.ts",
@@ -8715,20 +7064,6 @@
           "scripts/testing/validate-native-inventory.mjs",
           "scripts/testing/run-ios-camera-attempt.ts",
           "scripts/testing/native-camera-submission-evidence.ts",
-          "scripts/testing/native-detox-camera-ios-contract.ts",
-          "scripts/testing/native-detox-camera-ios-evidence.ts",
-          "scripts/testing/native-detox-camera-ios-ipc.ts",
-          "scripts/testing/native-detox-camera-ios-owner.ts",
-          "scripts/testing/native-detox-camera-ios-producer.ts",
-          "scripts/testing/native-detox-camera-ios-stage.ts",
-          "scripts/testing/native-detox-camera-ios-current-owner.ts",
-          "scripts/testing/native-detox-camera-ios-inputs.ts",
-          "scripts/testing/native-detox-camera-ios-verifier.ts",
-          "scripts/testing/run-ios-detox-camera-attempt.ts",
-          "e2e/detox-ios-camera-route.e2e.test.js",
-          "detox.camera.private.config.js",
-          "jest.detox-camera.private.config.js",
-          "scripts/testing/detox-integrated-session-baseline.ts",
           "scripts/testing/detox-connection-evidence.ts",
           "scripts/testing/detox-native-hierarchy.ts",
           "scripts/testing/native-camera-observation.ts",
@@ -8758,30 +7093,7 @@
           "scripts/testing/native-connection-hierarchy-android.ts",
           "scripts/testing/native-connection-public-evidence-android.ts",
           "scripts/testing/native-connection-password-offer-witness.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
           "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
-          "scripts/testing/native-detox-connection-public-bridge.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
-          "scripts/testing/native-detox-connection-public-staging.ts",
-          "scripts/testing/native-detox-training-public-dispatch.ts",
-          "scripts/testing/native-detox-training-public-finalization.ts",
-          "scripts/testing/native-detox-training-public-finalization-contract.ts",
-          "scripts/testing/native-detox-training-public-types.ts",
-          "scripts/testing/native-detox-dispatch-lifecycle.ts",
-          "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-          "scripts/testing/native-detox-connection-android-public-staging.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
-          "scripts/testing/native-connection-engine-contract.ts",
-          "scripts/testing/native-detox-connection-runtime-dispatch.ts",
-          "scripts/testing/native-detox-connection-runtime-producer.ts",
-          "scripts/testing/native-detox-connection-runtime-verification.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
           "scripts/testing/run-ios-training-attempt.ts",
           "scripts/testing/native-view-evidence.ts",
           "scripts/testing/native-ios-incremental-build-cache.ts",
@@ -8847,48 +7159,9 @@
           "scripts/testing/android-session-charter.ts",
           "scripts/testing/detox-android-session-storage-producer.ts",
           "scripts/testing/detox-connection-actionability.ts",
-          "scripts/testing/detox-connection-ipc.ts",
-          "scripts/testing/detox-connection-lifecycle.ts",
-          "scripts/testing/detox-integrated-connection-baseline.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-android-qualified-build.ts",
           "scripts/testing/detox-session-cache-observation.ts",
-          "scripts/testing/detox-session-cancel-evidence.ts",
-          "scripts/testing/detox-session-final-transport.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts",
-          "scripts/testing/detox-training-owned-dispatch.ts",
           "scripts/testing/native-android-session-adapter.ts",
-          "scripts/testing/detox-save-retry-child-client.ts",
-          "scripts/testing/detox-save-retry-child-protocol.mjs",
-          "scripts/testing/detox-save-retry-driver.ts",
-          "scripts/testing/detox-save-retry-owned-dispatch.ts",
-          "scripts/testing/detox-save-retry-runtime-finalizer.ts",
-          "scripts/testing/native-detox-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-session-public-adapter.ts",
-          "scripts/testing/native-detox-session-public-staging.ts",
           "scripts/testing/native-pilot-preflight.ts",
-          "scripts/testing/ios-detox-camera-remote-service-helper.ts",
-          "scripts/testing/native-detox-camera-ios-remote-service-route.ts",
-          "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/t15-cold-android-reset-producer.ts",
-          "scripts/testing/t15-detox-android-session-cold-route.ts",
-          "scripts/testing/t15-detox-android-session-normalization.ts",
-          "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-          "scripts/testing/t15-detox-android-session-reset-preparation.ts",
-          "scripts/testing/t15-detox-cold-lifecycle.ts",
-          "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-          "scripts/testing/native-detox-camera-android-bridge.ts",
-          "scripts/testing/native-detox-camera-android-contract.ts",
-          "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-          "scripts/testing/native-detox-camera-android-owned-session.ts",
-          "scripts/testing/native-detox-camera-android-producer.ts",
-          "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-          "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-          "scripts/testing/native-detox-camera-android-q-adapter.ts",
-          "scripts/testing/native-detox-camera-android-reset-independent.ts",
-          "scripts/testing/native-detox-camera-android-reset.ts",
           "scripts/testing/native-android-session-public-dispatch.ts",
           ".maestro/flows/camera-denied-android.yaml",
           "scripts/testing/run-t16-owned-exploration.ts",
@@ -9042,8 +7315,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-android-session-checkpoint-copy.ts",
         "scripts/testing/native-session-helper-ledger.ts",
@@ -9148,19 +7419,12 @@
         "scripts/testing/detox-native-hierarchy.ts",
         "scripts/testing/detox-session-cache-observation.ts",
         "scripts/testing/native-android-session-adapter.ts",
-        "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-        "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-        "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-        "scripts/testing/t15-cold-android-reset-producer.ts",
         "scripts/testing/native-save-retry-attempt-binding.ts",
         "scripts/testing/native-connection-public-evidence.ts",
-        "scripts/testing/native-detox-dispatch-lifecycle.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
         "scripts/testing/run-android-training-attempt.ts",
         "scripts/testing/run-android-save-retry-attempt.ts",
         "scripts/testing/native-android-save-retry-public-evidence.ts",
         "scripts/testing/native-training-public-evidence.ts",
-        "scripts/testing/native-detox-training-public-finalization-contract.ts",
         "scripts/testing/run-ios-training-attempt.ts",
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
@@ -9168,26 +7432,7 @@
         "scripts/testing/verify-owned-ios-cleanup.ts",
         "scripts/testing/run-ios-save-retry-attempt.ts",
         "scripts/testing/native-save-retry-public-evidence.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
         "scripts/testing/partial-backend-boundary.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/detox-android-qualified-build.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
-        "scripts/testing/detox-connection-ipc.ts",
-        "scripts/testing/detox-integrated-connection-baseline.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-integrated-session-baseline.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
-        "scripts/testing/detox-save-retry-child-client.ts",
-        "scripts/testing/detox-save-retry-child-protocol.mjs",
-        "scripts/testing/detox-save-retry-driver.ts",
-        "scripts/testing/detox-save-retry-owned-dispatch.ts",
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts",
         "scripts/testing/run-ios-session-attempt.ts",
         "scripts/testing/run-ios-connection-attempt.ts",
         "scripts/testing/run-ios-camera-attempt.ts",
@@ -9196,9 +7441,6 @@
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
         "scripts/testing/compare-native-pilot.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
         "scripts/testing/t16b-owned-maestro-bootstrap.ts",
         "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -9210,48 +7452,9 @@
         "scripts/testing/prepare-exploration.ts",
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
-        "scripts/testing/native-detox-training-public-types.ts",
-        "scripts/testing/detox-session-cancel-evidence.ts",
-        "scripts/testing/detox-session-final-transport.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/t15-detox-android-session-reset-preparation.ts",
         "scripts/testing/native-connection-engine-contract.ts",
-        "scripts/testing/detox-connection-lifecycle.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts",
-        "scripts/testing/native-detox-connection-runtime-producer.ts",
-        "scripts/testing/native-detox-connection-runtime-verification.ts",
-        "scripts/testing/native-detox-connection-public-staging.ts",
-        "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-        "scripts/testing/t15-detox-android-session-normalization.ts",
-        "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-        "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-        "scripts/testing/native-detox-camera-android-owned-session.ts",
-        "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-        "scripts/testing/native-detox-camera-android-bridge.ts",
-        "scripts/testing/native-detox-camera-android-contract.ts",
-        "scripts/testing/native-detox-camera-android-q-adapter.ts",
-        "scripts/testing/native-detox-camera-android-reset-independent.ts",
-        "scripts/testing/native-detox-camera-android-reset.ts",
-        "scripts/testing/native-detox-camera-android-producer.ts",
-        "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-        "scripts/testing/native-detox-camera-ios-verifier.ts",
-        "scripts/testing/native-detox-camera-ios-contract.ts",
-        "scripts/testing/native-detox-camera-ios-evidence.ts",
-        "scripts/testing/native-detox-camera-ios-owner.ts",
-        "scripts/testing/native-detox-camera-ios-producer.ts",
-        "scripts/testing/native-detox-camera-ios-ipc.ts",
-        "scripts/testing/native-detox-camera-ios-stage.ts",
-        "scripts/testing/native-detox-connection-android-public-staging.ts",
-        "scripts/testing/native-detox-session-public-adapter.ts",
-        "scripts/testing/native-detox-session-public-staging.ts",
-        "scripts/testing/native-pilot-preflight.ts",
-        "scripts/testing/native-detox-camera-ios-current-owner.ts",
-        "scripts/testing/native-detox-camera-ios-inputs.ts",
-        "scripts/testing/t15-detox-android-session-cold-route.ts",
-        "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-        "scripts/testing/t15-detox-cold-lifecycle.ts"
+        "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -9270,8 +7473,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-android-session-checkpoint-copy-source",
           "SRC-session-helper-ledger-source",
@@ -9396,8 +7597,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-android-session-checkpoint-copy.ts",
           "scripts/testing/native-session-helper-ledger.ts",
@@ -9502,19 +7701,12 @@
           "scripts/testing/detox-native-hierarchy.ts",
           "scripts/testing/detox-session-cache-observation.ts",
           "scripts/testing/native-android-session-adapter.ts",
-          "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-          "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-          "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-          "scripts/testing/t15-cold-android-reset-producer.ts",
           "scripts/testing/native-save-retry-attempt-binding.ts",
           "scripts/testing/native-connection-public-evidence.ts",
-          "scripts/testing/native-detox-dispatch-lifecycle.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
           "scripts/testing/run-android-training-attempt.ts",
           "scripts/testing/run-android-save-retry-attempt.ts",
           "scripts/testing/native-android-save-retry-public-evidence.ts",
           "scripts/testing/native-training-public-evidence.ts",
-          "scripts/testing/native-detox-training-public-finalization-contract.ts",
           "scripts/testing/run-ios-training-attempt.ts",
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
@@ -9522,26 +7714,7 @@
           "scripts/testing/verify-owned-ios-cleanup.ts",
           "scripts/testing/run-ios-save-retry-attempt.ts",
           "scripts/testing/native-save-retry-public-evidence.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
           "scripts/testing/partial-backend-boundary.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/detox-android-qualified-build.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
-          "scripts/testing/detox-connection-ipc.ts",
-          "scripts/testing/detox-integrated-connection-baseline.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-integrated-session-baseline.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
-          "scripts/testing/detox-save-retry-child-client.ts",
-          "scripts/testing/detox-save-retry-child-protocol.mjs",
-          "scripts/testing/detox-save-retry-driver.ts",
-          "scripts/testing/detox-save-retry-owned-dispatch.ts",
-          "scripts/testing/detox-save-retry-runtime-finalizer.ts",
           "scripts/testing/run-ios-session-attempt.ts",
           "scripts/testing/run-ios-connection-attempt.ts",
           "scripts/testing/run-ios-camera-attempt.ts",
@@ -9550,9 +7723,6 @@
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
           "scripts/testing/compare-native-pilot.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
           "scripts/testing/t16b-owned-maestro-bootstrap.ts",
           "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -9564,48 +7734,9 @@
           "scripts/testing/prepare-exploration.ts",
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
-          "scripts/testing/native-detox-training-public-types.ts",
-          "scripts/testing/detox-session-cancel-evidence.ts",
-          "scripts/testing/detox-session-final-transport.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/t15-detox-android-session-reset-preparation.ts",
           "scripts/testing/native-connection-engine-contract.ts",
-          "scripts/testing/detox-connection-lifecycle.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts",
-          "scripts/testing/native-detox-connection-runtime-producer.ts",
-          "scripts/testing/native-detox-connection-runtime-verification.ts",
-          "scripts/testing/native-detox-connection-public-staging.ts",
-          "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-          "scripts/testing/t15-detox-android-session-normalization.ts",
-          "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-          "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-          "scripts/testing/native-detox-camera-android-owned-session.ts",
-          "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-          "scripts/testing/native-detox-camera-android-bridge.ts",
-          "scripts/testing/native-detox-camera-android-contract.ts",
-          "scripts/testing/native-detox-camera-android-q-adapter.ts",
-          "scripts/testing/native-detox-camera-android-reset-independent.ts",
-          "scripts/testing/native-detox-camera-android-reset.ts",
-          "scripts/testing/native-detox-camera-android-producer.ts",
-          "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-          "scripts/testing/native-detox-camera-ios-verifier.ts",
-          "scripts/testing/native-detox-camera-ios-contract.ts",
-          "scripts/testing/native-detox-camera-ios-evidence.ts",
-          "scripts/testing/native-detox-camera-ios-owner.ts",
-          "scripts/testing/native-detox-camera-ios-producer.ts",
-          "scripts/testing/native-detox-camera-ios-ipc.ts",
-          "scripts/testing/native-detox-camera-ios-stage.ts",
-          "scripts/testing/native-detox-connection-android-public-staging.ts",
-          "scripts/testing/native-detox-session-public-adapter.ts",
-          "scripts/testing/native-detox-session-public-staging.ts",
-          "scripts/testing/native-pilot-preflight.ts",
-          "scripts/testing/native-detox-camera-ios-current-owner.ts",
-          "scripts/testing/native-detox-camera-ios-inputs.ts",
-          "scripts/testing/t15-detox-android-session-cold-route.ts",
-          "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-          "scripts/testing/t15-detox-cold-lifecycle.ts"
+          "scripts/testing/native-pilot-preflight.ts"
         ]
       },
       "receiptIds": [],
@@ -9763,8 +7894,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-save-retry-observation.ts",
         "scripts/testing/native-save-retry-attempt-binding.ts",
@@ -9783,9 +7912,6 @@
         "scripts/testing/t15-cold-reset-handoff.ts",
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/compare-native-pilot.ts",
         "scripts/testing/capture-native-testability.ts",
         "scripts/testing/owned-ios-simulator.ts",
@@ -9859,16 +7985,8 @@
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
         "scripts/testing/run-android-session-attempt.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
         "scripts/testing/native-connection-journey.ts",
         "scripts/testing/detox-connection-evidence.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
         "scripts/testing/native-camera-android-capture-adapter.ts",
         "scripts/testing/native-camera-android-contract.ts",
         "scripts/testing/native-camera-android-observation.ts",
@@ -9893,7 +8011,6 @@
         "scripts/testing/owned-maestro-mcp-stdio.ts",
         "scripts/testing/schemas/connection-snapshot-v1.schema.json",
         "scripts/testing/run-ios-camera-attempt.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
         "scripts/testing/capture-android-testability.ts",
         "scripts/testing/native-android-driver-diagnostics.ts",
         "scripts/testing/native-android-driver-startup-sampling.ts",
@@ -9919,8 +8036,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-save-retry-observer",
           "SRC-save-retry-attempt-source",
@@ -9939,9 +8054,6 @@
           "SRC-ios-cold-reset-handoff-source",
           "SRC-ios-cold-runtime-link-source",
           "SRC-t15-cold-dispatcher-source",
-          "SRC-t15-cold-owned-lifecycle-source",
-          "SRC-t15-cold-production-runner-source",
-          "SRC-t15-cold-ios-family-attempt-source",
           "SRC-native-comparison-source",
           "SRC-ios-capture-source",
           "SRC-ios-simulator-owner-source",
@@ -10027,8 +8139,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-save-retry-observation.ts",
           "scripts/testing/native-save-retry-attempt-binding.ts",
@@ -10047,9 +8157,6 @@
           "scripts/testing/t15-cold-reset-handoff.ts",
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/compare-native-pilot.ts",
           "scripts/testing/capture-native-testability.ts",
           "scripts/testing/owned-ios-simulator.ts",
@@ -10123,16 +8230,8 @@
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
           "scripts/testing/run-android-session-attempt.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
           "scripts/testing/native-connection-journey.ts",
           "scripts/testing/detox-connection-evidence.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
           "scripts/testing/native-camera-android-capture-adapter.ts",
           "scripts/testing/native-camera-android-contract.ts",
           "scripts/testing/native-camera-android-observation.ts",
@@ -10157,7 +8256,6 @@
           "scripts/testing/owned-maestro-mcp-stdio.ts",
           "scripts/testing/schemas/connection-snapshot-v1.schema.json",
           "scripts/testing/run-ios-camera-attempt.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
           "scripts/testing/capture-android-testability.ts",
           "scripts/testing/native-android-driver-diagnostics.ts",
           "scripts/testing/native-android-driver-startup-sampling.ts",
@@ -10336,8 +8434,6 @@
         "scripts/testing/schemas/public-receipt-v1.schema.json",
         "scripts/testing/schema-validation.ts",
         "scripts/testing/native-cleanup-evidence.ts",
-        "scripts/testing/detox-connection-artifact-root.ts",
-        "scripts/testing/detox-connection-result-writer.ts",
         "scripts/testing/native-pilot-invocation.ts",
         "scripts/testing/native-save-retry-observation.ts",
         "scripts/testing/native-save-retry-attempt-binding.ts",
@@ -10432,10 +8528,6 @@
         "scripts/testing/detox-native-hierarchy.ts",
         "scripts/testing/detox-session-cache-observation.ts",
         "scripts/testing/native-android-session-adapter.ts",
-        "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-        "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-        "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-        "scripts/testing/t15-cold-android-reset-producer.ts",
         "scripts/testing/run-android-camera-public-attempt.ts",
         "scripts/testing/native-android-camera-runtime-finalizer.ts",
         "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -10449,11 +8541,8 @@
         "scripts/testing/run-android-camera-attempt.ts",
         "scripts/testing/schemas/connection-snapshot-v1.schema.json",
         "scripts/testing/native-connection-public-evidence.ts",
-        "scripts/testing/native-detox-dispatch-lifecycle.ts",
-        "scripts/testing/native-detox-connection-public-dispatch.ts",
         "scripts/testing/run-android-training-attempt.ts",
         "scripts/testing/native-training-public-evidence.ts",
-        "scripts/testing/native-detox-training-public-finalization-contract.ts",
         "scripts/testing/run-ios-training-attempt.ts",
         "scripts/testing/native-android-session-public-dispatch.ts",
         "scripts/testing/native-android-session-public-staging.ts",
@@ -10461,26 +8550,7 @@
         "scripts/testing/verify-owned-ios-cleanup.ts",
         "scripts/testing/run-ios-save-retry-attempt.ts",
         "scripts/testing/native-save-retry-public-evidence.ts",
-        "scripts/testing/detox-android-session-producer.ts",
-        "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-        "scripts/testing/native-detox-android-session-public-adapter.ts",
-        "scripts/testing/native-detox-android-session-public-finalization.ts",
-        "scripts/testing/native-detox-android-session-public-staging.ts",
         "scripts/testing/partial-backend-boundary.ts",
-        "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-        "scripts/testing/detox-android-connection-producer.ts",
-        "scripts/testing/detox-android-qualified-build.ts",
-        "scripts/testing/detox-connection-ancestor-safe.py",
-        "scripts/testing/detox-connection-ipc.ts",
-        "scripts/testing/detox-integrated-connection-baseline.ts",
-        "scripts/testing/detox-integrated-connection-driver.ts",
-        "scripts/testing/detox-integrated-session-baseline.ts",
-        "scripts/testing/detox-runtime-build-metadata.ts",
-        "scripts/testing/detox-save-retry-child-client.ts",
-        "scripts/testing/detox-save-retry-child-protocol.mjs",
-        "scripts/testing/detox-save-retry-driver.ts",
-        "scripts/testing/detox-save-retry-owned-dispatch.ts",
-        "scripts/testing/detox-save-retry-runtime-finalizer.ts",
         "scripts/testing/run-ios-session-attempt.ts",
         "scripts/testing/run-ios-connection-attempt.ts",
         "scripts/testing/run-ios-camera-attempt.ts",
@@ -10489,9 +8559,6 @@
         "scripts/testing/t15-cold-runtime-link.ts",
         "scripts/testing/t15-cold-dispatcher.ts",
         "scripts/testing/compare-native-pilot.ts",
-        "scripts/testing/t15-cold-owned-lifecycle.ts",
-        "scripts/testing/t15-cold-production-runner.ts",
-        "scripts/testing/t15-cold-ios-family-attempt.ts",
         "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
         "scripts/testing/t16b-owned-maestro-bootstrap.ts",
         "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -10503,48 +8570,9 @@
         "scripts/testing/prepare-exploration.ts",
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
-        "scripts/testing/native-detox-training-public-types.ts",
-        "scripts/testing/detox-session-cancel-evidence.ts",
-        "scripts/testing/detox-session-final-transport.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/t15-detox-android-session-reset-preparation.ts",
         "scripts/testing/native-connection-engine-contract.ts",
-        "scripts/testing/detox-connection-lifecycle.ts",
-        "scripts/testing/detox-training-child-client.ts",
-        "scripts/testing/detox-training-child-protocol.mjs",
-        "scripts/testing/detox-training-journey.ts",
-        "scripts/testing/native-detox-connection-runtime-producer.ts",
-        "scripts/testing/native-detox-connection-runtime-verification.ts",
-        "scripts/testing/native-detox-connection-public-staging.ts",
-        "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-        "scripts/testing/t15-detox-android-session-normalization.ts",
-        "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-        "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-        "scripts/testing/native-detox-camera-android-owned-session.ts",
-        "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-        "scripts/testing/native-detox-camera-android-bridge.ts",
-        "scripts/testing/native-detox-camera-android-contract.ts",
-        "scripts/testing/native-detox-camera-android-q-adapter.ts",
-        "scripts/testing/native-detox-camera-android-reset-independent.ts",
-        "scripts/testing/native-detox-camera-android-reset.ts",
-        "scripts/testing/native-detox-camera-android-producer.ts",
-        "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-        "scripts/testing/native-detox-camera-ios-verifier.ts",
-        "scripts/testing/native-detox-camera-ios-contract.ts",
-        "scripts/testing/native-detox-camera-ios-evidence.ts",
-        "scripts/testing/native-detox-camera-ios-owner.ts",
-        "scripts/testing/native-detox-camera-ios-producer.ts",
-        "scripts/testing/native-detox-camera-ios-ipc.ts",
-        "scripts/testing/native-detox-camera-ios-stage.ts",
-        "scripts/testing/native-detox-connection-android-public-staging.ts",
-        "scripts/testing/native-detox-session-public-adapter.ts",
-        "scripts/testing/native-detox-session-public-staging.ts",
-        "scripts/testing/native-pilot-preflight.ts",
-        "scripts/testing/native-detox-camera-ios-current-owner.ts",
-        "scripts/testing/native-detox-camera-ios-inputs.ts",
-        "scripts/testing/t15-detox-android-session-cold-route.ts",
-        "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-        "scripts/testing/t15-detox-cold-lifecycle.ts"
+        "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
         "sourceIds": [
@@ -10566,8 +8594,6 @@
           "SRC-public-receipt-schema-source",
           "SRC-schema-validator-source",
           "SRC-native-cleanup-evidence-source",
-          "SRC-detox-artifact-root-source",
-          "SRC-detox-result-writer-source",
           "SRC-native-pilot-invocation-source",
           "SRC-save-retry-observer",
           "SRC-save-retry-attempt-source",
@@ -10685,8 +8711,6 @@
           "scripts/testing/schemas/public-receipt-v1.schema.json",
           "scripts/testing/schema-validation.ts",
           "scripts/testing/native-cleanup-evidence.ts",
-          "scripts/testing/detox-connection-artifact-root.ts",
-          "scripts/testing/detox-connection-result-writer.ts",
           "scripts/testing/native-pilot-invocation.ts",
           "scripts/testing/native-save-retry-observation.ts",
           "scripts/testing/native-save-retry-attempt-binding.ts",
@@ -10781,10 +8805,6 @@
           "scripts/testing/detox-native-hierarchy.ts",
           "scripts/testing/detox-session-cache-observation.ts",
           "scripts/testing/native-android-session-adapter.ts",
-          "scripts/testing/t15-cold-android-maestro-family-attempt.ts",
-          "scripts/testing/t15-cold-android-maestro-public-finalizer.ts",
-          "scripts/testing/t15-cold-android-maestro-public-consumer.ts",
-          "scripts/testing/t15-cold-android-reset-producer.ts",
           "scripts/testing/run-android-camera-public-attempt.ts",
           "scripts/testing/native-android-camera-runtime-finalizer.ts",
           "scripts/testing/native-android-camera-runtime-eligibility.ts",
@@ -10798,11 +8818,8 @@
           "scripts/testing/run-android-camera-attempt.ts",
           "scripts/testing/schemas/connection-snapshot-v1.schema.json",
           "scripts/testing/native-connection-public-evidence.ts",
-          "scripts/testing/native-detox-dispatch-lifecycle.ts",
-          "scripts/testing/native-detox-connection-public-dispatch.ts",
           "scripts/testing/run-android-training-attempt.ts",
           "scripts/testing/native-training-public-evidence.ts",
-          "scripts/testing/native-detox-training-public-finalization-contract.ts",
           "scripts/testing/run-ios-training-attempt.ts",
           "scripts/testing/native-android-session-public-dispatch.ts",
           "scripts/testing/native-android-session-public-staging.ts",
@@ -10810,26 +8827,7 @@
           "scripts/testing/verify-owned-ios-cleanup.ts",
           "scripts/testing/run-ios-save-retry-attempt.ts",
           "scripts/testing/native-save-retry-public-evidence.ts",
-          "scripts/testing/detox-android-session-producer.ts",
-          "scripts/testing/native-detox-android-session-native-pilot-route.ts",
-          "scripts/testing/native-detox-android-session-public-adapter.ts",
-          "scripts/testing/native-detox-android-session-public-finalization.ts",
-          "scripts/testing/native-detox-android-session-public-staging.ts",
           "scripts/testing/partial-backend-boundary.ts",
-          "scripts/testing/verify-owned-android-detox-connection-cleanup.ts",
-          "scripts/testing/detox-android-connection-producer.ts",
-          "scripts/testing/detox-android-qualified-build.ts",
-          "scripts/testing/detox-connection-ancestor-safe.py",
-          "scripts/testing/detox-connection-ipc.ts",
-          "scripts/testing/detox-integrated-connection-baseline.ts",
-          "scripts/testing/detox-integrated-connection-driver.ts",
-          "scripts/testing/detox-integrated-session-baseline.ts",
-          "scripts/testing/detox-runtime-build-metadata.ts",
-          "scripts/testing/detox-save-retry-child-client.ts",
-          "scripts/testing/detox-save-retry-child-protocol.mjs",
-          "scripts/testing/detox-save-retry-driver.ts",
-          "scripts/testing/detox-save-retry-owned-dispatch.ts",
-          "scripts/testing/detox-save-retry-runtime-finalizer.ts",
           "scripts/testing/run-ios-session-attempt.ts",
           "scripts/testing/run-ios-connection-attempt.ts",
           "scripts/testing/run-ios-camera-attempt.ts",
@@ -10838,9 +8836,6 @@
           "scripts/testing/t15-cold-runtime-link.ts",
           "scripts/testing/t15-cold-dispatcher.ts",
           "scripts/testing/compare-native-pilot.ts",
-          "scripts/testing/t15-cold-owned-lifecycle.ts",
-          "scripts/testing/t15-cold-production-runner.ts",
-          "scripts/testing/t15-cold-ios-family-attempt.ts",
           "scripts/testing/t16b-owned-ios-native-entrypoint.ts",
           "scripts/testing/t16b-owned-maestro-bootstrap.ts",
           "scripts/testing/t16b-owned-maestro-runtime.ts",
@@ -10852,48 +8847,9 @@
           "scripts/testing/prepare-exploration.ts",
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
-          "scripts/testing/native-detox-training-public-types.ts",
-          "scripts/testing/detox-session-cancel-evidence.ts",
-          "scripts/testing/detox-session-final-transport.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/t15-detox-android-session-reset-preparation.ts",
           "scripts/testing/native-connection-engine-contract.ts",
-          "scripts/testing/detox-connection-lifecycle.ts",
-          "scripts/testing/detox-training-child-client.ts",
-          "scripts/testing/detox-training-child-protocol.mjs",
-          "scripts/testing/detox-training-journey.ts",
-          "scripts/testing/native-detox-connection-runtime-producer.ts",
-          "scripts/testing/native-detox-connection-runtime-verification.ts",
-          "scripts/testing/native-detox-connection-public-staging.ts",
-          "scripts/testing/native-detox-connection-android-public-dispatch.ts",
-          "scripts/testing/t15-detox-android-session-normalization.ts",
-          "scripts/testing/native-detox-camera-android-native-pilot-route.ts",
-          "scripts/testing/native-detox-camera-android-public-dispatch.ts",
-          "scripts/testing/native-detox-camera-android-owned-session.ts",
-          "scripts/testing/android-detox-camera-cold-reset-boundary.ts",
-          "scripts/testing/native-detox-camera-android-bridge.ts",
-          "scripts/testing/native-detox-camera-android-contract.ts",
-          "scripts/testing/native-detox-camera-android-q-adapter.ts",
-          "scripts/testing/native-detox-camera-android-reset-independent.ts",
-          "scripts/testing/native-detox-camera-android-reset.ts",
-          "scripts/testing/native-detox-camera-android-producer.ts",
-          "scripts/testing/native-detox-camera-android-public-finalizer.ts",
-          "scripts/testing/native-detox-camera-ios-verifier.ts",
-          "scripts/testing/native-detox-camera-ios-contract.ts",
-          "scripts/testing/native-detox-camera-ios-evidence.ts",
-          "scripts/testing/native-detox-camera-ios-owner.ts",
-          "scripts/testing/native-detox-camera-ios-producer.ts",
-          "scripts/testing/native-detox-camera-ios-ipc.ts",
-          "scripts/testing/native-detox-camera-ios-stage.ts",
-          "scripts/testing/native-detox-connection-android-public-staging.ts",
-          "scripts/testing/native-detox-session-public-adapter.ts",
-          "scripts/testing/native-detox-session-public-staging.ts",
-          "scripts/testing/native-pilot-preflight.ts",
-          "scripts/testing/native-detox-camera-ios-current-owner.ts",
-          "scripts/testing/native-detox-camera-ios-inputs.ts",
-          "scripts/testing/t15-detox-android-session-cold-route.ts",
-          "scripts/testing/t15-detox-android-session-public-receipt-bridge.ts",
-          "scripts/testing/t15-detox-cold-lifecycle.ts"
+          "scripts/testing/native-pilot-preflight.ts"
         ]
       },
       "receiptIds": [],

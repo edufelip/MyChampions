@@ -435,8 +435,6 @@ export function requireNativeConnectionHelperInputs(
         /^scripts\/testing\/[a-z0-9._/-]+\.ts$/.test(helperPath) ||
         helperPath === 'scripts/testing/validate-native-inventory.mjs' ||
         helperPath === '.maestro/flows/camera-denied-android.yaml' ||
-        helperPath === 'scripts/testing/detox-save-retry-child-protocol.mjs' ||
-        helperPath === 'scripts/testing/detox-training-child-protocol.mjs' ||
         helperPath === 'scripts/testing/schemas/connection-snapshot-v1.schema.json' ||
         helperPath === 'scripts/testing/detox-connection-ancestor-safe.py' ||
         helperPath === 'scripts/testing/android-input-reader/InputReader.java' ||

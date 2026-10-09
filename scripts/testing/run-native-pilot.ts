@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { lstat, realpath, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -12,6 +12,7 @@ import {
   stageNativeAndroidSaveRetryPublicEvidence,
   verifyStagedNativeAndroidSaveRetryEvidence,
 } from './native-android-save-retry-public-evidence';
+import { androidSessionPublicAssertions } from './native-android-session-public-receipt';
 import { sourceIdentity } from './native-build-identity';
 import { loadReusableIosBuild } from './native-build-reuse';
 import {
@@ -23,42 +24,6 @@ import {
   stageNativeConnectionPublicEvidence,
   verifyStagedNativeConnectionEvidence,
 } from './native-connection-public-evidence';
-import {
-  runAndroidDetoxSessionAttemptForNativePilot,
-  type AndroidDetoxSessionNativePilotAttempt,
-} from './native-detox-android-session-native-pilot-route';
-import {
-  androidDetoxSessionVerifiedTerminalEvidenceName,
-  buildAndroidDetoxSessionVerifiedTerminalProof,
-  mapAndroidDetoxSessionAssertionsToOuterTerminal,
-  stageAndroidDetoxSessionPublicEvidence,
-  verifyStagedAndroidDetoxSessionEvidence,
-} from './native-detox-android-session-public-finalization';
-import { AndroidDetoxSessionStagingError } from './native-detox-android-session-public-staging';
-import {
-  isAndroidDetoxCameraPublicArguments,
-  runAndroidDetoxCameraAttemptForNativePilot,
-  type AndroidDetoxCameraNativePilotAttempt,
-} from './native-detox-camera-android-native-pilot-route';
-import { ANDROID_DETOX_CAMERA_FINALIZER_RECEIPT_PATH } from './native-detox-camera-android-public-finalizer';
-import { verifyDetoxIosCameraPrivateEvidence } from './native-detox-camera-ios-verifier';
-import {
-  ANDROID_DETOX_CONNECTION_PUBLIC_DISPATCH,
-  runAndroidDetoxConnectionAttemptForNativePilot,
-  type DetoxAndroidNativePilotAttemptResult,
-} from './native-detox-connection-android-public-dispatch';
-import {
-  stageAndroidDetoxConnectionPublicEvidence,
-  verifyStagedAndroidDetoxConnectionPublicEvidence,
-} from './native-detox-connection-android-public-staging';
-import {
-  stageIosDetoxConnectionPublicEvidence,
-  verifyStagedIosDetoxConnectionPublicEvidence,
-} from './native-detox-connection-public-staging';
-import {
-  stageDetoxSessionPublicEvidence,
-  verifyStagedDetoxSessionEvidence,
-} from './native-detox-session-public-staging';
 import { NativeHostContentionError, requireNativeHostAvailability } from './native-host-contention';
 import {
   stageNativeQuantityFailure,
@@ -89,7 +54,7 @@ import {
   writeNativePilotBlockedReceipt,
   writeNativePilotTerminalReceipt,
   type NativePilotTerminalPublication,
-  createNativePilotOutputRoot,
+  type createNativePilotOutputRoot,
 } from './native-pilot-invocation';
 import { installNativePilotPreflightLifecycle } from './native-pilot-preflight';
 import { parseNativeExecutionDeadlines } from './native-runtime-preflight';
@@ -118,7 +83,6 @@ import {
 } from './run-android-camera-public-attempt';
 import { runAndroidConnectionAttempt } from './run-android-connection-attempt';
 import { runAndroidSaveRetryAttempt } from './run-android-save-retry-attempt';
-import { androidSessionPublicAssertions } from './native-android-session-public-receipt';
 import { runAndroidSessionAttempt } from './run-android-session-attempt';
 import { runAndroidTrainingAttempt } from './run-android-training-attempt';
 import { requireIosCameraAttemptLifecycle, runIosCameraAttempt } from './run-ios-camera-attempt';
@@ -141,12 +105,6 @@ import {
   type ColdResetHandoff,
 } from './t15-cold-reset-handoff';
 import { buildColdResetRuntimeLinkBinding } from './t15-cold-runtime-link';
-import { runT15AndroidDetoxSessionColdRoute } from './t15-detox-android-session-cold-route';
-import {
-  blockAndroidDetoxSessionOuterReceiptForBridgeFailure,
-  promoteAndroidDetoxSessionOuterReceiptAfterBridge,
-  reconcileT15AndroidDetoxSessionOuterReceipt,
-} from './t15-detox-android-session-public-receipt-bridge';
 import {
   runOwnedT16BFromOwnedIosNativeSession,
   type T16BOwnedIosNativeEntrypointInput,
@@ -157,69 +115,8 @@ import {
   repositoryIdentity,
   type RepositoryIdentity,
 } from './testing-repository-identity';
-import type { DetoxBaselineReport } from './detox-integrated-session-baseline';
-import type { AndroidDetoxSessionPublicAdapterResult } from './native-detox-android-session-public-adapter';
-import type * as IosDetoxConnectionPublicDispatch from './native-detox-connection-public-dispatch';
-import type * as IosDetoxConnectionRuntimeDispatch from './native-detox-connection-runtime-dispatch';
-import type * as IosDetoxSessionNativePilotRoute from './native-detox-session-native-pilot-route';
-import type { IosDetoxSessionPublicAdapterResult } from './native-detox-session-public-adapter';
-import type * as IosDetoxTrainingPublicDispatch from './native-detox-training-public-dispatch';
 import type { ProxyObservation } from './owned-api-proxy';
-import type * as IosDetoxCameraPublicDispatch from './run-ios-detox-camera-attempt';
 import type { ColdResetPreparationExpectation } from './t15-cold-ios-reset-producer';
-
-/**
- * Keep iOS Detox dispatchers behind a runtime platform boundary. The Android
- * Maestro/Detox owner starts from this unified CLI, so a static import here
- * would make the Android production graph load iOS training and connection
- * code before the selected platform is known.
- */
-export const IOS_DETOX_CONNECTION_PUBLIC_DISPATCH = 'ios-detox-connection' as const;
-export const IOS_DETOX_TRAINING_PUBLIC_DISPATCH = 'ios-detox-training' as const;
-export const IOS_DETOX_CAMERA_PUBLIC_DISPATCH = 'ios-detox-camera' as const;
-
-const iosDetoxConnectionDispatchSpecifier = ['.', 'native-detox-connection-public-dispatch'].join(
-  '/',
-);
-const iosDetoxTrainingDispatchSpecifier = ['.', 'native-detox-training-public-dispatch'].join('/');
-const iosDetoxConnectionRuntimeDispatchSpecifier = [
-  '.',
-  'native-detox-connection-runtime-dispatch',
-].join('/');
-const iosDetoxSessionRouteSpecifier = ['.', 'native-detox-session-native-pilot-route'].join('/');
-const iosDetoxCameraDispatchSpecifier = ['.', 'run-ios-detox-camera-attempt'].join('/');
-
-async function loadIosDetoxConnectionPublicDispatch(): Promise<
-  typeof IosDetoxConnectionPublicDispatch
-> {
-  return (await import(
-    iosDetoxConnectionDispatchSpecifier
-  )) as typeof IosDetoxConnectionPublicDispatch;
-}
-
-async function loadIosDetoxTrainingPublicDispatch(): Promise<
-  typeof IosDetoxTrainingPublicDispatch
-> {
-  return (await import(iosDetoxTrainingDispatchSpecifier)) as typeof IosDetoxTrainingPublicDispatch;
-}
-
-async function loadIosDetoxConnectionRuntimeDispatch(): Promise<
-  typeof IosDetoxConnectionRuntimeDispatch
-> {
-  return (await import(
-    iosDetoxConnectionRuntimeDispatchSpecifier
-  )) as typeof IosDetoxConnectionRuntimeDispatch;
-}
-
-async function loadIosDetoxSessionNativePilotRoute(): Promise<
-  typeof IosDetoxSessionNativePilotRoute
-> {
-  return (await import(iosDetoxSessionRouteSpecifier)) as typeof IosDetoxSessionNativePilotRoute;
-}
-
-async function loadIosDetoxCameraPublicDispatch(): Promise<typeof IosDetoxCameraPublicDispatch> {
-  return (await import(iosDetoxCameraDispatchSpecifier)) as typeof IosDetoxCameraPublicDispatch;
-}
 
 type ProtectedInventoryLifecycle = Readonly<{
   signal?: AbortSignal;
@@ -259,15 +156,6 @@ type NativePilotAttempt =
   | Awaited<ReturnType<typeof runIosSaveRetryAttempt>>
   | Awaited<ReturnType<typeof runIosConnectionAttempt>>
   | Awaited<ReturnType<typeof runAndroidConnectionAttempt>>
-  | IosDetoxConnectionPublicDispatch.DetoxNativePilotAttemptResult
-  | IosDetoxTrainingPublicDispatch.DetoxIosTrainingNativePilotAttemptResult
-  | IosDetoxSessionNativePilotRoute.IosDetoxSessionNativePilotAttempt
-  | AndroidDetoxSessionNativePilotAttempt
-  | DetoxAndroidNativePilotAttemptResult
-  | AndroidDetoxCameraNativePilotAttempt
-  | Awaited<
-      ReturnType<typeof IosDetoxCameraPublicDispatch.runIosDetoxCameraAttemptForPublicDispatch>
-    >
   | Awaited<ReturnType<typeof runIosCameraAttempt>>
   | Awaited<ReturnType<typeof runIosSessionAttempt>>
   | Awaited<ReturnType<typeof runAndroidSessionAttempt>>
@@ -354,57 +242,6 @@ export async function appendAndroidCameraRecoveryArtifacts(
   return rejected;
 }
 
-type AndroidDetoxSessionRecoveryReceipt = AndroidCameraRecoveryReceipt;
-
-/** Attach the staging ledger produced in the owned capture root to the outer
- * receipt.  Retained stage paths remain inside that ledger because they are
- * relative to a sibling staging namespace and cannot safely be re-rooted. */
-export async function attachAndroidDetoxSessionStagingRecovery(
-  receipt: AndroidDetoxSessionRecoveryReceipt,
-  outputRoot: string,
-  error: Pick<
-    AndroidDetoxSessionStagingError,
-    'recoveryStatus' | 'recoveryRecordPath' | 'recoveryPublication' | 'childLifecycle'
-  >,
-): Promise<readonly string[]> {
-  if (
-    error.recoveryStatus === 'failed-recovery-ledger-retained' ||
-    error.recoveryPublication === 'unknown'
-  )
-    receipt.cleanup.status =
-      error.recoveryPublication === 'unknown'
-        ? 'failed-recovery-ledger-retained'
-        : error.recoveryStatus;
-  if (error.recoveryRecordPath === null) return [];
-  const rejected = await appendAndroidCameraRecoveryArtifacts(receipt, outputRoot, [
-    error.recoveryRecordPath,
-  ]);
-  if (!rejected.includes(error.recoveryRecordPath) && receipt.cleanup.recoveryRecordPath === null)
-    receipt.cleanup.recoveryRecordPath = error.recoveryRecordPath;
-  return rejected;
-}
-
-/**
- * The outer P4 row may pass only after the producer proved an executed Detox
- * command, the strict lifecycle normalizer accepted the private ledgers, the
- * protected writer published a real receipt that was reread, and the shared
- * lifecycle matched its sealed contract. Missing gate inputs are failures;
- * source fixtures and in-memory candidates never receive terminal credit.
- */
-export function shouldBlockAndroidDetoxSessionOuterTerminal(input: {
-  nativeExecution: boolean;
-  lifecycleNormalization: { status: string };
-  publicReceiptBound: boolean;
-  sharedLifecycleStatus: string;
-}): boolean {
-  return (
-    input.nativeExecution !== true ||
-    input.lifecycleNormalization?.status !== 'private-candidate' ||
-    input.publicReceiptBound !== true ||
-    input.sharedLifecycleStatus !== 'sealed-contract-compatible'
-  );
-}
-
 type NativePilotChildClassification =
   | 'completed'
   | 'child-failed'
@@ -461,8 +298,7 @@ export function nativePilotCleanupStatus(input: {
 
 /**
  * Preserve a non-passed terminal row when repository identity cannot be
- * published. This is deliberately separate from the passed-only Detox
- * publisher: incomplete source evidence remains a durable harness outcome,
+ * published. Incomplete source evidence remains a durable harness outcome,
  * never a product failure or a passing runtime row.
  */
 export function markNativePilotReceiptBlockedForRepositoryEvidence(
@@ -651,36 +487,6 @@ export function resolveNativePilotTerminalDecision(input: {
   return null;
 }
 
-export function resolveIosDetoxConnectionDeadlineMs(input: {
-  runStartedMs: number;
-  nowMs: number;
-  wholeRunMs: number;
-  stepMs: number;
-}): number {
-  const remainingMs = Math.floor(input.runStartedMs + input.wholeRunMs - input.nowMs);
-  const deadlineMs = Math.min(input.stepMs, remainingMs);
-  assert(
-    Number.isSafeInteger(deadlineMs) && deadlineMs >= 30_000 && deadlineMs <= 600_000,
-    'The iOS Detox connection deadline must retain at least the owned 30-second bridge bound',
-  );
-  return deadlineMs;
-}
-
-export function resolveAndroidDetoxConnectionDeadlineMs(input: {
-  runStartedMs: number;
-  nowMs: number;
-  wholeRunMs: number;
-  stepMs: number;
-}): number {
-  const remainingMs = Math.floor(input.runStartedMs + input.wholeRunMs - input.nowMs);
-  const deadlineMs = Math.min(input.stepMs, remainingMs);
-  assert(
-    Number.isSafeInteger(deadlineMs) && deadlineMs >= 30_000 && deadlineMs <= 600_000,
-    'The Android Detox connection deadline must retain at least the owned 30-second bridge bound',
-  );
-  return deadlineMs;
-}
-
 /**
  * Reachable native-pilot dispatch for the owned T16-B caller. The explicit
  * bundle remains the owner of target, locale, API, SQL, and cleanup facts.
@@ -697,119 +503,10 @@ export async function runIosT16BOwnedAttemptForNativePilot(
   return runOwnedT16BFromOwnedIosNativeSession(input);
 }
 
-type IosDetoxConnectionDispatchOptions = Parameters<
-  typeof IosDetoxConnectionPublicDispatch.runIosDetoxConnectionAttemptForNativePilot
->[0];
-
-/** Keep the engine-specific Detox branch injectable for source-only controls. */
-export function runIosDetoxConnectionAttemptForPublicDispatch(
-  options: IosDetoxConnectionDispatchOptions,
-  runner: (
-    options: IosDetoxConnectionDispatchOptions,
-  ) => ReturnType<
-    typeof IosDetoxConnectionPublicDispatch.runIosDetoxConnectionAttemptForNativePilot
-  >,
-): ReturnType<typeof IosDetoxConnectionPublicDispatch.runIosDetoxConnectionAttemptForNativePilot> {
-  assert.deepEqual(options.selection.arguments, {
-    platform: 'ios',
-    engine: 'detox',
-    scenario: 'SCN-connection-ios',
-    mode: 'integration',
-  });
-  assert.equal(options.requestedAttemptId, `${options.requestedRunId}:first`);
-  assert.match(options.buildRunId, /^[a-f0-9]{24}$/, 'Detox buildRunId is invalid');
-  assert(options.signal instanceof AbortSignal);
-  assert(Number.isSafeInteger(options.deadlineMs) && options.deadlineMs >= 30_000);
-  return runner(options);
-}
-
-type AndroidDetoxConnectionDispatchOptions = Parameters<
-  typeof runAndroidDetoxConnectionAttemptForNativePilot
->[0];
-
-/** Keep the Android Detox route explicit at the outer runner boundary. */
-export function runAndroidDetoxConnectionAttemptForPublicDispatch(
-  options: AndroidDetoxConnectionDispatchOptions,
-  runner: (
-    options: AndroidDetoxConnectionDispatchOptions,
-  ) => ReturnType<
-    typeof runAndroidDetoxConnectionAttemptForNativePilot
-  > = runAndroidDetoxConnectionAttemptForNativePilot,
-): ReturnType<typeof runAndroidDetoxConnectionAttemptForNativePilot> {
-  assert.deepEqual(options.selection.arguments, {
-    platform: 'android',
-    engine: 'detox',
-    scenario: 'SCN-connection-android',
-    mode: 'integration',
-  });
-  assert.equal(options.requestedAttemptId, `${options.requestedRunId}:first`);
-  assert.match(options.buildRunId, /^[a-f0-9]{24}$/, 'Android Detox buildRunId is invalid');
-  assert(options.signal instanceof AbortSignal);
-  assert(Number.isSafeInteger(options.deadlineMs) && options.deadlineMs >= 30_000);
-  return runner(options);
-}
-
-/**
- * Join the already-completed iOS Detox producer to the canonical runner's
- * outer verification boundary.  The producer is deliberately supplied as a
- * completed attempt so this wrapper cannot acquire a second driver, proxy,
- * build or artifact namespace.  The only terminal writer remains the caller
- * of run-native-pilot; this function never publishes a receipt.
- */
-export async function runIosDetoxConnectionRuntimeForOuterTerminal(
-  input: Readonly<{
-    attempt: IosDetoxConnectionPublicDispatch.DetoxNativePilotAttemptResult;
-    repositoryRoot: string;
-    serverRoot: string;
-    outputRoot: string;
-    requestedRunId: string;
-    requestedAttemptId: string;
-    selection: NativePilotSelection;
-    signal: AbortSignal;
-    deadlineMs: number;
-    deadlineAtMonotonicMs: number;
-    buildRunId: string;
-    parentEnv?: Readonly<Record<string, string | undefined>>;
-  }>,
-): Promise<IosDetoxConnectionRuntimeDispatch.DetoxRuntimeDispatchResult> {
-  assert.equal(input.attempt.requestedRunId, input.requestedRunId);
-  assert.equal(input.attempt.requestedAttemptId, input.requestedAttemptId);
-  assert.equal(input.attempt.detoxBuild.platform, 'ios');
-  const runtimeDispatch = await loadIosDetoxConnectionRuntimeDispatch();
-  return runtimeDispatch.runIosDetoxConnectionRuntimeForCanonicalTerminal(
-    {
-      repositoryRoot: input.repositoryRoot,
-      serverRoot: input.serverRoot,
-      artifactRoot: input.attempt.artifactRoot,
-      outputRoot: input.outputRoot,
-      requestedRunId: input.requestedRunId,
-      requestedAttemptId: input.requestedAttemptId,
-      selection: input.selection,
-      signal: input.signal,
-      deadlineMs: input.deadlineMs,
-      deadlineAtMonotonicMs: input.deadlineAtMonotonicMs,
-      buildRunId: input.buildRunId,
-      parentEnv: input.parentEnv,
-    },
-    {
-      runAttempt: () => Promise.resolve(input.attempt),
-    },
-  );
-}
-
 function isSupportedTrainingSelection(args: NativePilotArguments): boolean {
   return (
     args.engine === 'maestro' &&
     args.scenario === `SCN-training-${args.platform}` &&
-    args.mode === 'integration'
-  );
-}
-
-function isSupportedDetoxTrainingSelection(args: NativePilotArguments): boolean {
-  return (
-    args.platform === 'ios' &&
-    args.engine === 'detox' &&
-    args.scenario === 'SCN-training-ios' &&
     args.mode === 'integration'
   );
 }
@@ -827,15 +524,6 @@ function isSupportedCameraSelection(args: NativePilotArguments): boolean {
   return (
     args.platform === 'ios' &&
     args.engine === 'maestro' &&
-    args.scenario === 'SCN-camera-denied-ios' &&
-    args.mode === 'integration'
-  );
-}
-
-function isSupportedDetoxCameraSelection(args: NativePilotArguments): boolean {
-  return (
-    args.platform === 'ios' &&
-    args.engine === 'detox' &&
     args.scenario === 'SCN-camera-denied-ios' &&
     args.mode === 'integration'
   );
@@ -1079,19 +767,10 @@ export function nativePilotExecutionAdapter(
   | 'connection'
   | 'ios-save-retry'
   | 'android-save-retry'
-  | 'ios-detox-connection'
-  | 'ios-detox-training'
-  | 'ios-detox-camera'
-  | 'ios-detox-session'
-  | 'android-detox-session'
-  | 'android-detox-connection'
-  | 'android-detox-camera'
   | 'camera'
   | 'ios-session'
   | 'android-session'
   | null {
-  if (isSupportedDetoxTrainingSelection(args)) return IOS_DETOX_TRAINING_PUBLIC_DISPATCH;
-  if (isSupportedDetoxCameraSelection(args)) return IOS_DETOX_CAMERA_PUBLIC_DISPATCH;
   if (isSupportedTrainingSelection(args)) return 'training';
   if (isSupportedAndroidSessionSelection(args)) return 'android-session';
   if (
@@ -1100,35 +779,6 @@ export function nativePilotExecutionAdapter(
     args.mode === 'integration'
   )
     return 'connection';
-  if (
-    args.platform === 'ios' &&
-    args.engine === 'detox' &&
-    args.scenario === 'SCN-session-ios' &&
-    args.mode === 'integration'
-  )
-    return 'ios-detox-session';
-  if (
-    args.platform === 'ios' &&
-    args.engine === 'detox' &&
-    args.scenario === 'SCN-connection-ios' &&
-    args.mode === 'integration'
-  )
-    return IOS_DETOX_CONNECTION_PUBLIC_DISPATCH;
-  if (
-    args.platform === 'android' &&
-    args.engine === 'detox' &&
-    args.scenario === 'SCN-session-android' &&
-    args.mode === 'integration'
-  )
-    return 'android-detox-session';
-  if (
-    args.platform === 'android' &&
-    args.engine === 'detox' &&
-    args.scenario === 'SCN-connection-android' &&
-    args.mode === 'integration'
-  )
-    return ANDROID_DETOX_CONNECTION_PUBLIC_DISPATCH;
-  if (isAndroidDetoxCameraPublicArguments(args)) return 'android-detox-camera';
   if (
     args.platform === 'android' &&
     args.engine === 'maestro' &&
@@ -1341,7 +991,7 @@ async function main() {
       : invocation;
     const coldPreflight = await prepareNativePilotColdInvocation<ColdResetHandoff>({
       invocation: invocationForPreflight,
-      defaultOutputParent: nativePilotDefaultOutputParent(root, invocation.selection),
+      defaultOutputParent: nativePilotDefaultOutputParent(root),
       signal: preflight.controller.signal,
       deadlineAt: preflight.deadlineAtMs,
       onPrepared: (prepared) => {
@@ -1464,10 +1114,7 @@ async function main() {
         interrupted ? {} : expectedRepositoryRoots,
       );
       const blocked = await writeNativePilotBlockedReceipt({
-        defaultOutputParent: nativePilotDefaultOutputParent(
-          path.resolve(__dirname, '../..'),
-          typeof invocation === 'undefined' ? undefined : invocation.selection,
-        ),
+        defaultOutputParent: nativePilotDefaultOutputParent(path.resolve(__dirname, '../..')),
         partialOutputRoot,
         startedAt: new Date().toISOString(),
         signal: interrupted ? undefined : preflight.controller.signal,
@@ -1540,18 +1187,12 @@ async function main() {
   let reuseBuildRunId: string | undefined;
   let reuseBuildSourceRoot: string | undefined;
   let incrementalBuildCacheSourceRoot: string | undefined;
-  let androidDetoxBuildRunId: string | undefined;
   let deadlines = preflight.deadlines;
   let deadlinesRecorded = false;
   let runtimeTarget: NativePilotTarget = nativePilotTargetFromCapture('ios');
   let runtimeTargetFailure: { name: string; message: string } | null = null;
   let executionAdapter: ReturnType<typeof nativePilotExecutionAdapter> = null;
-  let serverRoot: string | undefined;
   let runtimeLinkPublished = false;
-  let androidDetoxSessionOuterCandidateGateBlocked = false;
-  let iosDetoxRuntimeDispatch: IosDetoxConnectionRuntimeDispatch.DetoxRuntimeDispatchResult | null =
-    null;
-  let iosDetoxRuntimeFailure: { code: string; message: string } | null = null;
   let coldResetHandoffPublished = false;
   let coldResetChildBinding: ChildColdResetBinding | null = null;
   let runtimeExecutionFailure: { name: string; message: string } | null = null;
@@ -1581,19 +1222,6 @@ async function main() {
       deadlineAtMs: preflight.deadlineAtMs,
     });
     selected = await selectNativePilotScenario(args, inventory, root);
-    const detoxTrainingConnectionSelection =
-      executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH
-        ? await selectNativePilotScenario(
-            {
-              platform: 'ios',
-              engine: 'detox',
-              scenario: 'SCN-connection-ios',
-              mode: 'integration',
-            },
-            inventory,
-            root,
-          )
-        : undefined;
     stage = 'invalid-environment';
     const bootstatusDeadlineOverride =
       typeof process.env.MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS === 'string'
@@ -1610,10 +1238,6 @@ async function main() {
     const requestedIncrementalBuildCacheSourceRoot =
       typeof process.env.MYCHAMPIONS_NATIVE_INCREMENTAL_BUILD_CACHE_ROOT === 'string'
         ? process.env.MYCHAMPIONS_NATIVE_INCREMENTAL_BUILD_CACHE_ROOT
-        : undefined;
-    const requestedAndroidDetoxBuildRunId =
-      typeof process.env.MYCHAMPIONS_NATIVE_ANDROID_DETOX_BUILD_RUN_ID === 'string'
-        ? process.env.MYCHAMPIONS_NATIVE_ANDROID_DETOX_BUILD_RUN_ID
         : undefined;
     const iosOnlyOptionSet =
       bootstatusDeadlineOverride !== undefined ||
@@ -1650,43 +1274,12 @@ async function main() {
     }
     if (
       coldResetExpectation &&
-      executionAdapter !== 'android-detox-camera' &&
-      (executionAdapter === 'ios-session' ||
-        executionAdapter === 'ios-detox-session' ||
-        executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH ||
-        executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH ||
-        executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH ||
-        (args.platform === 'android' && executionAdapter !== 'android-detox-session'))
+      (executionAdapter === 'ios-session' || args.platform === 'android')
     ) {
       stage = 'invalid-environment';
       throw new Error(
-        'Cold reset consumption requires an iOS Maestro callback adapter with the reviewed child producer; Detox cold reset is not yet bound to the same capture owner',
+        'Cold reset consumption requires an iOS Maestro callback adapter with the reviewed child producer',
       );
-    }
-    if (
-      executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH ||
-      executionAdapter === 'ios-detox-session' ||
-      executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH ||
-      executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH
-    ) {
-      stage = 'invalid-build-reuse';
-      assert(
-        requestedBuildRunId !== undefined,
-        'iOS Detox session routes require an explicit qualified build reuse ID',
-      );
-    }
-    if (
-      executionAdapter === ANDROID_DETOX_CONNECTION_PUBLIC_DISPATCH ||
-      executionAdapter === 'android-detox-session' ||
-      executionAdapter === 'android-detox-camera'
-    ) {
-      stage = 'invalid-build-reuse';
-      assert(
-        requestedAndroidDetoxBuildRunId !== undefined,
-        'Android Detox routes require an explicit qualified build descriptor run ID',
-      );
-      assert.match(requestedAndroidDetoxBuildRunId, /^[a-f0-9]{24}$/);
-      androidDetoxBuildRunId = requestedAndroidDetoxBuildRunId;
     }
     if (requestedBuildSourceRoot !== undefined)
       assert(
@@ -1741,7 +1334,6 @@ async function main() {
         throw new Error('Native host lock is required');
       if (!signalCode) {
         const sourceObservation = await readRepositorySources(root, controller.signal);
-        serverRoot = sourceObservation.roots.server;
         sourcesBefore = [...sourceObservation.sources];
         repositoryRootsBefore = sourceObservation.roots;
         controller.signal.throwIfAborted();
@@ -1763,32 +1355,6 @@ async function main() {
             selection: selected,
           }),
         };
-        const iosDetoxConnectionDispatch =
-          executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH
-            ? await loadIosDetoxConnectionPublicDispatch()
-            : undefined;
-        const iosDetoxTrainingDispatch =
-          executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH
-            ? await loadIosDetoxTrainingPublicDispatch()
-            : undefined;
-        const iosDetoxCameraDispatch =
-          executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH
-            ? await loadIosDetoxCameraPublicDispatch()
-            : undefined;
-        const iosDetoxSessionRoute =
-          executionAdapter === 'ios-detox-session'
-            ? await loadIosDetoxSessionNativePilotRoute()
-            : undefined;
-        if (
-          executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH ||
-          executionAdapter === ANDROID_DETOX_CONNECTION_PUBLIC_DISPATCH ||
-          executionAdapter === 'android-detox-session' ||
-          executionAdapter === 'android-detox-camera' ||
-          executionAdapter === 'ios-detox-session' ||
-          executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH ||
-          executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH
-        )
-          assert(serverRoot, 'Detox server root is unavailable');
         runtime =
           executionAdapter === 'android-session'
             ? await runAndroidSessionAttempt(adapterOptions)
@@ -1803,322 +1369,94 @@ async function main() {
                       reuseBuildRunId,
                       reuseBuildSourceRoot,
                     })
-                : executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH
-                  ? await runIosDetoxConnectionAttemptForPublicDispatch(
-                      {
-                        repositoryRoot: root,
-                        serverRoot,
-                        artifactRoot: output,
-                        requestedRunId: runId,
-                        requestedAttemptId: attemptId,
-                        selection: selected,
-                        signal: controller.signal,
-                        deadlineMs: resolveIosDetoxConnectionDeadlineMs({
-                          runStartedMs: runStarted,
-                          nowMs: performance.now(),
-                          wholeRunMs: deadlines.wholeRunMs,
-                          stepMs: deadlines.stepMs,
-                        }),
-                        deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                        buildRunId: reuseBuildRunId!,
-                        reuseBuildSourceRoot,
-                        parentEnv: process.env,
-                      },
-                      iosDetoxConnectionDispatch!.runIosDetoxConnectionAttemptForNativePilot,
-                    )
-                  : executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH
-                    ? await iosDetoxCameraDispatch!.runIosDetoxCameraAttemptForPublicDispatch({
-                        repositoryRoot: root,
-                        serverRoot,
-                        artifactRoot: output,
-                        requestedRunId: runId,
-                        requestedAttemptId: attemptId,
-                        selection: selected,
-                        signal: controller.signal,
-                        deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                        buildRunId: reuseBuildRunId!,
-                        reuseBuildSourceRoot,
-                        parentEnv: process.env,
+                : executionAdapter === 'ios-save-retry'
+                  ? await runIosSaveRetryAttempt({
+                      ...adapterOptions,
+                      bootstatusDeadlineMs,
+                      reuseBuildRunId,
+                      reuseBuildSourceRoot,
+                    })
+                  : executionAdapter === 'ios-session'
+                    ? await runIosSessionAttempt({
+                        ...adapterOptions,
+                        bootstatusDeadlineMs,
+                        reuseBuildRunId,
                       })
-                    : executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH
-                      ? await iosDetoxTrainingDispatch!.runIosDetoxTrainingAttemptForPublicDispatch(
-                          {
-                            repositoryRoot: root,
-                            serverRoot:
-                              serverRoot ??
-                              assert.fail('iOS Detox training server root is unavailable'),
-                            artifactRoot: output,
-                            requestedRunId: runId,
-                            requestedAttemptId: attemptId,
-                            selection: selected,
-                            connectionSelection:
-                              detoxTrainingConnectionSelection ??
-                              assert.fail('iOS Detox training connection selection is unavailable'),
-                            signal: controller.signal,
-                            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                            buildRunId: reuseBuildRunId!,
-                            reuseBuildSourceRoot,
-                            parentEnv: process.env,
-                          },
-                        )
-                      : executionAdapter === ANDROID_DETOX_CONNECTION_PUBLIC_DISPATCH
-                        ? await runAndroidDetoxConnectionAttemptForPublicDispatch({
-                            repositoryRoot: root,
-                            serverRoot,
-                            artifactRoot: output,
-                            requestedRunId: runId,
-                            requestedAttemptId: attemptId,
-                            selection: selected,
-                            signal: controller.signal,
-                            deadlineMs: resolveAndroidDetoxConnectionDeadlineMs({
-                              runStartedMs: runStarted,
-                              nowMs: performance.now(),
-                              wholeRunMs: deadlines.wholeRunMs,
-                              stepMs: deadlines.stepMs,
-                            }),
-                            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                            buildRunId: androidDetoxBuildRunId!,
-                            parentEnv: process.env,
+                    : executionAdapter === 'camera'
+                      ? selected.arguments.platform === 'android'
+                        ? await runAndroidCameraAttemptForPublicDispatch(adapterOptions)
+                        : await runIosCameraAttemptForPublicDispatch({
+                            ...adapterOptions,
+                            bootstatusDeadlineMs,
+                            reuseBuildRunId,
                           })
-                        : executionAdapter === 'android-detox-camera'
-                          ? await runAndroidDetoxCameraAttemptForNativePilot({
-                              repositoryRoot: root,
-                              serverRoot,
-                              artifactRoot: output,
-                              requestedRunId: runId,
-                              requestedAttemptId: attemptId,
-                              selection: selected,
-                              signal: controller.signal,
-                              deadlineAt: runStarted + deadlines.wholeRunMs,
-                              parentEnv: process.env,
-                              expectedLocale: 'en-US',
-                              coldReset: coldResetExpectation ?? undefined,
-                            })
-                          : executionAdapter === 'android-detox-session'
-                            ? coldResetPreparation
-                              ? await (async () => {
-                                  const captureInvocation = await createNativePilotOutputRoot({
-                                    invocation: {
-                                      selection: selected.arguments,
-                                      requestedRunId: null,
-                                      requestedAttemptId: null,
-                                      outputParent: null,
-                                    },
-                                    defaultOutputParent: path.join(
-                                      root,
-                                      '.qa/artifacts/native-pilot',
-                                    ),
-                                    signal: controller.signal,
-                                    deadlineAt: runStarted + deadlines.wholeRunMs,
-                                  });
-                                  const resourceOwnerRunId = randomBytes(12).toString('hex');
-                                  assert.notEqual(resourceOwnerRunId, runId);
-                                  assert.notEqual(
-                                    resourceOwnerRunId,
-                                    path.basename(captureInvocation.outputRoot),
-                                  );
-                                  return runT15AndroidDetoxSessionColdRoute({
-                                    repositoryRoot: root,
-                                    serverRoot,
-                                    artifactRoot: captureInvocation.outputRoot,
-                                    requestedRunId: runId,
-                                    captureRunId: path.basename(captureInvocation.outputRoot),
-                                    requestedAttemptId: attemptId,
-                                    resourceOwnerRunId,
-                                    selection: selected,
-                                    signal: controller.signal,
-                                    deadlineMs: resolveAndroidDetoxConnectionDeadlineMs({
-                                      runStartedMs: runStarted,
-                                      nowMs: performance.now(),
-                                      wholeRunMs: deadlines.wholeRunMs,
-                                      stepMs: deadlines.stepMs,
-                                    }),
-                                    deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                                    buildRunId: androidDetoxBuildRunId!,
-                                    parentEnv: process.env,
-                                    coldReset: {
-                                      expectation: coldResetPreparation,
-                                      ownerRunId: resourceOwnerRunId,
-                                    },
-                                  });
-                                })()
-                              : await (async () => {
-                                  // The session baseline writes its own census and
-                                  // receipts, so it needs a capture root separate from
-                                  // the runner's output root (as the cold route does).
-                                  const captureInvocation = await createNativePilotOutputRoot({
-                                    invocation: {
-                                      selection: selected.arguments,
-                                      requestedRunId: null,
-                                      requestedAttemptId: null,
-                                      outputParent: null,
-                                    },
-                                    defaultOutputParent: path.join(
-                                      root,
-                                      '.qa/artifacts/native-pilot',
-                                    ),
-                                    signal: controller.signal,
-                                    deadlineAt: runStarted + deadlines.wholeRunMs,
-                                  });
-                                  return runAndroidDetoxSessionAttemptForNativePilot({
-                                    repositoryRoot: root,
-                                    serverRoot,
-                                    artifactRoot: captureInvocation.outputRoot,
-                                    captureRunId: path.basename(captureInvocation.outputRoot),
-                                    requestedRunId: runId,
-                                    requestedAttemptId: attemptId,
-                                    selection: selected,
-                                    signal: controller.signal,
-                                    deadlineMs: resolveAndroidDetoxConnectionDeadlineMs({
-                                      runStartedMs: runStarted,
-                                      nowMs: performance.now(),
-                                      wholeRunMs: deadlines.wholeRunMs,
-                                      stepMs: deadlines.stepMs,
-                                    }),
-                                    deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                                    buildRunId: androidDetoxBuildRunId!,
-                                    parentEnv: process.env,
-                                  });
-                                })()
-                            : executionAdapter === 'ios-detox-session'
-                              ? await iosDetoxSessionRoute!.runIosDetoxSessionAttemptForNativePilot(
-                                  {
-                                    repositoryRoot: root,
-                                    serverRoot: serverRoot,
-                                    artifactRoot: output,
-                                    requestedRunId: runId,
-                                    requestedAttemptId: attemptId,
-                                    selection: selected,
-                                    signal: controller.signal,
-                                    deadlineMs: resolveIosDetoxConnectionDeadlineMs({
-                                      runStartedMs: runStarted,
-                                      nowMs: performance.now(),
-                                      wholeRunMs: deadlines.wholeRunMs,
-                                      stepMs: deadlines.stepMs,
-                                    }),
-                                    deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-                                    buildRunId: reuseBuildRunId!,
-                                    reuseBuildSourceRoot,
-                                    parentEnv: process.env,
-                                  },
-                                )
-                              : executionAdapter === 'ios-save-retry'
-                                ? await runIosSaveRetryAttempt({
-                                    ...adapterOptions,
-                                    bootstatusDeadlineMs,
-                                    reuseBuildRunId,
-                                    reuseBuildSourceRoot,
-                                  })
-                                : executionAdapter === 'ios-session'
-                                  ? await runIosSessionAttempt({
-                                      ...adapterOptions,
-                                      bootstatusDeadlineMs,
-                                      reuseBuildRunId,
-                                    })
-                                  : executionAdapter === 'camera'
-                                    ? selected.arguments.platform === 'android'
-                                      ? await runAndroidCameraAttemptForPublicDispatch(
-                                          adapterOptions,
-                                        )
-                                      : await runIosCameraAttemptForPublicDispatch({
-                                          ...adapterOptions,
-                                          bootstatusDeadlineMs,
-                                          reuseBuildRunId,
-                                        })
-                                    : selected.arguments.platform === 'android'
-                                      ? await runAndroidTrainingAttempt(adapterOptions)
-                                      : await runIosTrainingAttempt({
-                                          ...adapterOptions,
-                                          bootstatusDeadlineMs,
-                                          reuseBuildRunId,
-                                        });
+                      : selected.arguments.platform === 'android'
+                        ? await runAndroidTrainingAttempt(adapterOptions)
+                        : await runIosTrainingAttempt({
+                            ...adapterOptions,
+                            bootstatusDeadlineMs,
+                            reuseBuildRunId,
+                          });
         runtimeTarget = nativePilotTargetFromCapture(selected.arguments.platform);
-        if (
-          executionAdapter === 'ios-detox-session' ||
-          executionAdapter === 'android-detox-session'
-        ) {
-          assert(runtime, 'Detox session runtime is unavailable');
-          const detoxRuntime = runtime as
-            | IosDetoxSessionNativePilotRoute.IosDetoxSessionNativePilotAttempt
-            | AndroidDetoxSessionNativePilotAttempt;
-          assert(detoxRuntime.target.deviceId, 'Detox session target identity is missing');
-          assert(detoxRuntime.target.apiOrigin, 'Detox session API origin is missing');
-          runtimeTarget = detoxRuntime.target;
-        } else if (executionAdapter === 'android-detox-camera') {
-          assert(runtime && 'target' in runtime, 'Android Detox camera target is unavailable');
-          runtimeTarget = runtime.target;
-        } else if (executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH) {
-          const cameraRuntime = runtime as Awaited<
-            ReturnType<
-              typeof IosDetoxCameraPublicDispatch.runIosDetoxCameraAttemptForPublicDispatch
-            >
-          >;
-          runtimeTarget = cameraRuntime.target;
-        } else {
-          try {
-            const runtimeCapture = (
-              await readChildCaptureFromOwnedRoot({
-                captureRoot: runtime.artifactRoot,
-                expectedCaptureRunId: path.basename(runtime.artifactRoot),
-              })
-            ).capture;
-            assert(
-              runtimeCapture &&
-                typeof runtimeCapture === 'object' &&
-                !Array.isArray(runtimeCapture) &&
-                (runtimeCapture as { platform?: unknown }).platform === selected.arguments.platform,
-              'Runtime capture platform differs from selected platform',
-            );
-            runtimeTarget = nativePilotTargetFromCapture(
-              selected.arguments.platform,
-              runtimeCapture,
-            );
-            if (coldResetExpectation) {
-              const childBinding = consumeChildColdReset({
-                capture: runtimeCapture,
-                captureRoot: runtime.artifactRoot,
-                expectation: coldResetExpectation,
-              });
-              coldResetChildBinding = childBinding;
-              coldResetHandoff = await handoffColdResetReceiptFromProcessBinding({
-                binding: childBinding,
-                prepared: preparedInvocation,
-                signal: controller.signal,
-              });
-              await writeNativePilotPrivateFile({
-                root: output,
-                relative: 'cold-reset-handoff.private.json',
-                contents: JSON.stringify({
-                  kind: 'private child-produced cold reset handoff; not standalone public evidence',
-                  source: coldResetHandoff.source,
-                  final: coldResetHandoff.final,
-                  finalRelativePath: coldResetHandoff.finalRelativePath,
-                  sourceIdentity: coldResetHandoff.sourceIdentity,
-                  finalIdentity: coldResetHandoff.finalIdentity,
-                  target: childBinding.target,
-                  backend: childBinding.backend,
-                }),
-                namespaceIdentity: preparedInvocation.namespaceIdentity,
-                signal: controller.signal,
-                deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-              });
-              coldResetHandoffPublished = true;
-            }
-          } catch (error) {
-            if (coldResetExpectation) {
-              stage = 'runtime-verification-failed';
-              throw new Error(
-                `Child-produced cold reset could not be consumed for ${attemptId}: ${
-                  error instanceof Error ? error.message : 'unknown child reset error'
-                }`,
-              );
-            }
-            runtimeTargetFailure = {
-              name: error instanceof Error ? error.name : 'UnknownError',
-              message:
-                error instanceof Error ? error.message : 'Runtime target metadata unavailable',
-            };
+        try {
+          const runtimeCapture = (
+            await readChildCaptureFromOwnedRoot({
+              captureRoot: runtime.artifactRoot,
+              expectedCaptureRunId: path.basename(runtime.artifactRoot),
+            })
+          ).capture;
+          assert(
+            runtimeCapture &&
+              typeof runtimeCapture === 'object' &&
+              !Array.isArray(runtimeCapture) &&
+              (runtimeCapture as { platform?: unknown }).platform === selected.arguments.platform,
+            'Runtime capture platform differs from selected platform',
+          );
+          runtimeTarget = nativePilotTargetFromCapture(selected.arguments.platform, runtimeCapture);
+          if (coldResetExpectation) {
+            const childBinding = consumeChildColdReset({
+              capture: runtimeCapture,
+              captureRoot: runtime.artifactRoot,
+              expectation: coldResetExpectation,
+            });
+            coldResetChildBinding = childBinding;
+            coldResetHandoff = await handoffColdResetReceiptFromProcessBinding({
+              binding: childBinding,
+              prepared: preparedInvocation,
+              signal: controller.signal,
+            });
+            await writeNativePilotPrivateFile({
+              root: output,
+              relative: 'cold-reset-handoff.private.json',
+              contents: JSON.stringify({
+                kind: 'private child-produced cold reset handoff; not standalone public evidence',
+                source: coldResetHandoff.source,
+                final: coldResetHandoff.final,
+                finalRelativePath: coldResetHandoff.finalRelativePath,
+                sourceIdentity: coldResetHandoff.sourceIdentity,
+                finalIdentity: coldResetHandoff.finalIdentity,
+                target: childBinding.target,
+                backend: childBinding.backend,
+              }),
+              namespaceIdentity: preparedInvocation.namespaceIdentity,
+              signal: controller.signal,
+              deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
+            });
+            coldResetHandoffPublished = true;
           }
+        } catch (error) {
+          if (coldResetExpectation) {
+            stage = 'runtime-verification-failed';
+            throw new Error(
+              `Child-produced cold reset could not be consumed for ${attemptId}: ${
+                error instanceof Error ? error.message : 'unknown child reset error'
+              }`,
+            );
+          }
+          runtimeTargetFailure = {
+            name: error instanceof Error ? error.name : 'UnknownError',
+            message: error instanceof Error ? error.message : 'Runtime target metadata unavailable',
+          };
         }
         assert.equal(runtime.requestedRunId, runId, 'Adapter run ID differs from requested run ID');
         assert.equal(
@@ -2198,19 +1536,13 @@ async function main() {
         });
         runtimeLinkPublished = true;
         const invocationEvidenceValid =
-          executionAdapter === 'ios-detox-session' ||
-          executionAdapter === 'android-detox-session' ||
-          executionAdapter === 'android-detox-camera'
-            ? 'captureInvocation' in runtime &&
-              runtime.captureInvocation.count === 1 &&
-              runtime.captureInvocation.returned === true
-            : executionAdapter === 'ios-session'
-              ? isIosSessionCaptureResultConsistent(runtime)
-              : executionAdapter === 'android-session'
-                ? 'captureInvocation' in runtime &&
-                  runtime.captureInvocation.count === 1 &&
-                  runtime.captureInvocation.returned === true
-                : 'callbackInvocations' in runtime && runtime.callbackInvocations === 1;
+          executionAdapter === 'ios-session'
+            ? isIosSessionCaptureResultConsistent(runtime)
+            : executionAdapter === 'android-session'
+              ? 'captureInvocation' in runtime &&
+                runtime.captureInvocation.count === 1 &&
+                runtime.captureInvocation.returned === true
+              : 'callbackInvocations' in runtime && runtime.callbackInvocations === 1;
         stage = runtimeTargetFailure
           ? 'runtime-verification-failed'
           : runtime.externalCleanupResult !== 'passed'
@@ -2228,39 +1560,27 @@ async function main() {
                   ? 'runtime-application-failed'
                   : runtime.captureExitCode !== 0 || !invocationEvidenceValid
                     ? 'runtime-execution-failed'
-                    : runtime.verificationResult !== 'passed' &&
-                        // The Android Detox camera owner reports its finalized
-                        // native result as 'verified-native'; the terminal
-                        // camera branch below re-verifies and publishes it.
-                        !(
-                          executionAdapter === 'android-detox-camera' &&
-                          runtime.verificationResult === 'verified-native'
-                        )
-                      ? executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH &&
-                        'detoxBridgeResult' in runtime &&
-                        runtime.detoxBridgeResult.attempt.status === 'source-only' &&
-                        runtime.captureCompleted
+                    : runtime.verificationResult !== 'passed'
+                      ? executionAdapter === 'camera' &&
+                        selected.arguments.platform === 'android' &&
+                        runtime.verificationResult === 'source-only'
                         ? 'runtime-finalization-pending'
-                        : (executionAdapter === 'android-detox-camera' ||
-                              (executionAdapter === 'camera' &&
-                                selected.arguments.platform === 'android')) &&
+                        : (executionAdapter === 'ios-session' ||
+                              executionAdapter === 'android-session' ||
+                              executionAdapter === 'camera') &&
                             runtime.verificationResult === 'source-only'
-                          ? 'runtime-finalization-pending'
-                          : (executionAdapter === 'ios-session' ||
-                                executionAdapter === 'android-session' ||
-                                executionAdapter === 'android-detox-session' ||
-                                executionAdapter === 'camera') &&
-                              runtime.verificationResult === 'source-only'
-                            ? (executionAdapter === 'ios-session' &&
-                                'publicFinalization' in runtime &&
-                                runtime.publicFinalization !== null) ||
-                              // The Android Maestro session adapter staged and
-                              // verified its evidence copy; finalize from it.
-                              (executionAdapter === 'android-session' &&
-                                'staged' in runtime &&
-                                runtime.staged !== null)
-                              ? 'runtime-finalization-pending'
-                              : 'runtime-source-only'
+                          ? (executionAdapter === 'ios-session' &&
+                              'publicFinalization' in runtime &&
+                              runtime.publicFinalization !== null) ||
+                            // The Android Maestro session adapter staged and
+                            // verified its evidence copy; finalize from it.
+                            (executionAdapter === 'android-session' &&
+                              'staged' in runtime &&
+                              runtime.staged !== null)
+                            ? 'runtime-finalization-pending'
+                            : 'runtime-source-only'
+                          : runtime.verificationResult === 'source-only'
+                            ? 'runtime-source-only'
                             : 'runtime-verification-failed'
                       : 'runtime-finalization-pending';
       }
@@ -2438,9 +1758,7 @@ async function main() {
   };
   if (deadlinesRecorded) receipt.artifacts.push('execution-deadlines.private.json');
   if (
-    (executionAdapter === 'ios-session' ||
-      executionAdapter === 'android-session' ||
-      executionAdapter === 'android-detox-session') &&
+    (executionAdapter === 'ios-session' || executionAdapter === 'android-session') &&
     runtime &&
     'staged' in runtime &&
     runtime.staged
@@ -2507,7 +1825,6 @@ async function main() {
   }
   if (!signalCode && stage === 'runtime-finalization-pending' && runtime && selected) {
     const finalizationStarted = performance.now();
-    let iosDetoxCameraSourceOnly = false;
     try {
       assert.deepEqual(sourcesBefore, sources, 'Native repository inputs changed during execution');
       const current = await selectNativePilotScenario(
@@ -2522,14 +1839,9 @@ async function main() {
       assert(runtime.fixtureRunId, 'Native fixture identity is unavailable');
       const finalizationCaptureRunId = runtime.captureRunId;
       assert(finalizationCaptureRunId, 'Native capture identity is unavailable');
-      for (const [phase, value] of Object.entries(receipt.timingsMs))
+      for (const value of Object.values(receipt.timingsMs))
         assert(
-          typeof value === 'number' &&
-            Number.isFinite(value) &&
-            // The Android Detox camera attempt only reuses a qualified APK pair.
-            (phase === 'build' && executionAdapter === 'android-detox-camera'
-              ? value >= 0
-              : value > 0),
+          typeof value === 'number' && Number.isFinite(value) && value > 0,
           'Actual native phase timing is unavailable',
         );
       const assertionBindings =
@@ -2544,412 +1856,7 @@ async function main() {
       let stagedArtifacts: string[] = [];
       let stagedCopyManifest: { path: string; sha256: string } | undefined;
       let androidCameraSourceOnly = false;
-      let androidDetoxCameraSourceOnly = false;
-      let androidDetoxCameraVerified = false;
-      let iosDetoxSourceOnly = false;
-      let iosDetoxTrainingSourceOnly = false;
-      const iosDetoxTrainingFinalizationDispatch =
-        executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH
-          ? await loadIosDetoxTrainingPublicDispatch()
-          : undefined;
-      let iosDetoxTrainingPublicFinalization:
-        | ReturnType<
-            typeof IosDetoxTrainingPublicDispatch.selectVerifiedIosDetoxTrainingPublicFinalization
-          >
-        | undefined;
-      let androidDetoxSourceOnly = false;
-      let androidDetoxSessionOuterLifecycleCandidate: Awaited<
-        ReturnType<typeof reconcileT15AndroidDetoxSessionOuterReceipt>
-      > | null = null;
-      let androidDetoxSessionStaged:
-        Awaited<ReturnType<typeof stageAndroidDetoxSessionPublicEvidence>> | undefined;
-      if (executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH) {
-        assert('detoxBridgeResult' in runtime, 'iOS Detox bridge result is unavailable');
-        assert('detoxBuild' in runtime, 'iOS Detox qualified build is unavailable');
-        const iosDetoxRuntime =
-          runtime as IosDetoxConnectionPublicDispatch.DetoxNativePilotAttemptResult;
-        iosDetoxRuntimeDispatch = await runIosDetoxConnectionRuntimeForOuterTerminal({
-          attempt: iosDetoxRuntime,
-          repositoryRoot: root,
-          serverRoot: serverRoot!,
-          outputRoot: output,
-          requestedRunId: runId,
-          requestedAttemptId: iosDetoxRuntime.requestedAttemptId,
-          selection: selected,
-          signal: controller.signal,
-          deadlineMs: deadlines.stepMs,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-          buildRunId: reuseBuildRunId!,
-          parentEnv: process.env,
-        });
-        if (iosDetoxRuntimeDispatch.status === 'verified-private') {
-          const verification = iosDetoxRuntimeDispatch.verification;
-          assert(verification, 'Verified iOS Detox runtime result is missing its ledger');
-          const staged = verification.staged;
-          assert.equal(path.resolve(staged.outputRoot), path.resolve(output));
-          stagedAssertions = verification.assertionBindings.map((binding) => ({
-            id: binding.id,
-            requirementRefs: [...binding.requirementRefs],
-            outcome: 'passed' as const,
-            evidencePaths: [...binding.evidencePaths],
-          }));
-          stagedArtifacts = [
-            path.relative(
-              output,
-              path.join(staged.outputRoot, 'detox-connection-evidence-copy.private.json'),
-            ),
-            ...staged.manifest.files.map((file) =>
-              path.relative(staged.outputRoot, path.join(staged.outputRoot, file.name)),
-            ),
-          ];
-        } else {
-          if (iosDetoxRuntimeDispatch.status === 'blocked')
-            iosDetoxRuntimeFailure = iosDetoxRuntimeDispatch.blocker;
-          const stagingOutputRoot = path.join(
-            path.dirname(output),
-            `${path.basename(output)}-detox-public`,
-          );
-          const stagingLifecycle = {
-            signal: controller.signal,
-            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-          };
-          const stagedDetox = await stageIosDetoxConnectionPublicEvidence({
-            repositoryRoot: root,
-            captureRoot: runtime.artifactRoot,
-            outputRoot: stagingOutputRoot,
-            requestedRunId: runId,
-            requestedAttemptId: runtime.requestedAttemptId,
-            selection: selected,
-            bridgeResult: runtime.detoxBridgeResult as Parameters<
-              typeof stageIosDetoxConnectionPublicEvidence
-            >[0]['bridgeResult'],
-            build: runtime.detoxBuild,
-            lifecycle: stagingLifecycle,
-          });
-          await verifyStagedIosDetoxConnectionPublicEvidence({
-            repositoryRoot: root,
-            captureRoot: runtime.artifactRoot,
-            outputRoot: stagedDetox.outputRoot,
-            requestedRunId: runId,
-            requestedAttemptId: runtime.requestedAttemptId,
-            selection: selected,
-            bridgeResult: runtime.detoxBridgeResult as Parameters<
-              typeof verifyStagedIosDetoxConnectionPublicEvidence
-            >[0]['bridgeResult'],
-            build: runtime.detoxBuild,
-            lifecycle: stagingLifecycle,
-            copyManifest: stagedDetox.manifest,
-          });
-          await writeNativePilotPrivateFile({
-            root: output,
-            relative: 'detox-staging-link.private.json',
-            contents: JSON.stringify({
-              kind: 'private iOS Detox staging link; not public receipt',
-              requestedRunId: runId,
-              requestedAttemptId: runtime.requestedAttemptId,
-              captureRoot: runtime.artifactRoot,
-              stagingOutputRoot: stagedDetox.outputRoot,
-              manifestPath: stagedDetox.manifestPath,
-              runtimeDispatch: iosDetoxRuntimeDispatch,
-              manifest: {
-                kind: stagedDetox.manifest.kind,
-                files: stagedDetox.manifest.files,
-                nativePassingCases: stagedDetox.manifest.nativePassingCases,
-                publicPromotionEligible: stagedDetox.manifest.publicPromotionEligible,
-              },
-            }),
-            namespaceIdentity: preparedInvocation.namespaceIdentity,
-            signal: controller.signal,
-            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-          });
-          stagedArtifacts = ['detox-staging-link.private.json'];
-          iosDetoxSourceOnly = true;
-        }
-      } else if (executionAdapter === 'ios-detox-session') {
-        const detoxRuntime =
-          runtime as IosDetoxSessionNativePilotRoute.IosDetoxSessionNativePilotAttempt;
-        const report = JSON.parse(
-          readNativeEvidence(
-            detoxRuntime.artifactRoot,
-            'detox-integrated-session-baseline.private.json',
-            true,
-          ).toString('utf8'),
-        ) as DetoxBaselineReport;
-        const stagedOutputIdentity = preparedInvocation.namespaceIdentity.output.entries.at(-1);
-        assert(stagedOutputIdentity, 'iOS Detox session output identity is unavailable');
-        const stagedDetoxSession = await stageDetoxSessionPublicEvidence({
-          captureRoot: detoxRuntime.artifactRoot,
-          outputRoot: output,
-          requestedRunId: runId,
-          requestedAttemptId: detoxRuntime.requestedAttemptId,
-          selection: selected,
-          report,
-          adapter: detoxRuntime as unknown as IosDetoxSessionPublicAdapterResult,
-          expectedOutputRootIdentity: {
-            dev: stagedOutputIdentity.dev,
-            ino: stagedOutputIdentity.ino,
-            uid: stagedOutputIdentity.uid,
-            gid: stagedOutputIdentity.gid,
-            mode: stagedOutputIdentity.mode,
-          },
-          lifecycle: {
-            signal: controller.signal,
-            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-          },
-        });
-        stagedAssertions = stagedDetoxSession.assertions.map((assertion) => ({
-          id: assertion.id,
-          requirementRefs: [...assertion.requirementRefs],
-          outcome: assertion.outcome,
-          evidencePaths: [...assertion.evidencePaths],
-        }));
-        stagedArtifacts = [...stagedDetoxSession.artifacts];
-        stagedCopyManifest = stagedDetoxSession.copyManifest;
-      } else if (executionAdapter === 'android-detox-session') {
-        const detoxRuntime = runtime as AndroidDetoxSessionNativePilotAttempt;
-        const report = JSON.parse(
-          readNativeEvidence(
-            detoxRuntime.artifactRoot,
-            'detox-integrated-session-baseline.private.json',
-            true,
-          ).toString('utf8'),
-        ) as DetoxBaselineReport;
-        const stagingOutputRoot = path.join(
-          path.dirname(output),
-          `${path.basename(output)}-detox-android-session-public`,
-        );
-        const stagingLifecycle = {
-          signal: controller.signal,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-        };
-        androidDetoxSessionStaged = await stageAndroidDetoxSessionPublicEvidence({
-          captureRoot: detoxRuntime.artifactRoot,
-          outputRoot: stagingOutputRoot,
-          requestedRunId: runId,
-          requestedAttemptId: detoxRuntime.requestedAttemptId,
-          selection: selected,
-          report,
-          adapter: detoxRuntime as unknown as AndroidDetoxSessionPublicAdapterResult,
-          lifecycle: stagingLifecycle,
-        });
-        stagedAssertions = androidDetoxSessionStaged.assertions.map((assertion) => ({
-          id: assertion.id,
-          requirementRefs: [...assertion.requirementRefs],
-          outcome: assertion.outcome,
-          evidencePaths: [...assertion.evidencePaths],
-        }));
-        stagedCopyManifest = androidDetoxSessionStaged.copyManifest;
-        await writeNativePilotPrivateFile({
-          root: output,
-          relative: 'detox-android-session-staging-link.private.json',
-          contents: JSON.stringify({
-            kind: 'private Android Detox session staging link; not public receipt',
-            requestedRunId: runId,
-            requestedAttemptId: detoxRuntime.requestedAttemptId,
-            captureRoot: detoxRuntime.artifactRoot,
-            stagingOutputRoot: androidDetoxSessionStaged.outputRoot,
-            manifestPath: androidDetoxSessionStaged.manifestPath,
-            outputIdentity: androidDetoxSessionStaged.outputIdentity,
-            manifest: {
-              kind: androidDetoxSessionStaged.manifest.kind,
-              files: androidDetoxSessionStaged.manifest.files,
-              nativePassingCases: androidDetoxSessionStaged.manifest.nativePassingCases,
-              publicPromotionEligible: androidDetoxSessionStaged.manifest.publicPromotionEligible,
-            },
-          }),
-          namespaceIdentity: preparedInvocation.namespaceIdentity,
-          signal: controller.signal,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-        });
-        await writeNativePilotPrivateFile({
-          root: output,
-          relative: 'detox-android-session-lifecycle-normalization.private.json',
-          contents: JSON.stringify({
-            kind: 'private Android Detox session split-identity lifecycle normalization; not public receipt',
-            requestedRunId: runId,
-            requestedAttemptId: detoxRuntime.requestedAttemptId,
-            captureRunId: detoxRuntime.captureRunId,
-            resourceOwnerRunId: detoxRuntime.resourceOwnerRunId,
-            normalization: detoxRuntime.lifecycleNormalization,
-          }),
-          namespaceIdentity: preparedInvocation.namespaceIdentity,
-          signal: controller.signal,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-        });
-        stagedArtifacts = [
-          'detox-android-session-staging-link.private.json',
-          'detox-android-session-lifecycle-normalization.private.json',
-        ];
-        // Private fixture/source controls can satisfy every structural staging
-        // assertion while still lacking an executed Detox command. Keep that
-        // boundary explicit: a real completed owned command may reach the
-        // verified outer terminal, while source-only output remains blocked.
-        androidDetoxSessionOuterCandidateGateBlocked = shouldBlockAndroidDetoxSessionOuterTerminal({
-          nativeExecution: detoxRuntime.nativeExecution,
-          lifecycleNormalization: detoxRuntime.lifecycleNormalization,
-          publicReceiptBound: false,
-          sharedLifecycleStatus: 'blocked',
-        });
-        // Candidate validation records a blocked public binding, but it cannot
-        // classify a real native execution as source-only. The protected
-        // post-publication reread below owns the terminal decision.
-        androidDetoxSourceOnly = detoxRuntime.nativeExecution !== true;
-      } else if (executionAdapter === ANDROID_DETOX_CONNECTION_PUBLIC_DISPATCH) {
-        assert('detoxBridgeResult' in runtime, 'Android Detox bridge result is unavailable');
-        assert('detoxBuild' in runtime, 'Android Detox qualified build is unavailable');
-        const stagingOutputRoot = path.join(
-          path.dirname(output),
-          `${path.basename(output)}-detox-android-public`,
-        );
-        const stagingLifecycle = {
-          signal: controller.signal,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-        };
-        const stagedDetox = await stageAndroidDetoxConnectionPublicEvidence({
-          repositoryRoot: root,
-          captureRoot: runtime.artifactRoot,
-          outputRoot: stagingOutputRoot,
-          requestedRunId: runId,
-          requestedAttemptId: runtime.requestedAttemptId,
-          selection: selected,
-          bridgeResult: runtime.detoxBridgeResult as Parameters<
-            typeof stageAndroidDetoxConnectionPublicEvidence
-          >[0]['bridgeResult'],
-          build: runtime.detoxBuild,
-          lifecycle: stagingLifecycle,
-        });
-        await verifyStagedAndroidDetoxConnectionPublicEvidence({
-          repositoryRoot: root,
-          captureRoot: runtime.artifactRoot,
-          outputRoot: stagedDetox.outputRoot,
-          requestedRunId: runId,
-          requestedAttemptId: runtime.requestedAttemptId,
-          selection: selected,
-          bridgeResult: runtime.detoxBridgeResult as Parameters<
-            typeof verifyStagedAndroidDetoxConnectionPublicEvidence
-          >[0]['bridgeResult'],
-          build: runtime.detoxBuild,
-          lifecycle: stagingLifecycle,
-          copyManifest: stagedDetox.manifest,
-        });
-        await writeNativePilotPrivateFile({
-          root: output,
-          relative: 'detox-android-staging-link.private.json',
-          contents: JSON.stringify({
-            kind: 'private Android Detox staging link; not public receipt',
-            requestedRunId: runId,
-            requestedAttemptId: runtime.requestedAttemptId,
-            captureRoot: runtime.artifactRoot,
-            stagingOutputRoot: stagedDetox.outputRoot,
-            manifestPath: stagedDetox.manifestPath,
-            manifest: {
-              kind: stagedDetox.manifest.kind,
-              files: stagedDetox.manifest.files,
-              nativePassingCases: stagedDetox.manifest.nativePassingCases,
-              publicPromotionEligible: stagedDetox.manifest.publicPromotionEligible,
-            },
-          }),
-          namespaceIdentity: preparedInvocation.namespaceIdentity,
-          signal: controller.signal,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-        });
-        stagedArtifacts = ['detox-android-staging-link.private.json'];
-        androidDetoxSourceOnly = true;
-      } else if (executionAdapter === 'android-detox-camera') {
-        const detoxCameraRuntime = runtime as AndroidDetoxCameraNativePilotAttempt;
-        assert(detoxCameraRuntime.cameraStage, 'Android Detox camera stage is unavailable');
-        assert(detoxCameraRuntime.fixtureHash, 'Android Detox camera fixture hash is unavailable');
-        assert(detoxCameraRuntime.flagsHash, 'Android Detox camera flags hash is unavailable');
-        assert(
-          typeof detoxCameraRuntime.toolVersions.detox === 'string' &&
-            detoxCameraRuntime.toolVersions.detox.length > 0,
-          'Android Detox camera Detox version is unavailable',
-        );
-        assert.equal(
-          detoxCameraRuntime.assertionContractSha256,
-          selected.scenario.pilotAssertionContract?.sha256,
-          'Android Detox camera assertion contract is not bound to the selected declaration',
-        );
-        assert.equal(
-          detoxCameraRuntime.deadlineAtMonotonicMs,
-          runStarted + deadlines.wholeRunMs,
-          'Android Detox camera caller deadline was changed before terminal verification',
-        );
-        assert.equal(
-          detoxCameraRuntime.backendRunId,
-          detoxCameraRuntime.cameraProducer?.backendRunId,
-          'Android Detox camera backend run identity is not producer-bound',
-        );
-        assert.equal(
-          detoxCameraRuntime.buildIdentity.sourceTreeHash,
-          detoxCameraRuntime.cameraProducer?.sourceTreeHash,
-          'Android Detox camera source identity is not producer-bound',
-        );
-        assert.equal(
-          detoxCameraRuntime.buildIdentity.helperInputsHash,
-          detoxCameraRuntime.cameraProducer?.helperInputsHash,
-          'Android Detox camera helper identity is not producer-bound',
-        );
-        assert.equal(
-          detoxCameraRuntime.buildIdentity.appId,
-          detoxCameraRuntime.target.appId,
-          'Android Detox camera app identity is not target-bound',
-        );
-        assert.equal(
-          detoxCameraRuntime.buildIdentity.buildProfile,
-          detoxCameraRuntime.target.buildProfile,
-          'Android Detox camera build profile is not target-bound',
-        );
-        assert.equal(
-          detoxCameraRuntime.buildIdentity.apiOrigin,
-          detoxCameraRuntime.target.apiOrigin,
-          'Android Detox camera API origin is not target-bound',
-        );
-        assert(
-          typeof detoxCameraRuntime.target.osVersion === 'string' &&
-            detoxCameraRuntime.target.osVersion.length > 0,
-          'Android Detox camera OS version is unavailable',
-        );
-        assert.equal(
-          detoxCameraRuntime.buildIdentity.binaryHash,
-          detoxCameraRuntime.target.binaryHash,
-          'Android Detox camera build and target binary identities differ',
-        );
-        for (const [phase, elapsed] of Object.entries(detoxCameraRuntime.timingsMs)) {
-          // The camera attempt reuses a qualified APK pair, so its build phase is 0.
-          assert(
-            Number.isFinite(elapsed) && (phase === 'build' ? elapsed >= 0 : elapsed > 0),
-            `Android Detox camera ${phase} timing is unavailable at terminal verification`,
-          );
-        }
-        stagedAssertions = [];
-        stagedArtifacts = [detoxCameraRuntime.cameraStage.manifestPath];
-        if (detoxCameraRuntime.nativeFinalization) {
-          assert.equal(detoxCameraRuntime.verificationResult, 'verified-native');
-          assert.equal(detoxCameraRuntime.nativePassingCases, 4);
-          assert.equal(detoxCameraRuntime.publicPassingCases, 4);
-          assert.equal(detoxCameraRuntime.publicPromotionEligible, true);
-          stagedAssertions = detoxCameraRuntime.cameraStage.assertionBindings.map((binding) => ({
-            id: binding.id,
-            requirementRefs: [
-              ...(selected.scenario.pilotAssertions?.find((row) => row.id === binding.id)
-                ?.requirementRefs ??
-                assert.fail(`Android Detox camera requirement refs missing for ${binding.id}`)),
-            ],
-            outcome: 'passed' as const,
-            evidencePaths: [...binding.evidencePaths],
-          }));
-          stagedArtifacts.push(
-            detoxCameraRuntime.nativeFinalization.receipt.path ||
-              ANDROID_DETOX_CAMERA_FINALIZER_RECEIPT_PATH,
-          );
-          androidDetoxCameraVerified = true;
-        } else {
-          assert.equal(detoxCameraRuntime.verificationResult, 'source-only');
-          androidDetoxCameraSourceOnly = true;
-        }
-        stagedCopyManifest = undefined;
-      } else if (executionAdapter === 'ios-session') {
+      if (executionAdapter === 'ios-session') {
         assert('publicFinalization' in runtime && runtime.publicFinalization);
         assert(
           'publicFinalizationInput' in runtime && runtime.publicFinalizationInput,
@@ -2981,67 +1888,6 @@ async function main() {
         // Staged artifacts were already attached when the receipt was built.
         stagedArtifacts = [];
         stagedCopyManifest = runtime.staged.copyManifest;
-      } else if (executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH) {
-        const cameraRuntime = runtime as Awaited<
-          ReturnType<typeof IosDetoxCameraPublicDispatch.runIosDetoxCameraAttemptForPublicDispatch>
-        >;
-        let cameraVerification: Awaited<
-          ReturnType<typeof verifyDetoxIosCameraPrivateEvidence>
-        > | null = null;
-        try {
-          cameraVerification = await verifyDetoxIosCameraPrivateEvidence({
-            result: cameraRuntime.detoxCameraResult,
-            runtimeFacts: cameraRuntime.runtimeFacts,
-            artifactRoot: cameraRuntime.artifactRoot,
-            outputRoot: output,
-            requestedRunId: runId,
-            requestedAttemptId: cameraRuntime.requestedAttemptId,
-            lifecycle: {
-              signal: controller.signal,
-              deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-            },
-          });
-          const assertionById = new Map(
-            (selected.scenario.pilotAssertions ?? []).map((assertion) => [assertion.id, assertion]),
-          );
-          stagedAssertions = cameraVerification.assertionBindings.map((binding) => {
-            const assertion = assertionById.get(binding.id);
-            assert(
-              assertion,
-              `Camera assertion ${binding.id} is absent from the selected inventory`,
-            );
-            return {
-              id: binding.id,
-              requirementRefs: [...assertion.requirementRefs],
-              outcome: 'passed' as const,
-              evidencePaths: [...binding.evidencePaths],
-            };
-          });
-          assert.equal(stagedAssertions.length, 4);
-          stagedArtifacts = [...cameraVerification.artifacts];
-        } catch {
-          iosDetoxCameraSourceOnly = true;
-        }
-        await writeNativePilotPrivateFile({
-          root: output,
-          relative: 'detox-camera-staging-link.private.json',
-          contents: JSON.stringify({
-            kind: 'private iOS Detox camera staging link; not public receipt',
-            requestedRunId: runId,
-            requestedAttemptId: runtime.requestedAttemptId,
-            captureRoot: runtime.artifactRoot,
-            reportPath: cameraVerification?.reportPath ?? null,
-            stagePath: cameraVerification?.stagePath ?? null,
-            terminalPath: cameraVerification?.terminalPath ?? null,
-            assertionIds: cameraVerification?.assertionBindings.map((binding) => binding.id) ?? [],
-            outerVerification: cameraVerification,
-            publicPromotionEligible: false,
-          }),
-          namespaceIdentity: preparedInvocation.namespaceIdentity,
-          signal: controller.signal,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-        });
-        stagedArtifacts = [...stagedArtifacts, 'detox-camera-staging-link.private.json'];
       } else if (executionAdapter === 'camera') {
         assert(runtime.fixtureRunId, 'Native camera fixture identity is unavailable');
         if (selected.arguments.platform === 'android') {
@@ -3111,13 +1957,6 @@ async function main() {
           selection: selected,
           bindings: writableAssertionBindings,
         };
-        if (executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH)
-          iosDetoxTrainingPublicFinalization =
-            'publicFinalization' in runtime
-              ? iosDetoxTrainingFinalizationDispatch!.selectVerifiedIosDetoxTrainingPublicFinalization(
-                  runtime as IosDetoxTrainingPublicDispatch.DetoxIosTrainingNativePilotAttemptResult,
-                )
-              : undefined;
         const staged =
           executionAdapter === 'connection'
             ? await stageNativeConnectionPublicEvidence({
@@ -3137,7 +1976,6 @@ async function main() {
                   })
                 : await stageNativeTrainingPublicEvidence({
                     ...stageOptions,
-                    publicFinalization: iosDetoxTrainingPublicFinalization,
                     lifecycle: {
                       signal: controller.signal,
                       deadlineAtMs: runStarted + deadlines.wholeRunMs,
@@ -3151,8 +1989,6 @@ async function main() {
         }));
         stagedArtifacts = [...staged.artifacts];
         stagedCopyManifest = staged.copyManifest;
-        if (executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH)
-          iosDetoxTrainingSourceOnly = iosDetoxTrainingPublicFinalization === undefined;
       }
       const finalSources = await readRepositorySources(root, controller.signal);
       assert.deepEqual(
@@ -3165,106 +2001,7 @@ async function main() {
         repositoryRootsBefore,
         'Native repository roots changed during finalization',
       );
-      if (executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH) {
-        assert(
-          iosDetoxRuntimeDispatch?.status === 'verified-private' || iosDetoxSourceOnly,
-          'iOS Detox runtime verification or source-only staging was not completed',
-        );
-      } else if (executionAdapter === IOS_DETOX_TRAINING_PUBLIC_DISPATCH) {
-        assert(
-          iosDetoxTrainingSourceOnly || iosDetoxTrainingPublicFinalization !== undefined,
-          'iOS Detox training staging did not produce a verified private or public outcome',
-        );
-      } else if (executionAdapter === ANDROID_DETOX_CONNECTION_PUBLIC_DISPATCH) {
-        assert(androidDetoxSourceOnly, 'Android Detox source-only staging was not completed');
-      } else if (executionAdapter === 'android-detox-camera') {
-        assert(
-          androidDetoxCameraSourceOnly || androidDetoxCameraVerified,
-          'Android Detox camera staging was not completed',
-        );
-      } else if (executionAdapter === 'android-detox-session') {
-        assert(androidDetoxSessionStaged, 'Android Detox session staging result is unavailable');
-        const verifiedManifest = await verifyStagedAndroidDetoxSessionEvidence({
-          outputRoot: androidDetoxSessionStaged.outputRoot,
-          outputIdentity: androidDetoxSessionStaged.outputIdentity,
-          copyManifest: androidDetoxSessionStaged.copyManifest,
-          requestedRunId: runId,
-          requestedAttemptId: runtime.requestedAttemptId,
-          selection: selected,
-          lifecycle: {
-            signal: controller.signal,
-            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-          },
-        });
-        const detoxRuntime = runtime as AndroidDetoxSessionNativePilotAttempt;
-        const verifiedReport = JSON.parse(
-          readNativeEvidence(
-            detoxRuntime.artifactRoot,
-            'detox-integrated-session-baseline.private.json',
-            true,
-          ).toString('utf8'),
-        ) as DetoxBaselineReport;
-        const terminalProof = buildAndroidDetoxSessionVerifiedTerminalProof({
-          requestedRunId: runId,
-          requestedAttemptId: runtime.requestedAttemptId,
-          selection: selected,
-          report: verifiedReport,
-          adapter: detoxRuntime as unknown as AndroidDetoxSessionPublicAdapterResult,
-          staged: androidDetoxSessionStaged,
-          verifiedManifest,
-        });
-        await writeNativePilotPrivateFile({
-          root: output,
-          relative: androidDetoxSessionVerifiedTerminalEvidenceName,
-          contents: terminalProof,
-          namespaceIdentity: preparedInvocation.namespaceIdentity,
-          signal: controller.signal,
-          deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-        });
-        stagedAssertions = mapAndroidDetoxSessionAssertionsToOuterTerminal({
-          assertions: androidDetoxSessionStaged.assertions,
-          terminalEvidencePath: androidDetoxSessionVerifiedTerminalEvidenceName,
-        });
-        const terminalAliases = [
-          ...new Set(
-            stagedAssertions
-              .flatMap((assertion) => assertion.evidencePaths)
-              .filter((relative) => relative !== androidDetoxSessionVerifiedTerminalEvidenceName),
-          ),
-        ];
-        for (const relative of terminalAliases)
-          await writeNativePilotPrivateFile({
-            root: output,
-            relative,
-            contents: terminalProof,
-            namespaceIdentity: preparedInvocation.namespaceIdentity,
-            signal: controller.signal,
-            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-          });
-        stagedArtifacts.push(androidDetoxSessionVerifiedTerminalEvidenceName, ...terminalAliases);
-      } else if (executionAdapter === 'ios-detox-session') {
-        assert(stagedCopyManifest, 'iOS Detox session public copy manifest is unavailable');
-        const stagedOutputIdentity = preparedInvocation.namespaceIdentity.output.entries.at(-1);
-        assert(stagedOutputIdentity, 'iOS Detox session output identity is unavailable');
-        await verifyStagedDetoxSessionEvidence({
-          outputRoot: output,
-          copyManifest: stagedCopyManifest,
-          requestedRunId: runId,
-          requestedAttemptId: runtime.requestedAttemptId,
-          selection: selected,
-          expectedOutputRootIdentity: {
-            dev: stagedOutputIdentity.dev,
-            ino: stagedOutputIdentity.ino,
-            uid: stagedOutputIdentity.uid,
-            gid: stagedOutputIdentity.gid,
-            mode: stagedOutputIdentity.mode,
-          },
-          lifecycle: {
-            signal: controller.signal,
-            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-          },
-        });
-      } else if (executionAdapter === 'ios-session') {
+      if (executionAdapter === 'ios-session') {
         assert(stagedCopyManifest, 'Native session public copy manifest is unavailable');
         await verifyNativeSessionPublicEvidence(
           {
@@ -3283,7 +2020,6 @@ async function main() {
         );
       } else if (
         executionAdapter !== 'camera' &&
-        executionAdapter !== IOS_DETOX_CAMERA_PUBLIC_DISPATCH &&
         // The adapter verified its staged copy before returning (verifyStage).
         executionAdapter !== 'android-session'
       ) {
@@ -3323,7 +2059,6 @@ async function main() {
           await verifyStagedNativeTrainingEvidence({
             ...verifyOptions,
             copyManifest: stagedCopyManifest!,
-            expectedPublicFinalization: iosDetoxTrainingPublicFinalization,
             lifecycle: {
               signal: controller.signal,
               deadlineAtMs: runStarted + deadlines.wholeRunMs,
@@ -3333,123 +2068,7 @@ async function main() {
       controller.signal.throwIfAborted();
       receipt.assertions = stagedAssertions;
       receipt.artifacts.push(...stagedArtifacts);
-      if (executionAdapter === 'android-detox-session' && runtime && selected) {
-        const detoxRuntime = runtime as AndroidDetoxSessionNativePilotAttempt;
-        if (detoxRuntime.nativeExecution) {
-          try {
-            androidDetoxSessionOuterLifecycleCandidate =
-              reconcileT15AndroidDetoxSessionOuterReceipt({
-                outputRoot: output,
-                requestedRunId: runId,
-                requestedAttemptId: detoxRuntime.requestedAttemptId,
-                selection: selected,
-                runtimeTarget,
-                expectedFixtureHash: detoxRuntime.fixtureHash,
-                expectedFlagsHash: detoxRuntime.flagsHash,
-                expectedToolVersions: detoxRuntime.toolVersions,
-                runtime: detoxRuntime,
-                candidateReceipt: {
-                  ...receipt,
-                  result: 'passed',
-                  exitCode: 0,
-                  blocker: null,
-                },
-              });
-          } catch {
-            androidDetoxSessionOuterLifecycleCandidate = null;
-          }
-        }
-        androidDetoxSessionOuterCandidateGateBlocked = shouldBlockAndroidDetoxSessionOuterTerminal({
-          nativeExecution: detoxRuntime.nativeExecution,
-          lifecycleNormalization:
-            androidDetoxSessionOuterLifecycleCandidate?.normalization ??
-            detoxRuntime.lifecycleNormalization,
-          publicReceiptBound:
-            androidDetoxSessionOuterLifecycleCandidate !== null &&
-            androidDetoxSessionOuterLifecycleCandidate.publicReceipt !== null,
-          sharedLifecycleStatus:
-            androidDetoxSessionOuterLifecycleCandidate?.sharedLifecycle.status ?? 'blocked',
-        });
-        // The candidate has no public receipt by design. Keep its blocked gate
-        // as private provenance and let the actual published reread decide
-        // whether this native execution can receive terminal credit.
-        androidDetoxSourceOnly = detoxRuntime.nativeExecution !== true;
-      }
-      if (iosDetoxRuntimeFailure) {
-        receipt.result = 'harness-blocked';
-        receipt.exitCode = 2;
-        receipt.blocker = {
-          code: 'runtime-verification-failed',
-          detail: `The producer supplied a runtime envelope but the protected outer verification boundary rejected it: ${iosDetoxRuntimeFailure.message}`,
-          owner: 'client/server maintainer',
-          nextAction:
-            'Retain the original producer receipts and repair the failing identity, transport, SQL, UI or cleanup binding before a fresh attempt.',
-        };
-      } else if (iosDetoxSourceOnly || iosDetoxCameraSourceOnly) {
-        receipt.result = 'harness-blocked';
-        receipt.exitCode = 2;
-        receipt.blocker = {
-          code: 'runtime-source-only',
-          detail: iosDetoxCameraSourceOnly
-            ? 'The owned iOS Detox camera dispatcher and protected private staging completed source-only; native/public promotion remains explicitly ineligible.'
-            : 'The owned iOS Detox connection dispatcher and protected private staging completed source-only; native/public promotion remains explicitly ineligible.',
-          owner: 'client/server maintainer',
-          nextAction: iosDetoxCameraSourceOnly
-            ? 'Run the declared iOS Detox camera cell and retain the actual device, build, API, SQL, transport, child, four assertion, and cleanup receipts before promotion.'
-            : 'Run the declared iOS Detox integrated connection cell and retain the actual device, build, API, SQL, transport, child, and cleanup receipts before promotion.',
-        };
-      } else if (iosDetoxTrainingSourceOnly) {
-        receipt.result = 'harness-blocked';
-        receipt.exitCode = 2;
-        receipt.blocker = {
-          code: 'runtime-source-only',
-          detail:
-            'The owned iOS Detox training dispatcher and protected private staging completed source-only; native/public promotion remains explicitly ineligible.',
-          owner: 'client/server maintainer',
-          nextAction:
-            'Run the declared iOS Detox training cell and retain the actual device, build, API, SQL, transport, child, staged-original and cleanup receipts before promotion.',
-        };
-      } else if (androidDetoxSourceOnly) {
-        receipt.result = 'harness-blocked';
-        receipt.exitCode = 2;
-        receipt.blocker = {
-          code: 'runtime-source-only',
-          detail:
-            executionAdapter === 'android-detox-session'
-              ? 'The owned Android Detox session dispatcher and protected private staging completed source-only; native/public promotion remains explicitly ineligible.'
-              : 'The owned Android Detox connection dispatcher and protected private staging completed source-only; native/public promotion remains explicitly ineligible.',
-          owner: 'client/server maintainer',
-          nextAction:
-            executionAdapter === 'android-detox-session'
-              ? 'Run the declared Android Detox session cell and retain the actual device, build, API, SQL, storage, transport, child, protected UI and cleanup receipts before promotion.'
-              : 'Run the declared Android Detox integrated connection cell and retain the actual device, build, API, SQL, transport, child, and cleanup receipts before promotion.',
-        };
-      } else if (
-        executionAdapter === 'android-detox-session' &&
-        androidDetoxSessionOuterCandidateGateBlocked
-      ) {
-        receipt.result = 'harness-blocked';
-        receipt.exitCode = 2;
-        receipt.blocker = {
-          code: 'android-detox-session-outer-receipt-pending',
-          detail:
-            'The private Android Detox session candidate passed structural staging but cannot receive terminal credit until the protected writer publishes and rereads receipt.json.',
-          owner: 'client/server maintainer',
-          nextAction:
-            'Retain the provisional blocked row and let the final protected public-receipt bridge decide promotion.',
-        };
-      } else if (androidDetoxCameraSourceOnly) {
-        receipt.result = 'harness-blocked';
-        receipt.exitCode = 2;
-        receipt.blocker = {
-          code: 'runtime-source-only',
-          detail:
-            'Android Detox camera producer and protected private staging checks passed source-only; native/public promotion remains explicitly ineligible.',
-          owner: 'client/server maintainer',
-          nextAction:
-            'Run the declared Android Detox camera cell and retain the exact device, child, build, API, SQL, transport, frame and cleanup receipts before promotion.',
-        };
-      } else if (androidCameraSourceOnly) {
+      if (androidCameraSourceOnly) {
         receipt.result = 'harness-blocked';
         receipt.exitCode = 2;
         receipt.blocker = {
@@ -3506,7 +2125,6 @@ async function main() {
         )
           receipt.artifacts.push(error.recoveryRecordPath);
       }
-      if (executionAdapter === IOS_DETOX_CAMERA_PUBLIC_DISPATCH) iosDetoxCameraSourceOnly = true;
       let rejectedCameraRecoveryPaths: readonly string[] = [];
       if (error instanceof AndroidCameraPublicStageError) {
         if (error.recoveryStatus === 'failed-recovery-ledger-retained')
@@ -3526,8 +2144,6 @@ async function main() {
         )
           receipt.cleanup.recoveryRecordPath = error.recoveryRecordPath;
       }
-      if (error instanceof AndroidDetoxSessionStagingError)
-        await attachAndroidDetoxSessionStagingRecovery(receipt, output, error);
       receipt.result = 'harness-blocked';
       receipt.exitCode = 2;
       receipt.assertions = [];
@@ -3535,13 +2151,8 @@ async function main() {
         code: 'runtime-finalization-failed',
         detail:
           error instanceof NativeTrainingPublicEvidenceStageError ||
-          error instanceof AndroidCameraPublicStageError ||
-          error instanceof AndroidDetoxSessionStagingError
-            ? `${error.message}${
-                error instanceof AndroidDetoxSessionStagingError
-                  ? ` Recovery publication=${error.recoveryPublication}; child lifecycle=${JSON.stringify(error.childLifecycle)}.`
-                  : ''
-              }`
+          error instanceof AndroidCameraPublicStageError
+            ? error.message
             : 'Current native identities, fingerprints, timings or staged proof did not satisfy final completion.',
         owner: 'client/server maintainer',
         nextAction:
@@ -3612,41 +2223,15 @@ async function main() {
   }
   receipt.finishedAt = new Date().toISOString();
   assertPublicReceipt(receipt, output);
-  const iosDetoxConnectionRuntimeDispatch =
-    executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH
-      ? await loadIosDetoxConnectionRuntimeDispatch()
-      : undefined;
-  const verifiedIosDetoxDispatch =
-    executionAdapter === IOS_DETOX_CONNECTION_PUBLIC_DISPATCH &&
-    iosDetoxRuntimeDispatch !== null &&
-    iosDetoxConnectionRuntimeDispatch!.shouldUseVerifiedIosDetoxTerminalPublisher({
-      dispatchStatus: iosDetoxRuntimeDispatch.status,
-      receiptResult: receipt.result,
-    })
-      ? iosDetoxRuntimeDispatch
-      : null;
-  const terminalPublication: NativePilotTerminalPublication =
-    verifiedIosDetoxDispatch !== null
-      ? await iosDetoxConnectionRuntimeDispatch!.publishVerifiedIosDetoxConnectionRuntimeForOuterTerminal(
-          {
-            dispatch: verifiedIosDetoxDispatch,
-            receipt,
-            outputRoot: output,
-            selection: selected!,
-            namespaceIdentity: preparedInvocation.namespaceIdentity,
-            signal: controller.signal,
-            deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-            recoveryDeadlineMs: 30_000,
-            publishTerminal: writeNativePilotTerminalReceipt,
-          },
-        )
-      : await writeNativePilotTerminalReceipt({
-          root: output,
-          receipt,
-          namespaceIdentity: preparedInvocation.namespaceIdentity,
-          callerSignal: controller.signal,
-          recoveryDeadlineMs: 30_000,
-        });
+  const terminalPublication: NativePilotTerminalPublication = await writeNativePilotTerminalReceipt(
+    {
+      root: output,
+      receipt,
+      namespaceIdentity: preparedInvocation.namespaceIdentity,
+      callerSignal: controller.signal,
+      recoveryDeadlineMs: 30_000,
+    },
+  );
   preflight.dispose();
   if (terminalPublication.status !== 'published') {
     process.stderr.write(
@@ -3654,154 +2239,6 @@ async function main() {
     );
     process.exitCode = 2;
     return;
-  }
-  if (
-    executionAdapter === 'android-detox-session' &&
-    runtime &&
-    selected &&
-    'resourceOwnerRunId' in runtime &&
-    'lifecycleNormalization' in runtime
-  ) {
-    const androidDetoxRuntime = runtime;
-    let outerReceiptBridge = reconcileT15AndroidDetoxSessionOuterReceipt({
-      outputRoot: output,
-      requestedRunId: runId,
-      requestedAttemptId: androidDetoxRuntime.requestedAttemptId,
-      selection: selected,
-      runtimeTarget,
-      expectedFixtureHash: androidDetoxRuntime.fixtureHash,
-      expectedFlagsHash: androidDetoxRuntime.flagsHash,
-      expectedToolVersions: androidDetoxRuntime.toolVersions,
-      runtime: androidDetoxRuntime,
-    });
-    const finalOuterGateBlocked =
-      outerReceiptBridge.status !== 'normalized' ||
-      shouldBlockAndroidDetoxSessionOuterTerminal({
-        nativeExecution: androidDetoxRuntime.nativeExecution,
-        lifecycleNormalization: outerReceiptBridge.normalization,
-        publicReceiptBound: outerReceiptBridge.publicReceipt != null,
-        sharedLifecycleStatus: outerReceiptBridge.sharedLifecycle.status,
-      });
-    const bridgeBlocked =
-      finalOuterGateBlocked &&
-      blockAndroidDetoxSessionOuterReceiptForBridgeFailure(receipt, outerReceiptBridge);
-    if (!finalOuterGateBlocked) {
-      const promoted = promoteAndroidDetoxSessionOuterReceiptAfterBridge(
-        receipt,
-        outerReceiptBridge,
-      );
-      if (promoted) {
-        receipt.finishedAt = new Date().toISOString();
-        assertPublicReceipt(receipt, output);
-        const promotion = await writeNativePilotTerminalReceipt({
-          root: output,
-          receipt,
-          namespaceIdentity: preparedInvocation.namespaceIdentity,
-          callerSignal: controller.signal,
-          recoveryDeadlineMs: 30_000,
-          replaceExisting: true,
-        });
-        if (promotion.status !== 'published') {
-          process.stderr.write(
-            `Native pilot promoted terminal replacement remained unverified${promotion.recoveryRecordPath ? `; recovery: ${promotion.recoveryRecordPath}` : ''}.\n`,
-          );
-          process.exitCode = 2;
-          return;
-        }
-        outerReceiptBridge = reconcileT15AndroidDetoxSessionOuterReceipt({
-          outputRoot: output,
-          requestedRunId: runId,
-          requestedAttemptId: androidDetoxRuntime.requestedAttemptId,
-          selection: selected,
-          runtimeTarget,
-          expectedFixtureHash: androidDetoxRuntime.fixtureHash,
-          expectedFlagsHash: androidDetoxRuntime.flagsHash,
-          expectedToolVersions: androidDetoxRuntime.toolVersions,
-          runtime: androidDetoxRuntime,
-        });
-        const rereadReceipt = outerReceiptBridge.publicReceipt?.receipt as
-          Record<string, unknown> | undefined;
-        assert.equal(
-          rereadReceipt?.result,
-          receipt.result,
-          'Android Detox passed bridge replacement did not persist its result',
-        );
-        assert.equal(
-          rereadReceipt?.exitCode,
-          receipt.exitCode,
-          'Android Detox passed bridge replacement did not persist its exit code',
-        );
-      }
-    }
-    if (bridgeBlocked) {
-      // The first receipt was only a provisional terminal row. Once the
-      // protected reread proves that the bridge is blocked, rewrite the same
-      // receipt through the anchored replacement path so the durable result
-      // and exit code cannot retain a false pass.
-      receipt.finishedAt = new Date().toISOString();
-      assertPublicReceipt(receipt, output);
-      const replacement = await writeNativePilotTerminalReceipt({
-        root: output,
-        receipt,
-        namespaceIdentity: preparedInvocation.namespaceIdentity,
-        callerSignal: controller.signal,
-        recoveryDeadlineMs: 30_000,
-        replaceExisting: true,
-      });
-      if (replacement.status !== 'published') {
-        process.stderr.write(
-          `Native pilot blocked terminal replacement remained unverified${replacement.recoveryRecordPath ? `; recovery: ${replacement.recoveryRecordPath}` : ''}.\n`,
-        );
-        preflight.dispose();
-        process.exitCode = 2;
-        return;
-      }
-      outerReceiptBridge = reconcileT15AndroidDetoxSessionOuterReceipt({
-        outputRoot: output,
-        requestedRunId: runId,
-        requestedAttemptId: androidDetoxRuntime.requestedAttemptId,
-        selection: selected,
-        runtimeTarget,
-        expectedFixtureHash: androidDetoxRuntime.fixtureHash,
-        expectedFlagsHash: androidDetoxRuntime.flagsHash,
-        expectedToolVersions: androidDetoxRuntime.toolVersions,
-        runtime: androidDetoxRuntime,
-      });
-      const rereadReceipt = outerReceiptBridge.publicReceipt?.receipt as
-        Record<string, unknown> | undefined;
-      assert.equal(
-        rereadReceipt?.result,
-        receipt.result,
-        'Android Detox blocked bridge replacement did not persist its result',
-      );
-      assert.equal(
-        rereadReceipt?.exitCode,
-        receipt.exitCode,
-        'Android Detox blocked bridge replacement did not persist its exit code',
-      );
-    }
-    await writeNativePilotPrivateFile({
-      root: output,
-      relative: 'detox-android-session-public-receipt-bridge.private.json',
-      contents: JSON.stringify({
-        kind: 'private Android Detox session outer-public-receipt bridge; not public receipt',
-        status: outerReceiptBridge.status,
-        receiptPath: outerReceiptBridge.receiptPath,
-        receiptHash: outerReceiptBridge.receiptHash,
-        receiptIdentity: outerReceiptBridge.receiptIdentity,
-        normalization: outerReceiptBridge.normalization,
-        sharedLifecycle: outerReceiptBridge.sharedLifecycle,
-        blockers: outerReceiptBridge.blockers,
-        candidateGateBlocked: androidDetoxSessionOuterCandidateGateBlocked,
-        finalOuterGateBlocked,
-        nativePassingCases: 0,
-        publicPassingCases: 0,
-        coldQualifiedAttempts: 0,
-      }),
-      namespaceIdentity: preparedInvocation.namespaceIdentity,
-      signal: controller.signal,
-      deadlineAtMonotonicMs: runStarted + deadlines.wholeRunMs,
-    });
   }
   process.stdout.write(
     `Native pilot ${receipt.result} (${receipt.blocker?.code ?? 'complete'}); receipt: ${path.join(output, 'receipt.json')}\n`,
