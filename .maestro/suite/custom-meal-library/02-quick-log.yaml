@@ -29,9 +29,9 @@ tags: [nutrition]
     id: meal.library.quickLog.input
     text: "150"
 - runFlow:
-    file: ../common/dismiss-keyboard.yaml
+    file: ../common/hide-keyboard.yaml
     env:
-      KEYBOARD_DONE_ID: meal.library.quickLog.keyboard.done
+      IOS_KEYBOARD: done
 - tapOn:
     id: meal.library.quickLog.cta.confirm
 - extendedWaitUntil:

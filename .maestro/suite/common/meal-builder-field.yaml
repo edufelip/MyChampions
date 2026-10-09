@@ -8,7 +8,4 @@ appId: com.edufelip.mychampions.dev
 - tapOn:
     id: meal.builder.field.${FIELD}.input
 - inputText: ${VALUE}
-- runFlow:
-    file: dismiss-keyboard.yaml
-    env:
-      KEYBOARD_DONE_ID: meal.builder.keyboard.done
+- runFlow: hide-keyboard.yaml

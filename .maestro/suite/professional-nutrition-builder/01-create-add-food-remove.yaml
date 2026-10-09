@@ -58,8 +58,15 @@ tags: [nutrition]
     visible:
       id: pro.nutrition_plan.addMeal.input
     timeout: 5000
-- tapOn:
-    id: pro.nutrition_plan.addMeal.input
+# The input is auto-focused. On iOS the inline form stays behind the keyboard
+# (recorded product finding), so a tap on it would hit a key: type directly and
+# close the keyboard with Enter, which only blurs this field.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: pro.nutrition_plan.addMeal.input
 - inputText: Breakfast
 - assertVisible:
     id: pro.nutrition_plan.addMeal.input
@@ -67,7 +74,7 @@ tags: [nutrition]
 - runFlow:
     file: ../common/hide-keyboard.yaml
     env:
-      IOS_KEYBOARD: none
+      IOS_KEYBOARD: enter
 - scrollUntilVisible:
     element:
       id: pro.nutrition_plan.addMeal.confirm

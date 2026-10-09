@@ -34,7 +34,8 @@ tags: [support]
 - runFlow:
     file: ../common/hide-keyboard.yaml
     env:
-      IOS_KEYBOARD: none
+      IOS_KEYBOARD: tap
+      TAP_ID: settings.account.support.dialog.title
 - tapOn:
     id: settings.account.support.submitCta
 - extendedWaitUntil:

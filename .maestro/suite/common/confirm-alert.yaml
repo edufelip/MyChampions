@@ -1,5 +1,6 @@
-# Tap the BUTTON action of a native alert whose title has the same text.
-# iOS exposes the title first, so the button is the second match there.
+# Tap the BUTTON action of a native two-button alert (BUTTON beside Cancel).
+# On iOS the title, the alert body and other controls (e.g. a trash icon
+# labelled "Delete") can share the text, so pick the match right of Cancel.
 appId: com.edufelip.mychampions.dev
 ---
 - extendedWaitUntil:
@@ -12,7 +13,7 @@ appId: com.edufelip.mychampions.dev
     commands:
       - tapOn:
           text: ${BUTTON}
-          index: 1
+          rightOf: "^Cancel$"
 - runFlow:
     when:
       platform: Android

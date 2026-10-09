@@ -82,7 +82,7 @@ if [[ "$platform" == "ios" ]]; then
   # Password AutoFill clears typed create-account passwords and breaks
   # hierarchy reads on password screens; switch it off (idempotent).
   maestro_bin="$(bash "$project_root/scripts/testing/install-maestro.sh")"
-  "$maestro_bin" --device "$udid" test "$project_root/.maestro/setup/ios-disable-password-autofill.yaml" >/dev/null
+  "$maestro_bin" --device "$udid" test "$project_root/.maestro/setup/ios-disable-password-autofill.yaml" >&2
   echo "Password AutoFill is off on simulator $udid."
   xcrun simctl install "$udid" "$app"
   echo "Installed $(basename "$app") on simulator $udid."

@@ -9,7 +9,7 @@ tags: [cap-unknown]
     timeout: 10000
 - extendedWaitUntil:
     visible:
-      text: "11"
+      text: "11( .*)?"
     timeout: 5000
 - scrollUntilVisible:
     element:

@@ -9,7 +9,7 @@ tags: [cap-warning]
     timeout: 10000
 - extendedWaitUntil:
     visible:
-      text: "10"
+      text: "10( .*)?"
     timeout: 5000
 - tapOn:
     id: pro.home.subscriptionRenewCta

@@ -72,18 +72,30 @@ tags: [training]
     visible:
       id: pro.training_plan.addSession.name
     timeout: 5000
-- tapOn:
-    id: pro.training_plan.addSession.name
-- inputText: Push Day
-- tapOn:
-    id: pro.training_plan.addSession.notes
-- inputText: Upper body focus
+# On iOS the inline form stays behind the keyboard (recorded product finding),
+# so taps there would hit keys. Use the form's keyboard path instead: the name
+# is auto-focused, Enter moves to notes, and Enter in notes adds the session.
 - runFlow:
-    file: ../common/hide-keyboard.yaml
-    env:
-      IOS_KEYBOARD: none
-- tapOn:
-    id: pro.training_plan.addSession.confirm
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: pro.training_plan.addSession.name
+      - inputText: Push Day
+      - tapOn:
+          id: pro.training_plan.addSession.notes
+      - inputText: Upper body focus
+      - hideKeyboard
+      - tapOn:
+          id: pro.training_plan.addSession.confirm
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - inputText: Push Day
+      - pressKey: Enter
+      - inputText: Upper body focus
+      - pressKey: Enter
 - extendedWaitUntil:
     visible:
       id: pro.training_plan.sessionRow.Push_Day
@@ -94,8 +106,15 @@ tags: [training]
     visible:
       id: exerciseSearch.modal
     timeout: 5000
-- tapOn:
-    id: exerciseSearch.input
+# The search input is auto-focused. On iOS the keyboard pushes the sheet's
+# header (title and input) off-screen (recorded product finding), so type
+# without tapping and close the keyboard with Enter (it dismisses it).
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: exerciseSearch.input
 - inputText: push
 - extendedWaitUntil:
     visible:
@@ -104,7 +123,7 @@ tags: [training]
 - runFlow:
     file: ../common/hide-keyboard.yaml
     env:
-      IOS_KEYBOARD: none
+      IOS_KEYBOARD: enter
 - tapOn:
     id: exerciseSearch.result.e2e-exercise-push-up
 - extendedWaitUntil:
@@ -121,7 +140,7 @@ tags: [training]
 - runFlow:
     file: ../common/hide-keyboard.yaml
     env:
-      IOS_KEYBOARD: none
+      IOS_KEYBOARD: enter
 - scrollUntilVisible:
     element:
       id: exerciseSearch.confirm
