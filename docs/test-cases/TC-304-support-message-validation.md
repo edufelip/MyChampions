@@ -108,3 +108,8 @@ change its expectation merely to make automation pass.
   - Then: After spring-back settles, the sheet stays open without clearing either field.
   - When: Finally, the user deliberately drags the handle downward past the dismissal threshold.
   - Then: The sheet dismisses without console errors or uncaught page errors.
+
+- `TC-304.15`: **Native Sheet Above The Keyboard (iOS and Android edge-to-edge)**
+  - Given: The authenticated Student opens the support sheet on an iOS simulator or an Android 15+ emulator (edge-to-edge, where `adjustResize` no longer resizes the window).
+  - When: The user types a subject, then taps the Message field while the keyboard is still open and types a message.
+  - Then: The sheet sits above the keyboard and below the top safe area: the title stays on screen and the Message field shows the typed text while the keyboard is open (`.maestro/suite/support-request/01-validate-and-submit.yaml`, screenshot `support-message-keyboard-open`; `tests/component/support-modal.test.tsx` checks the lift and the height cap).

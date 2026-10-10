@@ -68,15 +68,32 @@ tags: [training]
     direction: DOWN
 - tapOn:
     id: pro.training_plan.addSession
-# The inline form stays behind the keyboard (recorded product finding), so taps
-# there would hit keys. Use the form's keyboard path: the name is auto-focused,
-# Enter moves to notes, and Enter in notes adds the session.
+# The session name opens focused and the form scrolls above the keyboard, so
+# its fields and Add session button are tapped while the keyboard stays open:
+# a control left behind the keyboard would take a key press instead.
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.addSession.form
+    timeout: 5000
 - waitForAnimationToEnd:
     timeout: 3000
+- tapOn:
+    id: pro.training_plan.addSession.name
 - inputText: Push Day
-- pressKey: Enter
+- tapOn:
+    id: pro.training_plan.addSession.notes
 - inputText: Upper body focus
-- pressKey: Enter
+- assertVisible:
+    id: pro.training_plan.addSession.name
+    text: Push Day
+- assertVisible:
+    id: pro.training_plan.addSession.notes
+    text: Upper body focus
+- assertVisible:
+    id: pro.training_plan.addSession.cancel
+- takeScreenshot: add-session-keyboard-open
+- tapOn:
+    id: pro.training_plan.addSession.confirm
 - extendedWaitUntil:
     visible:
       id: pro.training_plan.sessionRow.Push_Day
@@ -87,24 +104,24 @@ tags: [training]
     visible:
       id: exerciseSearch.modal
     timeout: 5000
-# The search input is auto-focused. On iOS the keyboard pushes the sheet's
-# header (title and input) off-screen (recorded product finding), so type
-# without tapping and close the keyboard with Enter (it dismisses it).
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - tapOn:
-          id: exerciseSearch.input
+# The search input opens focused. The sheet stays between the top safe area
+# and the keyboard, so its title and search box stay on screen while typing
+# and the result is tapped with the keyboard still open.
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: exerciseSearch.input
 - inputText: push
 - extendedWaitUntil:
     visible:
       id: exerciseSearch.result.e2e-exercise-push-up
     timeout: 10000
-- runFlow:
-    file: ../common/hide-keyboard.yaml
-    env:
-      IOS_KEYBOARD: enter
+- assertVisible:
+    id: exerciseSearch.title
+- assertVisible:
+    id: exerciseSearch.input
+    text: push
+- takeScreenshot: exercise-search-keyboard-open
 - tapOn:
     id: exerciseSearch.result.e2e-exercise-push-up
 - extendedWaitUntil:
@@ -161,7 +178,7 @@ tags: [training]
     file: ../common/confirm-alert.yaml
     env:
       BUTTON: Delete
-      MESSAGE: "This action cannot be undone\\..*"
+      MESSAGE: "Remove E2E Push-Up from this session\\?"
 - extendedWaitUntil:
     notVisible:
       id: pro.training_plan.itemRow.E2E_Push-Up

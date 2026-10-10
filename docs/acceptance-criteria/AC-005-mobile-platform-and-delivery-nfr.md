@@ -51,8 +51,8 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   preserve warning diagnostics without allowing the development LogBox overlay
   to intercept Maestro actions, and tests bring compact-viewport targets into view
   before interaction. The SC-215 quick-log story uses atomic grams replacement,
-  an exact-value assertion, explicit platform keyboard dismissal, and stable
-  element targets. The Android job starts with no stale device, QEMU process, or
+  an exact-value assertion with the keyboard open, and stable element targets.
+  The Android job starts with no stale device, QEMU process, or
   `5554/5555` listener; preboots the declared AVD on `emulator-5554`; requires
   the saved PID, runner UID, Linux start time, expected AVD/port command, exact
   device state, completed boot, and AVD name within 120 seconds; and fails if
@@ -149,6 +149,16 @@ Mobile platform constraints and delivery workflow without EAS dependency.
   never approving fork or untrusted workflow changes. Adding a collaborator or
   approving external workflow changes requires pausing the runners until a
   private broker, JIT, or ephemeral-runner boundary is in place.
+- `AC-543`: The software keyboard never hides the field being typed into or
+  its form actions. On iOS and on Android edge-to-edge (Android 15+, where
+  `adjustResize` no longer resizes the window), inline forms, bottom sheets,
+  and bottom panels that take text — SC-207 add meal, SC-208 add session and
+  exercise search, SC-213 support sheet, SC-215 quick log — keep the focused
+  field and its primary actions visible above the keyboard, keep sheet headers
+  below the top safe area, and accept taps on their buttons with the keyboard
+  open. The behavior uses React Native built-ins driven by keyboard metrics
+  (`DsScreen keyboardAware`, `useDsKeyboardOverlap`), with no native keyboard
+  dependency.
 
 ## Gherkin Scenarios
 
@@ -231,6 +241,12 @@ Feature: Mobile platform and delivery constraints
     Then feature A and its reverse dependents are selected
     And unrelated feature B suites are excluded
     And the selected Maestro suites run on iOS and Android
+
+  Scenario: Typing never happens behind the keyboard
+    Given a coach opens the add-meal form on an iOS or Android 15+ device
+    When the meal name field opens focused and the keyboard appears
+    Then the field and its Cancel and Add buttons are visible above the keyboard
+    And tapping Add with the keyboard open adds the meal
 
   Scenario: Shared changes fail closed
     Given a pull request changes navigation, localization, native configuration, or CI tooling

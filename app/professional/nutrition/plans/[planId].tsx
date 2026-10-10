@@ -22,6 +22,7 @@ import { PlanChangeRequestCard } from '@/components/ds/patterns/PlanChangeReques
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { useDsKeyboardTarget } from '@/components/ds/primitives/useDsKeyboard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -203,6 +204,8 @@ export default function NutritionPlanBuilderScreen() {
   >({ kind: 'closed' });
   const [isSortMode, setIsSortMode] = useState(false);
   const [showGuidance, hideGuidance] = usePersistentGuidance('guidance.nutrition_builder');
+  // The add-meal form (input + Add/Cancel) stays above the keyboard.
+  const addMealKeyboardTarget = useDsKeyboardTarget();
   const [isDeletingPlan, setIsDeletingPlan] = useState(false);
   const [shouldNavigateAfterDelete, setShouldNavigateAfterDelete] = useState(false);
   const isMutating = state.kind === 'ready' && Boolean(state.isMutating);
@@ -304,7 +307,7 @@ export default function NutritionPlanBuilderScreen() {
       const meal = state.plan.meals.find((m) => m.id === mealId);
       const mealName = meal?.name || t('pro.plan.section.meals');
 
-      Alert.alert(t('common.cta.delete'), t('pro.plan.delete.body').replace('{name}', mealName), [
+      Alert.alert(t('common.cta.delete'), t('pro.plan.meal.delete.body', { name: mealName }), [
         { text: t('common.cta.cancel'), style: 'cancel' },
         {
           text: t('common.cta.delete'),
@@ -420,6 +423,7 @@ export default function NutritionPlanBuilderScreen() {
       scheme={scheme}
       contentWidth="content"
       contentContainerStyle={styles.content}
+      keyboardAware
       testID="pro.nutrition_plan.screen"
     >
       <Stack.Screen options={{ headerShown: false }} />
@@ -565,9 +569,11 @@ export default function NutritionPlanBuilderScreen() {
       {/* ── Add meal form ─────────────────────────────────────────────────── */}
       {canEditPlan && !isSortMode && state.kind === 'ready' && addMealForm.kind === 'open' && (
         <Animated.View
+          ref={addMealKeyboardTarget}
           entering={FadeIn.duration(300)}
           exiting={FadeOut.duration(200)}
           style={[styles.addMealInline, { backgroundColor: theme.color.surface }]}
+          testID="pro.nutrition_plan.addMeal.form"
         >
           <TextInput
             style={[styles.addMealInput, { color: palette.text }]}
@@ -820,7 +826,12 @@ function MealRow({
       </Pressable>
 
       {!isSortMode && !readOnly && (
-        <Pressable onPress={onRemove} hitSlop={8} style={styles.removeBtn}>
+        <Pressable
+          onPress={onRemove}
+          hitSlop={8}
+          style={styles.removeBtn}
+          testID={`${testID}.remove`}
+        >
           <IconSymbol name="minus.circle.fill" size={20} color={palette.danger} />
         </Pressable>
       )}

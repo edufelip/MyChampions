@@ -59,6 +59,15 @@ Define and operationalize the mobile design language inspired by the provided da
 ### `DsScreen`
 - Standardized screen canvas and optional decorative blob background.
 - Responsive content lanes are centered and capped instead of scaling phone layouts across large surfaces: `form` 600px, `content` 680px on tablet / 880px on desktop, and `wide` 680px on tablet / 1040px on desktop.
+- `keyboardAware` (opt-in, scrollable screens only, native only; web is unchanged): while the software keyboard is open, the content gets the covered height as bottom space and the focused input is scrolled above the keyboard. Taps reach buttons without first closing the keyboard (`keyboardShouldPersistTaps="handled"` unless the screen sets its own value). It is needed on iOS and on Android edge-to-edge, where the window no longer resizes for the keyboard. Used by the nutrition plan, meal, and training plan builders (SC-207, SC-208).
+
+### Keyboard helpers (`useDsKeyboard`)
+- `components/ds/primitives/useDsKeyboard.ts` holds the keyboard handling shared by `DsScreen`, sheets, and panels. It uses React Native built-ins only.
+- `useDsKeyboardOverlap(viewRef)`: points of the view's bottom edge that the keyboard covers. A sheet or bottom panel pads its bottom by this amount to lift itself on both platforms (`SupportModal`, `ExerciseSearchModal`, the custom-meal quick-log panel). While it is enabled, a `keyboardAware` `DsScreen` behind the sheet leaves the sheet's inputs alone.
+- `useDsKeyboardTarget()`: callback ref for a view that must stay fully visible while one of its inputs is focused, such as an inline form with its Add and Cancel buttons. Without one, `DsScreen` reveals just the focused input.
+- `useDsKeyboardAwareScroll`: the scroll logic behind `keyboardAware` (`spacer` mode); sheets with their own scroll view use it in `resized` mode.
+- The pure helpers (`toDsKeyboardFrame`, `computeKeyboardOverlap`, `computeRevealScrollDelta`, `computeKeyboardSheetBounds`) are covered by `tests/component/ds-keyboard.test.tsx`.
+- Known limit: on Android, moving focus to another input while the keyboard stays open fires no keyboard event, so nothing is re-revealed. A `keyboardAware` screen with stacked inputs outside one form must register their container as a keyboard target.
 
 ### `DsBlobBackground`
 - Decorative top-left / bottom-right blob rendering with theme-aware colors.

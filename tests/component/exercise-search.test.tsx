@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { useCallback } from 'react';
+import { View } from 'react-native';
 import { ExerciseSearchModal } from '@/components/ds/patterns/ExerciseSearchModal';
-import { getDsTheme } from '@/constants/design-system';
+import { DsSpace, getDsTheme } from '@/constants/design-system';
 import {
   searchExerciseLibrary,
   type ExerciseItem,
@@ -9,6 +10,7 @@ import {
 } from '@/features/plans/exercise-service-source';
 import { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import { SUPPORTED_LOCALES, t } from '@/localization/core';
+import { hideKeyboard, measureHostViewsAs, showKeyboard } from './keyboard-test-utils';
 
 jest.mock('@/features/plans/exercise-service-source', () => ({ searchExerciseLibrary: jest.fn() }));
 const transport = jest.mocked(searchExerciseLibrary);
@@ -150,3 +152,43 @@ describe.each(SUPPORTED_LOCALES)(
     });
   },
 );
+
+describe('exercise search keyboard avoidance (SC-208)', () => {
+  test('keeps the title and the focused search box between the top safe area and the keyboard', async () => {
+    measureHostViewsAs(View, 0, 844);
+    await render(
+      <ExerciseSearchModal
+        isVisible
+        onClose={jest.fn()}
+        onConfirm={jest.fn()}
+        searchState={{ kind: 'idle' }}
+        onSearch={jest.fn()}
+        onClear={jest.fn()}
+        scheme="light"
+        theme={getDsTheme('light')}
+        t={(key, params) => t('en-US', key, params)}
+      />,
+    );
+    const frame = screen.getByTestId('exerciseSearch.keyboardFrame');
+    await fireEvent(frame, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 844 } },
+    });
+    expect(screen.getByTestId('exerciseSearch.modal')).toHaveStyle({ minHeight: '75%' });
+
+    await showKeyboard(500, 344);
+    expect(frame).toHaveStyle({ paddingBottom: 344 });
+    // The sheet's 75% minimum no longer pushes its header off the top: it is
+    // capped to the space above the keyboard and the result list shrinks.
+    const available = 844 - 344 - DsSpace.sm;
+    expect(screen.getByTestId('exerciseSearch.modal')).toHaveStyle({
+      minHeight: available,
+      maxHeight: available,
+    });
+    expect(screen.getByTestId('exerciseSearch.title')).toBeOnTheScreen();
+    expect(screen.getByTestId('exerciseSearch.input')).toBeOnTheScreen();
+
+    await hideKeyboard();
+    expect(frame).not.toHaveStyle({ paddingBottom: 344 });
+    expect(screen.getByTestId('exerciseSearch.modal')).toHaveStyle({ minHeight: '75%' });
+  });
+});

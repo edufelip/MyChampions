@@ -25,15 +25,15 @@ tags: [nutrition]
 - tapOn:
     id: meal.library.quickLog.input
 - inputText: "150"
-# Check the value once the keyboard is closed: on Android 15+ (edge-to-edge)
-# the keyboard covers the panel's input (recorded product finding).
-- runFlow:
-    file: ../common/hide-keyboard.yaml
-    env:
-      IOS_KEYBOARD: done
+# The panel lifts above the keyboard on both platforms (Android edge-to-edge
+# included): the typed grams, the preview and the Log action stay on screen,
+# and Log is tapped while the keyboard is still open.
 - assertVisible:
     id: meal.library.quickLog.input
     text: "150"
+- assertVisible:
+    id: meal.library.quickLog.preview
+- takeScreenshot: quick-log-keyboard-open
 - tapOn:
     id: meal.library.quickLog.cta.confirm
 - extendedWaitUntil:

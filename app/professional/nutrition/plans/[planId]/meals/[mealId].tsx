@@ -298,6 +298,7 @@ export default function NutritionMealBuilderScreen() {
       scheme={scheme}
       contentWidth="form"
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
+      keyboardAware
       testID="pro.nutrition_meal.screen"
     >
       <Stack.Screen options={{ headerShown: false }} />

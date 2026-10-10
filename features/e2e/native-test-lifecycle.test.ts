@@ -140,16 +140,19 @@ test('native gap phases remain scenario-isolated', () => {
   assert.match(fixtureSource, /id: 'qr-invalid-payload'/);
 });
 
-test('custom meal quick logging preserves grams and dismisses each native keyboard explicitly', () => {
+void test('custom meal quick logging keeps the grams input and Log action usable with the keyboard open', () => {
   const source = readFileSync(
     join(root, '.maestro/suite/custom-meal-library/02-quick-log.yaml'),
     'utf8',
   );
 
+  // The panel lifts above the keyboard on both platforms (SC-215), so the flow
+  // checks the typed grams and taps Log without closing the keyboard first.
   assert.match(
     source,
-    /- tapOn:\n    id: meal\.library\.quickLog\.input\n- inputText: "150"\n(#.*\n)*- runFlow:\n    file: \.\.\/common\/hide-keyboard\.yaml\n    env:\n      IOS_KEYBOARD: done\n- assertVisible:\n    id: meal\.library\.quickLog\.input\n    text: "150"\n/,
+    /- tapOn:\n    id: meal\.library\.quickLog\.input\n- inputText: "150"\n(#.*\n)*- assertVisible:\n    id: meal\.library\.quickLog\.input\n    text: "150"\n- assertVisible:\n    id: meal\.library\.quickLog\.preview\n- takeScreenshot: quick-log-keyboard-open\n- tapOn:\n    id: meal\.library\.quickLog\.cta\.confirm\n/,
   );
+  assert.doesNotMatch(source, /hide-keyboard/);
   assert.match(
     source,
     /- extendedWaitUntil:\n    notVisible:\n      id: meal\.library\.quickLog\.panel\n    timeout: 10000/,

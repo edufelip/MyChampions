@@ -998,6 +998,9 @@ export const esES: Record<TranslationKey, string> = {
   'pro.plan.item.field.nutrition_notes.label': 'Notas (opcional)',
   'pro.plan.item.field.nutrition_notes.placeholder': 'p.ej. Sin sal',
   'pro.plan.item.delete.body': '¿Eliminar {name} de esta comida?',
+  'pro.plan.meal.delete.body': '¿Eliminar {name} y sus alimentos de este plan?',
+  'pro.plan.session.delete.body': '¿Eliminar {name} y sus ejercicios de este plan?',
+  'pro.plan.session_item.delete.body': '¿Eliminar {name} de esta sesión?',
   'pro.plan.item.search.placeholder': 'Buscar un ejercicio...',
   'pro.plan.item.search.dialog_title': 'Búsqueda de ejercicios',
   'pro.plan.item.search.initial':

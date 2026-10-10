@@ -1,9 +1,11 @@
 import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { View } from 'react-native';
 import { SupportModal } from '@/components/ds/patterns/SupportModal';
-import { getDsTheme } from '@/constants/design-system';
+import { DsSpace, getDsTheme } from '@/constants/design-system';
 import { submitSupportMessage } from '@/features/support/support-source';
 import { SupportSourceError } from '@/features/support/support.logic';
 import { SUPPORTED_LOCALES, t } from '@/localization/core';
+import { hideKeyboard, measureHostViewsAs, showKeyboard } from './keyboard-test-utils';
 
 jest.mock('@/features/auth/auth-session', () => ({
   useAuthSession: () => ({ lockedRole: 'student' }),
@@ -147,5 +149,41 @@ describe.each(SUPPORTED_LOCALES)('SupportModal rendered behavior: %s (TC-304)', 
     await user.press(screen.getByTestId('settings.account.support.submitCta'));
     expect(await screen.findByTestId('settings.account.support.success')).toBeOnTheScreen();
     expect(transport).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SupportModal keyboard avoidance (SC-213)', () => {
+  test('lifts the sheet above the keyboard on both platforms and keeps its header on screen', async () => {
+    // The modal root fills an 844pt screen; the keyboard top sits at 500.
+    measureHostViewsAs(View, 0, 844);
+    await render(
+      <SupportModal
+        isVisible
+        scheme="light"
+        theme={getDsTheme('light')}
+        t={(key, params) => t('en-US', key, params)}
+        onClose={jest.fn()}
+      />,
+    );
+    const frame = screen.getByTestId('settings.account.support.keyboardFrame');
+    await fireEvent(frame, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 844 } },
+    });
+    expect(frame).toHaveStyle({ paddingBottom: 0 });
+    expect(screen.getByTestId('settings.account.support.modal')).toHaveStyle({ maxHeight: '90%' });
+
+    await showKeyboard(500, 344);
+    expect(frame).toHaveStyle({ paddingBottom: 344 });
+    // No top inset without a safe-area provider; the sheet fits above the keyboard.
+    const available = 844 - 344 - DsSpace.sm;
+    expect(screen.getByTestId('settings.account.support.modal')).toHaveStyle({
+      minHeight: available,
+      maxHeight: available,
+    });
+    expect(screen.getByTestId('settings.account.support.bodyInput')).toBeOnTheScreen();
+
+    await hideKeyboard();
+    expect(frame).toHaveStyle({ paddingBottom: 0 });
+    expect(screen.getByTestId('settings.account.support.modal')).toHaveStyle({ maxHeight: '90%' });
   });
 });

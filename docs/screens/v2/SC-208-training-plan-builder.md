@@ -26,6 +26,7 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Builder route native toolbar is disabled and uses an in-content icon-only back button.
 - A fresh professional builder reaches the Ready state after route-scope reset and exposes the Add session action immediately after the plan name is entered, including at 390x844 and 320x720 compact web viewports.
 - The plan name field (`pro.training_plan.name` testID) renders `multiline` whenever the plan is read-only (an assigned plan viewed by a Student, D-006). At 320px width a long plan name — e.g. "Assigned Training Plan" — now wraps onto a second line instead of being hard-clipped mid-word by the single-line editable `<TextInput>` (ET-165). The professional's own editable name field stays single-line.
+- Keyboard avoidance (iOS and Android, including Android 15+ edge-to-edge, where `adjustResize` no longer resizes the window): the builder is a `keyboardAware` `DsScreen`. While the software keyboard is open the content gets the covered height as bottom space, and the add-session form (`pro.training_plan.addSession.form`: name, notes, Add session and Cancel — in the empty-state region or after the session list) is registered as the keyboard target, so when it opens with the name focused it scrolls fully above the keyboard. Taps reach Add session and Cancel without first closing the keyboard.
 - On compact native viewports, native validation scrolls the builder until the current action (including a reopened plan's `Add session` CTA) is visible. After confirming an exercise it waits for the native modal transition to leave the hierarchy, then adds bottom-navigation clearance before tapping the footer save action below longer session/item content.
 - State orchestration uses centralized plans store (`features/plans/plans-store.ts`) through the existing `useTrainingPlanBuilder` adapter hook.
 
@@ -45,9 +46,9 @@ Let fitness coaches create and edit fully customizable named Professional Librar
 - Add training sessions (name required, notes optional).
 - When no sessions exist yet, tapping `Add session` opens the creation form in the same empty-state region, layered above the empty-state helper copy instead of pushing it downward.
 - The main `Add session` CTA uses a solid accent-green pill treatment with light text so it reads as the primary creation action.
-- Remove sessions.
+- Remove sessions. The confirmation names the session (`pro.plan.session.delete.body`, e.g. "Remove Push Day and its exercises from this plan?"), never the whole-plan delete copy.
 - Add exercise items to a session via proxy-backed exercise search (name required, quantity and notes optional) or by typing a custom name.
-- Remove exercise items from a session.
+- Remove exercise items from a session. The confirmation names the exercise (`pro.plan.session_item.delete.body`, e.g. "Remove Push-Up from this session?"), never the whole-plan delete copy (`pro.plan.delete.body` is only for deleting the plan).
 - Save plan (create or update) as a single persistence step that writes the current local draft to the MyChampions server.
 - After a successful Save, mark the removal guard clean before dispatching
   navigation to the training library. Reconcile the draft and saved session
@@ -70,6 +71,8 @@ Exercise items are added via the `ExerciseSearchModal` component, which:
 2. Displays a scrollable list of search results (title + localized muscle group + thumbnail).
 3. On item selection, shows a detail/confirmation form for `quantity` and `notes`.
 4. On confirm, calls `handleConfirmExercise` which adds the item to the local draft; the MyChampions server plan update is sent only when the user presses `Save`.
+
+On iOS and Android the search input opens focused. While the keyboard is open the sheet is lifted by the covered height and capped between the top safe area and the keyboard (`computeKeyboardSheetBounds`), so its title, Close control, and search box stay on screen and the result list shrinks and scrolls instead of the sheet being pushed off the top (iOS) or left behind the keyboard (Android edge-to-edge). Results can be tapped with the keyboard open. In the detail view the focused quantity or notes field is scrolled into view inside the sheet. The plan builder behind the open sheet keeps its scroll position: the sheet's inputs are left to the sheet, so closing it returns the coach to the session they were editing.
 
 On web, the search sheet does not use the native slide-in animation: it is viewport-bounded as soon as it opens so the title, localized Close control (`common.cta.close`), and focused search field are usable on compact mobile emulation. The results region owns its scroll so long result sets do not push the modal outside the viewport. At widths of 768px or greater it uses the shared centered-dialog layout; below that threshold it retains the compact bottom-sheet treatment. Resizing an already-open search dialog across that boundary must retain the query and results and keep the dialog within the viewport. See the [exercise-search resize test](../../test-cases/TC-332-exercise-search-resize.md).
 
@@ -167,65 +170,67 @@ Plan library reads, predefined assignment/draft operations, and builder mutation
 
 ## Localization Keys
 
-| Key                                        | Context                                                    |
-| ------------------------------------------ | ---------------------------------------------------------- |
-| `pro.library.training.title`               | Library screen header                                      |
-| `pro.library.training.empty`               | Library empty state                                        |
-| `pro.library.training.cta_create`          | Create plan CTA                                            |
-| `pro.library.cta_open`                     | Open plan CTA                                              |
-| `pro.library.error`                        | Library load error                                         |
-| `pro.plan.training.title.create`           | Builder screen title (create mode)                         |
-| `pro.plan.training.title.edit`             | Builder screen title (edit mode)                           |
-| `pro.plan.field.name.label`                | Plan name field label                                      |
-| `pro.plan.field.name.placeholder`          | Plan name placeholder                                      |
-| `pro.plan.section.sessions`                | Sessions section header                                    |
-| `pro.plan.cta.add_session`                 | Add session CTA                                            |
-| `pro.plan.cta.add_item`                    | Add session item CTA                                       |
-| `pro.plan.cta.save`                        | Save plan CTA                                              |
-| `pro.plan.cta.assign`                      | Assign to student CTA                                      |
-| `pro.plan.cta.bulk_assign`                 | Bulk assign CTA                                            |
-| `pro.plan.session.field.name.label`        | Session name field label                                   |
-| `pro.plan.session.field.name.placeholder`  | Session name placeholder                                   |
-| `pro.plan.session.field.notes.label`       | Session notes label                                        |
-| `pro.plan.item.field.name.label`           | Item name field label                                      |
-| `pro.plan.item.field.name.placeholder`     | Item name placeholder                                      |
-| `pro.plan.item.field.quantity.label`       | Item quantity label                                        |
-| `pro.plan.item.field.quantity.placeholder` | Item quantity placeholder                                  |
-| `pro.plan.item.field.notes.label`          | Item notes label                                           |
-| `pro.plan.validation.name_required`        | Name required error                                        |
-| `pro.plan.validation.name_too_short`       | Name too short error                                       |
-| `pro.plan.error.save`                      | Save error                                                 |
-| `pro.plan.error.load`                      | Load error                                                 |
-| `pro.plan.error.cta_back_to_library`       | Back to library CTA on the load-error state                |
-| `pro.plan.error.assign`                    | Assign error                                               |
-| `pro.plan.assign.title`                    | Assign modal title                                         |
-| `pro.plan.assign.student_count`            | Student count label                                        |
-| `pro.plan.assign.confirm`                  | Confirm assign CTA                                         |
-| `pro.plan.assign.fine_tune_notice`         | Fine-tune notice                                           |
-| `pro.plan.predefined.label`                | Predefined plan badge                                      |
-| `pro.predefined_plan.field_name`           | Predefined plan name label                                 |
-| `pro.predefined_plan.cta_create`           | Save predefined plan CTA                                   |
-| `pro.predefined_plan.bulk_assign.*`        | Bulk assign flow keys                                      |
-| `pro.plan.item.search.dialog_title`        | Accessible name for the single exercise-search dialog root |
-| `pro.plan.item.search.placeholder`         | Exercise search input placeholder                          |
-| `pro.plan.item.search.initial`             | Initial helper state before a query is entered             |
-| `pro.plan.item.search.loading`             | Accessible loading announcement while search is pending    |
-| `pro.plan.item.search.empty`               | No results state                                           |
-| `pro.plan.item.search.error`               | Search error state                                         |
-| `pro.plan.item.search.retry`               | Retry search CTA in the error state                        |
-| `pro.plan.item.search.back`                | "Back to search" link in exercise detail form              |
-| `exercise.muscle_group.chest`              | Muscle group label: Chest                                  |
-| `exercise.muscle_group.back`               | Muscle group label: Back                                   |
-| `exercise.muscle_group.shoulders`          | Muscle group label: Shoulders                              |
-| `exercise.muscle_group.biceps`             | Muscle group label: Biceps                                 |
-| `exercise.muscle_group.triceps`            | Muscle group label: Triceps                                |
-| `exercise.muscle_group.forearms`           | Muscle group label: Forearms                               |
-| `exercise.muscle_group.quads`              | Muscle group label: Quads                                  |
-| `exercise.muscle_group.hamstrings`         | Muscle group label: Hamstrings                             |
-| `exercise.muscle_group.glutes`             | Muscle group label: Glutes                                 |
-| `exercise.muscle_group.calves`             | Muscle group label: Calves                                 |
-| `exercise.muscle_group.core`               | Muscle group label: Core                                   |
-| `exercise.muscle_group.full_body`          | Muscle group label: Full Body                              |
+| Key                                        | Context                                                     |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| `pro.library.training.title`               | Library screen header                                       |
+| `pro.library.training.empty`               | Library empty state                                         |
+| `pro.library.training.cta_create`          | Create plan CTA                                             |
+| `pro.library.cta_open`                     | Open plan CTA                                               |
+| `pro.library.error`                        | Library load error                                          |
+| `pro.plan.training.title.create`           | Builder screen title (create mode)                          |
+| `pro.plan.training.title.edit`             | Builder screen title (edit mode)                            |
+| `pro.plan.field.name.label`                | Plan name field label                                       |
+| `pro.plan.field.name.placeholder`          | Plan name placeholder                                       |
+| `pro.plan.section.sessions`                | Sessions section header                                     |
+| `pro.plan.cta.add_session`                 | Add session CTA                                             |
+| `pro.plan.cta.add_item`                    | Add session item CTA                                        |
+| `pro.plan.cta.save`                        | Save plan CTA                                               |
+| `pro.plan.cta.assign`                      | Assign to student CTA                                       |
+| `pro.plan.cta.bulk_assign`                 | Bulk assign CTA                                             |
+| `pro.plan.session.field.name.label`        | Session name field label                                    |
+| `pro.plan.session.field.name.placeholder`  | Session name placeholder                                    |
+| `pro.plan.session.field.notes.label`       | Session notes label                                         |
+| `pro.plan.item.field.name.label`           | Item name field label                                       |
+| `pro.plan.item.field.name.placeholder`     | Item name placeholder                                       |
+| `pro.plan.item.field.quantity.label`       | Item quantity label                                         |
+| `pro.plan.item.field.quantity.placeholder` | Item quantity placeholder                                   |
+| `pro.plan.item.field.notes.label`          | Item notes label                                            |
+| `pro.plan.session.delete.body`             | Remove-session confirmation, names the session (`{name}`)   |
+| `pro.plan.session_item.delete.body`        | Remove-exercise confirmation, names the exercise (`{name}`) |
+| `pro.plan.validation.name_required`        | Name required error                                         |
+| `pro.plan.validation.name_too_short`       | Name too short error                                        |
+| `pro.plan.error.save`                      | Save error                                                  |
+| `pro.plan.error.load`                      | Load error                                                  |
+| `pro.plan.error.cta_back_to_library`       | Back to library CTA on the load-error state                 |
+| `pro.plan.error.assign`                    | Assign error                                                |
+| `pro.plan.assign.title`                    | Assign modal title                                          |
+| `pro.plan.assign.student_count`            | Student count label                                         |
+| `pro.plan.assign.confirm`                  | Confirm assign CTA                                          |
+| `pro.plan.assign.fine_tune_notice`         | Fine-tune notice                                            |
+| `pro.plan.predefined.label`                | Predefined plan badge                                       |
+| `pro.predefined_plan.field_name`           | Predefined plan name label                                  |
+| `pro.predefined_plan.cta_create`           | Save predefined plan CTA                                    |
+| `pro.predefined_plan.bulk_assign.*`        | Bulk assign flow keys                                       |
+| `pro.plan.item.search.dialog_title`        | Accessible name for the single exercise-search dialog root  |
+| `pro.plan.item.search.placeholder`         | Exercise search input placeholder                           |
+| `pro.plan.item.search.initial`             | Initial helper state before a query is entered              |
+| `pro.plan.item.search.loading`             | Accessible loading announcement while search is pending     |
+| `pro.plan.item.search.empty`               | No results state                                            |
+| `pro.plan.item.search.error`               | Search error state                                          |
+| `pro.plan.item.search.retry`               | Retry search CTA in the error state                         |
+| `pro.plan.item.search.back`                | "Back to search" link in exercise detail form               |
+| `exercise.muscle_group.chest`              | Muscle group label: Chest                                   |
+| `exercise.muscle_group.back`               | Muscle group label: Back                                    |
+| `exercise.muscle_group.shoulders`          | Muscle group label: Shoulders                               |
+| `exercise.muscle_group.biceps`             | Muscle group label: Biceps                                  |
+| `exercise.muscle_group.triceps`            | Muscle group label: Triceps                                 |
+| `exercise.muscle_group.forearms`           | Muscle group label: Forearms                                |
+| `exercise.muscle_group.quads`              | Muscle group label: Quads                                   |
+| `exercise.muscle_group.hamstrings`         | Muscle group label: Hamstrings                              |
+| `exercise.muscle_group.glutes`             | Muscle group label: Glutes                                  |
+| `exercise.muscle_group.calves`             | Muscle group label: Calves                                  |
+| `exercise.muscle_group.core`               | Muscle group label: Core                                    |
+| `exercise.muscle_group.full_body`          | Muscle group label: Full Body                               |
 
 All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
@@ -253,15 +258,15 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 
 ## Links
 
-| Artifact                | IDs                                                                                                              |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Functional requirements | FR-244, FR-245, FR-246, FR-247, FR-248, FR-254, FR-255, FR-256, FR-223, FR-224, FR-225, FR-226                   |
-| Use case                | UC-002.14, UC-002.20                                                                                             |
-| Acceptance criteria     | AC-256, AC-264, AC-265, AC-267                                                                                   |
-| Business rules          | BR-281, BR-282, BR-283, BR-293, BR-294, BR-303, BR-304, BR-305, BR-306                                           |
-| Test cases              | TC-268, TC-269, TC-269A, TC-270, TC-277, TC-278, TC-278A, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
-| Decisions               | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157, D-173                                                    |
-| Backlog                 | BL-106                                                                                                           |
+| Artifact                | IDs                                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Functional requirements | FR-244, FR-245, FR-246, FR-247, FR-248, FR-254, FR-255, FR-256, FR-223, FR-224, FR-225, FR-226                                              |
+| Use case                | UC-002.14, UC-002.20                                                                                                                        |
+| Acceptance criteria     | AC-256, AC-264, AC-265, AC-267, AC-543                                                                                                      |
+| Business rules          | BR-281, BR-282, BR-283, BR-293, BR-294, BR-303, BR-304, BR-305, BR-306                                                                      |
+| Test cases              | TC-268, TC-269, TC-269A, TC-270, TC-277, TC-278, TC-278A, TC-278B, TC-278C, TC-278D, TC-279, TC-280, TC-315, TC-316, TC-317, TC-318, TC-319 |
+| Decisions               | D-013, D-072, D-080, D-082, D-111, D-112, D-114, D-157, D-173                                                                               |
+| Backlog                 | BL-106                                                                                                                                      |
 
 ## Scoped native observation evidence (BL-018, 2026-09-29)
 

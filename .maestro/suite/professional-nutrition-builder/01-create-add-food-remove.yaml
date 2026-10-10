@@ -54,24 +54,24 @@ tags: [nutrition]
     timeout: 10000
 - tapOn:
     id: pro.nutrition_plan.addMeal
-# The input is auto-focused and the inline form stays behind the keyboard on
-# both platforms (recorded product finding): a tap on it would hit a key, so
-# type directly, close the keyboard (Enter only blurs this field on iOS), then
-# check the value.
+# The add-meal input opens focused and the form scrolls above the keyboard, so
+# the input and its Cancel/Add buttons are tapped while the keyboard stays open:
+# a control left behind the keyboard would take a key press instead.
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_plan.addMeal.form
+    timeout: 5000
 - waitForAnimationToEnd:
     timeout: 3000
+- tapOn:
+    id: pro.nutrition_plan.addMeal.input
 - inputText: Breakfast
-- runFlow:
-    file: ../common/hide-keyboard.yaml
-    env:
-      IOS_KEYBOARD: enter
 - assertVisible:
     id: pro.nutrition_plan.addMeal.input
     text: Breakfast
-- scrollUntilVisible:
-    element:
-      id: pro.nutrition_plan.addMeal.confirm
-    direction: DOWN
+- assertVisible:
+    id: pro.nutrition_plan.addMeal.cancel
+- takeScreenshot: add-meal-keyboard-open
 - tapOn:
     id: pro.nutrition_plan.addMeal.confirm
 - extendedWaitUntil:

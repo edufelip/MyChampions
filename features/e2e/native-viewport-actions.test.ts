@@ -191,3 +191,95 @@ test('nutrition builders type into each native editor before saving', () => {
     /style=\{\{ top: '100%', left: 0, right: 0, marginTop: 16 \}\}/,
   );
 });
+
+/** Steps from `from` up to (not including) the first later line matching `to`. */
+function stepsBetween(source: string, from: RegExp, to: RegExp): string {
+  const start = source.search(from);
+  assert.ok(start >= 0, `missing ${from}`);
+  const rest = source.slice(start);
+  const end = rest.slice(1).search(to);
+  assert.ok(end >= 0, `missing ${to} after ${from}`);
+  return rest.slice(0, end + 1);
+}
+
+void test('keyboard-heavy forms are used with the keyboard open, with no workaround', () => {
+  // Fixed product findings (SC-207, SC-208, SC-213, SC-215): forms and sheets
+  // stay above the keyboard, so flows tap their fields and buttons directly.
+  assert.deepEqual(
+    allSuiteFlows()
+      .filter(({ source }) => /recorded product finding/.test(source))
+      .map(({ path }) => path),
+    [],
+  );
+
+  const nutrition = suite('professional-nutrition-builder/01-create-add-food-remove.yaml');
+  const addMeal = stepsBetween(
+    nutrition,
+    /- tapOn:\n    id: pro\.nutrition_plan\.addMeal\n/,
+    /id: pro\.nutrition_plan\.mealRow\.Breakfast\n/,
+  );
+  assert.match(
+    addMeal,
+    /- tapOn:\n    id: pro\.nutrition_plan\.addMeal\.input\n- inputText: Breakfast\n- assertVisible:\n    id: pro\.nutrition_plan\.addMeal\.input\n    text: Breakfast\n- assertVisible:\n    id: pro\.nutrition_plan\.addMeal\.cancel\n- takeScreenshot: add-meal-keyboard-open\n- tapOn:\n    id: pro\.nutrition_plan\.addMeal\.confirm\n/,
+  );
+  assert.doesNotMatch(addMeal, /hide-keyboard|pressKey|scrollUntilVisible/);
+
+  const training = suite('professional-training-builder/01-create-add-exercise-remove.yaml');
+  const addSession = stepsBetween(
+    training,
+    /- tapOn:\n    id: pro\.training_plan\.addSession\n/,
+    /id: pro\.training_plan\.sessionRow\.Push_Day\n/,
+  );
+  assert.match(
+    addSession,
+    /- tapOn:\n    id: pro\.training_plan\.addSession\.name\n- inputText: Push Day\n- tapOn:\n    id: pro\.training_plan\.addSession\.notes\n- inputText: Upper body focus\n/,
+  );
+  assert.match(
+    addSession,
+    /- takeScreenshot: add-session-keyboard-open\n- tapOn:\n    id: pro\.training_plan\.addSession\.confirm\n/,
+  );
+  assert.doesNotMatch(addSession, /hide-keyboard|pressKey/);
+
+  const exerciseSearch = stepsBetween(
+    training,
+    /id: exerciseSearch\.modal\n    timeout: 5000\n/,
+    /id: exerciseSearch\.detail\n/,
+  );
+  assert.match(exerciseSearch, /\n- tapOn:\n    id: exerciseSearch\.input\n- inputText: push\n/);
+  assert.match(exerciseSearch, /- assertVisible:\n    id: exerciseSearch\.title\n/);
+  assert.match(exerciseSearch, /- assertVisible:\n    id: exerciseSearch\.input\n    text: push\n/);
+  assert.doesNotMatch(exerciseSearch, /hide-keyboard|platform: Android/);
+  // Removing one exercise confirms that exercise, not the whole-plan delete copy.
+  assert.match(training, /MESSAGE: "Remove E2E Push-Up from this session\\\\\?"/);
+  assert.doesNotMatch(training, /This action cannot be undone/);
+
+  const support = suite('support-request/01-validate-and-submit.yaml');
+  assert.match(
+    support,
+    /- inputText: E2E support issue\n(#.*\n)*- tapOn:\n    id: settings\.account\.support\.bodyInput\n- inputText: The support request flow should submit safely\.\n- assertVisible:\n    id: settings\.account\.support\.bodyInput\n    text: The support request flow should submit safely\.\n- assertVisible:\n    id: settings\.account\.support\.dialog\.title\n/,
+  );
+});
+
+void test('plan builders opt into keyboard avoidance and register their inline forms', () => {
+  const training = readSource('app/professional/training/plans/[planId].tsx');
+  for (const [source, form] of [
+    [professionalNutritionPlanScreenSource, 'pro.nutrition_plan.addMeal.form'],
+    [training, 'pro.training_plan.addSession.form'],
+  ] as const) {
+    assert.match(source, /<DsScreen[^>]*\n\s+keyboardAware\n/);
+    assert.match(source, /useDsKeyboardTarget\(\)/);
+    assert.match(source, new RegExp(`ref=\\{\\w+KeyboardTarget\\}[\\s\\S]{0,200}testID="${form}"`));
+  }
+  assert.match(professionalNutritionMealScreenSource, /\n\s+keyboardAware\n/);
+  assert.match(training, /t\('pro\.plan\.session_item\.delete\.body', \{ name: itemName \}\)/);
+  assert.match(training, /t\('pro\.plan\.session\.delete\.body', \{ name: sessionName \}\)/);
+  assert.match(
+    professionalNutritionPlanScreenSource,
+    /t\('pro\.plan\.meal\.delete\.body', \{ name: mealName \}\)/,
+  );
+  assert.doesNotMatch(training, /t\('pro\.plan\.delete\.body'\)\.replace/);
+  assert.doesNotMatch(
+    professionalNutritionPlanScreenSource,
+    /t\('pro\.plan\.delete\.body'\)\.replace/,
+  );
+});

@@ -26,7 +26,7 @@
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -43,6 +43,7 @@ import {
 import { DsOfflineBanner } from '@/components/ds/primitives/DsOfflineBanner';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { useDsKeyboardOverlap } from '@/components/ds/primitives/useDsKeyboard';
 import { DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
 import { useAuthSession } from '@/features/auth/auth-session';
@@ -544,6 +545,10 @@ function QuickLogPanel({
 }) {
   const { width: viewportWidth } = useWindowDimensions();
   const usesCenteredDialog = viewportWidth >= 768;
+  // Lift the panel above the keyboard so the grams input and actions stay
+  // visible while typing (Android edge-to-edge windows no longer resize).
+  const overlayRef = useRef<View>(null);
+  const keyboardOverlap = useDsKeyboardOverlap(overlayRef);
   useWebDialogAccessibility({
     dialogTitleTestID: 'meal.library.quickLog.title',
     isVisible: true,
@@ -566,8 +571,16 @@ function QuickLogPanel({
 
   return (
     <View
+      ref={overlayRef}
       accessibilityViewIsModal
-      style={[styles.quickLogOverlay, usesCenteredDialog && styles.quickLogOverlayCentered]}
+      style={[
+        styles.quickLogOverlay,
+        usesCenteredDialog && styles.quickLogOverlayCentered,
+        keyboardOverlap > 0 && {
+          paddingBottom:
+            keyboardOverlap + (usesCenteredDialog ? styles.quickLogOverlayCentered.padding : 0),
+        },
+      ]}
     >
       <Pressable
         accessibilityLabel={t('meal.library.quick_log.cta_cancel')}

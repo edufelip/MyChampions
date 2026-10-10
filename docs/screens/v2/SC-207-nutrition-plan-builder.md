@@ -31,10 +31,23 @@ Let nutritionists create and edit named predefined nutrition plans (calorie/macr
   re-tapping through the keyboard-type transition. The hydration editor is then
   dismissed through the same platform path before waiting for the save control
   to report enabled.
-- Native compact-viewport coverage scrolls the mounted add-meal confirmation
-  control fully into view after asserting the exact meal name and dismissing
-  its editor through native Back on Android or Return on iOS, and before
-  tapping it. After opening the taller add-food form, coverage asserts that the
+- Keyboard avoidance (iOS and Android, including Android 15+ edge-to-edge,
+  where `adjustResize` no longer resizes the window): the plan builder and the
+  meal builder are `keyboardAware` `DsScreen`s. While the software keyboard is
+  open the content gets the covered height as bottom space and the focused
+  input is scrolled above the keyboard. On the plan builder the add-meal form
+  (`pro.nutrition_plan.addMeal.form`: input, Cancel, Add) is registered as the
+  keyboard target, so when it opens with the input focused the whole form,
+  buttons included, scrolls above the keyboard; taps reach Cancel and Add
+  without first closing the keyboard.
+- Removing a meal confirms with `pro.plan.meal.delete.body` (e.g. "Remove
+  Breakfast and its foods from this plan?"); removing a food from a meal uses
+  `pro.plan.item.delete.body`. Neither uses the whole-plan delete copy
+  (`pro.plan.delete.body`).
+- Native compact-viewport coverage taps the focused add-meal input, types and
+  asserts the exact meal name, and taps Add while the keyboard is still open (a
+  control left behind the keyboard would receive a key press instead). After
+  opening the taller add-food form, coverage asserts that the
   form is mounted in measured page flow and scrolls the search input, result,
   quantity, and add action into view instead of requiring the entire form to
   satisfy a visibility threshold. Search asserts the exact query, dismisses
@@ -165,6 +178,8 @@ Plan library and builder persistence use the MyChampions server through `feature
 | `pro.plan.field.fats_target.label` | Fats target label |
 | `pro.plan.section.meals` | Meals section header |
 | `pro.plan.cta.add_meal` | Add food item CTA |
+| `pro.plan.meal.delete.body` | Remove-meal confirmation, names the meal (`{name}`) |
+| `pro.plan.item.delete.body` | Remove-food confirmation, names the food (`{name}`) |
 | `pro.plan.cta.save` | Save plan CTA |
 | `pro.plan.cta.assign` | Assign to student CTA |
 | `pro.plan.cta.bulk_assign` | Bulk assign CTA |
@@ -222,8 +237,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 |---|---|
 | Functional requirements | FR-240, FR-241, FR-242, FR-243, FR-247, FR-248, FR-223, FR-224, FR-225, FR-226 |
 | Use case | UC-002.14, UC-002.20 |
-| Acceptance criteria | AC-256, AC-264, AC-265, AC-267, AC-541 |
+| Acceptance criteria | AC-256, AC-264, AC-265, AC-267, AC-541, AC-543 |
 | Business rules | BR-281, BR-282, BR-283, BR-291, BR-292, BR-328, BR-331, BR-332, BR-334, BR-337, BR-343 |
-| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-275, TC-275A, TC-276, TC-277, TC-280, TC-328 |
+| Test cases | TC-268, TC-269, TC-269A, TC-270, TC-275, TC-275A, TC-276, TC-277, TC-278B, TC-278D, TC-280, TC-328 |
 | Decisions | D-072, D-080, D-082, D-111, D-112, D-113, D-114, D-173, D-194 |
 | Backlog | BL-106 |
