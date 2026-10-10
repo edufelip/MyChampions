@@ -1,11 +1,12 @@
-# Tap the BUTTON action of a native two-button alert (BUTTON beside Cancel).
+# Tap the BUTTON action of a native alert whose message matches MESSAGE.
 # On iOS the title, the alert body and other controls (e.g. a trash icon
-# labelled "Delete") can share the text, so pick the match right of Cancel.
+# labelled "Delete") can share the button's text; only the button sits below
+# the message.
 appId: com.edufelip.mychampions.dev
 ---
 - extendedWaitUntil:
     visible:
-      text: ${BUTTON}
+      text: ${MESSAGE}
     timeout: 5000
 - runFlow:
     when:
@@ -13,7 +14,8 @@ appId: com.edufelip.mychampions.dev
     commands:
       - tapOn:
           text: ${BUTTON}
-          rightOf: "^Cancel$"
+          below:
+            text: ${MESSAGE}
 - runFlow:
     when:
       platform: Android

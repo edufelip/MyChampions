@@ -150,6 +150,7 @@ tags: [nutrition]
     file: ../common/confirm-alert.yaml
     env:
       BUTTON: Delete
+      MESSAGE: "Remove E2E Brown Rice from this meal\\?"
 - extendedWaitUntil:
     visible:
       id: pro.nutrition_meal.total.calories

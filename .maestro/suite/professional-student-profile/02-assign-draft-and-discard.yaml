@@ -101,6 +101,7 @@ tags: [professional]
     file: ../common/confirm-alert.yaml
     env:
       BUTTON: Discard
+      MESSAGE: "You have unsaved changes\\..*"
 - extendedWaitUntil:
     visible:
       text: Draft discarded successfully.

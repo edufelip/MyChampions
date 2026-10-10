@@ -180,6 +180,7 @@ tags: [training]
     file: ../common/confirm-alert.yaml
     env:
       BUTTON: Delete
+      MESSAGE: "This action cannot be undone\\..*"
 - extendedWaitUntil:
     notVisible:
       id: pro.training_plan.itemRow.E2E_Push-Up
