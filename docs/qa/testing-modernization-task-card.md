@@ -1,3 +1,36 @@
+## Maestro fixture suite running on devices — 2026-10-09
+
+Status: **Implemented locally** (not pushed; no hosted run yet). The 67 flows ported from Detox (`.maestro/suite`, 13 CI suites, 41 fixture-phase invocations per platform) now run on real devices through `scripts/testing/run-maestro-suite.sh`: iOS on a dedicated en-US simulator ("MyChampions Maestro", iPhone 17, iOS 26.5), Android on a dedicated AVD (`MyChampions_Maestro`, API 37).
+
+Final clean runs on `3556cc3` (Metro-attached Debug, fixture backend, local Mac):
+
+| Platform | Result | Duration |
+| --- | --- | --- |
+| iOS (simulator, Maestro 2.10.0) | **40/40 flow groups passed on the first attempt**, no retries; exit 0 | 59 min |
+| Android (emulator, Maestro 2.10.0) | **40/40 flow groups passed on the first attempt**, no retries; exit 0 | 61 min |
+
+(41 invocations per platform: device preparation plus 40 tagged flow groups. The RevenueCat live suite is not part of CI and was not run.) This is local evidence, not a hosted CI run.
+
+What it took (each from a real failing run):
+
+| Problem | Fix |
+| --- | --- |
+| Shared simulator in pt-BR; English assertions failed | dedicated en-US simulator created by `maestro-device.sh` |
+| iOS "Save Password?" and "Open in …?" (deep link) prompts covered later screens, and outlived the app | `dismiss-password-sheet`, `open-link` (confirms the prompt) and `dismiss-stale-system-prompts` before each fresh launch |
+| Random iOS `kAXErrorInvalidUIElement` hierarchy failures on the sign-in screens | suite pinned to Maestro **2.10.0** (2.7.0 added recovery), installed from the release zip into its own folder; the native pilot keeps `~/.maestro` 2.6.1 |
+| iOS strong-password AutoFill wiped the typed create-account password | device prep turns off "AutoFill Passwords and Passkeys" (`.maestro/setup/ios-disable-password-autofill.yaml`); flows also show the password before typing |
+| Simulators cannot pre-grant the camera | `answer-camera-prompt` answers the system prompt in camera flows |
+| Maestro's iOS `hideKeyboard` only swipes; the app's number-pad "Done" bar is not visible by testID | `hide-keyboard` (margin tap, Enter, "Done" by text, or a static element per screen); Android keeps `hideKeyboard`, never called without a keyboard (it presses Back) |
+| iOS merges a row's texts into one label ("Idioma, Português", "10 Active students") | partial text matches |
+| iOS alert buttons share text with the title, the alert body and a trash icon | `confirm-alert` taps the button below the alert message |
+
+Product findings for owner decision (not changed; the flows work around them so the suites test their own purpose):
+
+1. **Add meal** (coach nutrition plan) and **Add session** (coach training plan): the inline form opens auto-focused at the end of the scroll view and stays behind the keyboard on iOS and Android — a user types into a field they cannot see, and the Add/Cancel buttons are covered.
+2. **Exercise search sheet** (iOS): when the auto-focused search box opens the keyboard, the sheet is pushed up so its title and search box leave the top of the screen.
+3. **Android 15+ (edge-to-edge)**: `windowSoftInputMode="adjustResize"` no longer lifts bottom panels, so the quick-log panel's grams input and the support sheet's message field sit behind the keyboard.
+4. **Remove exercise** (coach training plan): the confirmation for removing one exercise says "All meals and items in this plan will be permanently removed", the copy for deleting a whole plan (`app/professional/training/plans/[planId].tsx:375` uses `pro.plan.delete.body` and replaces a `{name}` placeholder that string does not have).
+
 ## Maestro migration: journeys proven, Detox retired — 2026-10-09
 
 Status: **Implemented locally** on `test/testing-modernization` (not pushed; no hosted run yet).

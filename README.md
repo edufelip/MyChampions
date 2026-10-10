@@ -132,11 +132,14 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    the fixture phase it runs under (`scripts/ci/native-fixture-profiles.ts`).
    The runner builds the Debug app once (the Metro port is compiled in),
    installs it, then starts a fresh Metro per fixture phase and runs the flows
-   tagged for it. It needs the [Maestro CLI](https://maestro.dev)
-   (`bash scripts/testing/install-maestro.sh`) and either a dedicated English iOS
-   simulator (created on first run as `MyChampions Maestro` from an `iPhone 17`,
-   overridable with `MAESTRO_IOS_SIMULATOR` / `MAESTRO_IOS_DEVICE_TYPE`) or one
-   Android device (`ANDROID_SERIAL` when several are attached).
+   tagged for it. The scripts install their pinned [Maestro CLI](https://maestro.dev)
+   (2.10.0, `scripts/testing/install-maestro.sh`) into
+   `~/.cache/mychampions/maestro/` on first use, separate from the native
+   pilot's `~/.maestro` (2.6.1). iOS runs on a dedicated English simulator
+   (created on first run as `MyChampions Maestro` from an `iPhone 17`,
+   overridable with `MAESTRO_IOS_SIMULATOR` / `MAESTRO_IOS_DEVICE_TYPE`; device
+   prep also turns off password AutoFill, which clears typed passwords); Android
+   on one device (`ANDROID_SERIAL` when several are attached).
 
    ```bash
    yarn test:e2e:ios                 # every CI Maestro suite on iOS

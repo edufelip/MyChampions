@@ -22,8 +22,9 @@ uses the same ledger.
 
 Each platform builds its Debug app once, then executes the deterministic suite
 set supplied through `SELECTED_SUITES_JSON` with
-`NATIVE_SKIP_BUILD=true`. Both lanes install the pinned Maestro CLI first
-(`scripts/testing/install-maestro.sh`); the Android lane targets the runner's
+`NATIVE_SKIP_BUILD=true`. Both lanes install the suite's pinned Maestro CLI
+(2.10.0, `scripts/testing/install-maestro.sh`, kept apart from the native
+pilot's 2.6.1); the Android lane targets the runner's
 kept-alive `emulator-5554` through `ANDROID_SERIAL`. The provider-live RevenueCat suite is intentionally
 excluded; it has its own credential-gated lane.
 
