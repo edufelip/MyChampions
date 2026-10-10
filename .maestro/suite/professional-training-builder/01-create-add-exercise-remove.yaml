@@ -68,34 +68,15 @@ tags: [training]
     direction: DOWN
 - tapOn:
     id: pro.training_plan.addSession
-- extendedWaitUntil:
-    visible:
-      id: pro.training_plan.addSession.name
-    timeout: 5000
-# On iOS the inline form stays behind the keyboard (recorded product finding),
-# so taps there would hit keys. Use the form's keyboard path instead: the name
-# is auto-focused, Enter moves to notes, and Enter in notes adds the session.
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - tapOn:
-          id: pro.training_plan.addSession.name
-      - inputText: Push Day
-      - tapOn:
-          id: pro.training_plan.addSession.notes
-      - inputText: Upper body focus
-      - hideKeyboard
-      - tapOn:
-          id: pro.training_plan.addSession.confirm
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - inputText: Push Day
-      - pressKey: Enter
-      - inputText: Upper body focus
-      - pressKey: Enter
+# The inline form stays behind the keyboard (recorded product finding), so taps
+# there would hit keys. Use the form's keyboard path: the name is auto-focused,
+# Enter moves to notes, and Enter in notes adds the session.
+- waitForAnimationToEnd:
+    timeout: 3000
+- inputText: Push Day
+- pressKey: Enter
+- inputText: Upper body focus
+- pressKey: Enter
 - extendedWaitUntil:
     visible:
       id: pro.training_plan.sessionRow.Push_Day

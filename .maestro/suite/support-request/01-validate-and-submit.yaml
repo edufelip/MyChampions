@@ -28,6 +28,13 @@ tags: [support]
 - tapOn:
     id: settings.account.support.subjectInput
 - inputText: E2E support issue
+# The sheet does not move above the keyboard on Android 15+ (recorded product
+# finding), so close it before reaching the message field.
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: tap
+      TAP_ID: settings.account.support.dialog.title
 - tapOn:
     id: settings.account.support.bodyInput
 - inputText: The support request flow should submit safely.

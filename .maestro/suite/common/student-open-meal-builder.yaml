@@ -10,4 +10,3 @@ appId: com.edufelip.mychampions.dev
     visible:
       id: meal.builder.screen
     timeout: 10000
-- runFlow: hide-keyboard.yaml
