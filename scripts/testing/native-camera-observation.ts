@@ -45,7 +45,7 @@ export type IosCameraPermissionObservation = {
 /**
  * Proof that the app which has just been launched is the qualified build on
  * the owned simulator. This is deliberately separate from the build-path
- * check: a qualified .app on disk does not prove that Detox installed that
+ * check: a qualified .app on disk does not prove that the runner installed that
  * same bundle on this target.
  */
 export type IosInstalledAppObservation = Readonly<{

@@ -25,21 +25,6 @@ import type { PartialBackendProcessCensus } from './partial-backend-boundary';
 const execute = promisify(execFile);
 const id = /^[a-f0-9]{24}$/;
 
-function isSafePrivateArtifactRelativePath(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    value.length <= 160 &&
-    value !== '.' &&
-    value !== '..' &&
-    !value.startsWith('../') &&
-    !path.isAbsolute(value) &&
-    !value.includes('/') &&
-    !value.includes('\\') &&
-    !value.includes('\0')
-  );
-}
-
 function assertCleanupLifecycleFence(
   signal: AbortSignal | undefined,
   deadlineAtMonotonicMs: number | undefined,
@@ -188,155 +173,6 @@ export function evaluateZeroAcquisitionIosCleanup(input: {
     hostCensusStatus: input.hostCensusStatus,
     failureReasons,
     result: failureReasons.length === 0 ? ('passed' as const) : ('failed' as const),
-  };
-}
-
-/**
- * A camera acquisition can fail after a resource was returned or after a
- * lower-level helper spawned a process but before it returned an owner
- * handle. This boundary consumes the durable partial ledger and deliberately
- * stays failed: an incomplete acquisition is not a cleanup pass, even when a
- * subset of known handles reported stopped.
- */
-export function evaluatePartialDetoxCameraCleanup(input: {
-  runId: string;
-  capture: {
-    result?: unknown;
-    acquisitionIntents?: unknown;
-    acquisitionSequence?: unknown;
-    acquisitionFailure?: unknown;
-    backendAcquisitionFailure?: unknown;
-    cleanup?: unknown;
-    preflight?: unknown;
-    resourceStates?: unknown;
-    cleanupAggregate?: unknown;
-    postChild?: unknown;
-  };
-  files: readonly string[];
-}) {
-  const failureReasons: string[] = [];
-  if (!id.test(input.runId)) failureReasons.push('run-id-invalid');
-  if (input.capture.result !== 'harness-blocked' && input.capture.result !== 'cancelled')
-    failureReasons.push('partial-result-invalid');
-  const intents = input.capture.acquisitionIntents;
-  if (
-    !Array.isArray(intents) ||
-    intents.length === 0 ||
-    intents.some((resource) => typeof resource !== 'string' || resource.length === 0)
-  )
-    failureReasons.push('acquisition-intents-invalid');
-  const sequence = input.capture.acquisitionSequence;
-  const intentList = Array.isArray(intents) ? intents : [];
-  if (
-    !Array.isArray(sequence) ||
-    sequence.some((resource) => !intentList.includes(resource)) ||
-    sequence.length > intentList.length ||
-    sequence.some((resource, index) => intentList[index] !== resource) ||
-    new Set(sequence).size !== sequence.length
-  )
-    failureReasons.push('acquisition-sequence-invalid');
-  const cleanup = input.capture.cleanup;
-  if (!cleanup || typeof cleanup !== 'object' || Array.isArray(cleanup)) {
-    failureReasons.push('partial-cleanup-object-missing');
-  } else {
-    const row = cleanup as Record<string, unknown>;
-    if (row.status !== 'failed-recovery-retained')
-      failureReasons.push('partial-cleanup-not-recovery-retained');
-    if (!Array.isArray(row.resources)) failureReasons.push('partial-cleanup-resources-missing');
-    if (!row.aggregate || typeof row.aggregate !== 'object' || Array.isArray(row.aggregate))
-      failureReasons.push('partial-cleanup-aggregate-missing');
-    if (!Array.isArray(row.unknownResources))
-      failureReasons.push('partial-cleanup-unknown-resources-missing');
-  }
-  let preflightCleanup: 'not-present' | 'cleaned' | 'uncertain' = 'not-present';
-  // Successful camera captures serialize the optional failed-preflight row as null. Treat both null and omitted as no preflight evidence; only an object is validated here.
-  if (input.capture.preflight !== undefined && input.capture.preflight !== null) {
-    if (
-      !input.capture.preflight ||
-      typeof input.capture.preflight !== 'object' ||
-      Array.isArray(input.capture.preflight)
-    ) {
-      failureReasons.push('preflight-receipt-invalid');
-    } else {
-      const preflight = input.capture.preflight as Record<string, unknown>;
-      if (preflight.resource !== 'detox-jest-list-tests')
-        failureReasons.push('preflight-resource-invalid');
-      if (preflight.cleanup === 'cleaned') preflightCleanup = 'cleaned';
-      else if (preflight.cleanup === 'uncertain') {
-        preflightCleanup = 'uncertain';
-        failureReasons.push('preflight-cleanup-uncertain');
-      } else failureReasons.push('preflight-cleanup-state-invalid');
-      if (
-        !preflight.execution ||
-        typeof preflight.execution !== 'object' ||
-        Array.isArray(preflight.execution)
-      )
-        failureReasons.push('preflight-execution-missing');
-    }
-  }
-  if (!input.capture.acquisitionFailure || typeof input.capture.acquisitionFailure !== 'object')
-    failureReasons.push('acquisition-failure-missing');
-  else {
-    const acquisitionFailure = input.capture.acquisitionFailure as Record<string, unknown>;
-    if (acquisitionFailure.artifactPathsLexicallyValidated !== true)
-      failureReasons.push('native-artifact-path-lexical-validation-missing');
-    for (const field of ['logPath', 'stdoutPath', 'ownershipPath'] as const) {
-      const value = acquisitionFailure[field];
-      if (value !== null && !isSafePrivateArtifactRelativePath(value))
-        failureReasons.push(`native-artifact-${field}-invalid`);
-    }
-  }
-  if (!Array.isArray(input.capture.resourceStates)) failureReasons.push('resource-states-missing');
-  if (
-    !input.capture.cleanupAggregate ||
-    typeof input.capture.cleanupAggregate !== 'object' ||
-    Array.isArray(input.capture.cleanupAggregate)
-  )
-    failureReasons.push('cleanup-aggregate-missing');
-  if (!input.capture.postChild || typeof input.capture.postChild !== 'object')
-    failureReasons.push('post-child-outcome-missing');
-  if (!input.files.includes('capture.private.json')) failureReasons.push('capture-ledger-missing');
-  const captureResult = typeof input.capture.result === 'string' ? input.capture.result : 'unknown';
-  const captureCleanup =
-    cleanup && typeof cleanup === 'object' && !Array.isArray(cleanup)
-      ? typeof (cleanup as Record<string, unknown>).status === 'string'
-        ? (cleanup as Record<string, unknown>).status
-        : 'unknown'
-      : typeof cleanup === 'string'
-        ? cleanup
-        : 'unknown';
-  const resourceStates = Array.isArray(input.capture.resourceStates)
-    ? (input.capture.resourceStates as unknown[])
-    : [];
-  const acquisitionIntents = Array.isArray(intents)
-    ? intents.filter((resource): resource is string => typeof resource === 'string')
-    : [];
-  const acquisitionSequence = Array.isArray(sequence)
-    ? sequence.filter((resource): resource is string => typeof resource === 'string')
-    : [];
-  return {
-    kind: 'independent ios partial Detox camera acquisition recovery proof',
-    scope: 'partial owned camera acquisition; no cleanup promotion',
-    runId: input.runId,
-    captureResult,
-    captureCleanup,
-    captureCleanupClean: false,
-    preflightCleanup,
-    preflightCleanupClean: preflightCleanup === 'cleaned',
-    recoveryVerified: false,
-    acquisitionIntents,
-    acquisitionSequence,
-    resourceStates,
-    unknownProcessQueries:
-      input.capture.acquisitionFailure &&
-      typeof input.capture.acquisitionFailure === 'object' &&
-      Number.isSafeInteger((input.capture.acquisitionFailure as { pid?: unknown }).pid)
-        ? [(input.capture.acquisitionFailure as { pid: number }).pid]
-        : [],
-    failureReasons,
-    result: 'failed' as const,
-    reason:
-      'A complete owner proof is required before partial camera acquisition cleanup can be classified as cleaned',
   };
 }
 
@@ -546,29 +382,6 @@ async function inspectZeroAcquisitionIosCleanup(
       devicesStable,
       foreignDeviceChanges,
     }),
-    finishedAt: new Date().toISOString(),
-  };
-}
-
-export async function inspectPartialDetoxCameraCleanup(
-  artifactRoot: string,
-  runId: string,
-  capture: Parameters<typeof evaluatePartialDetoxCameraCleanup>[0]['capture'],
-  lifecycle: CleanupLifecycleOptions = {},
-) {
-  assertCleanupLifecycleFence(
-    lifecycle.signal,
-    lifecycle.deadlineAtMonotonicMs,
-    'partial cleanup file census start',
-  );
-  const files = await readdir(artifactRoot);
-  assertCleanupLifecycleFence(
-    lifecycle.signal,
-    lifecycle.deadlineAtMonotonicMs,
-    'partial cleanup file census complete',
-  );
-  return {
-    ...evaluatePartialDetoxCameraCleanup({ runId, capture, files }),
     finishedAt: new Date().toISOString(),
   };
 }
@@ -837,14 +650,7 @@ export async function inspectOwnedIosCleanup(options: {
   const capture = json(artifactRoot, 'capture.private.json') as {
     result: string;
     cleanup: unknown;
-    preflight?: unknown;
-    partialAcquisition?: unknown;
     acquisitionIntents?: string[];
-    acquisitionSequence?: unknown;
-    acquisitionFailure?: unknown;
-    resourceStates?: unknown;
-    cleanupAggregate?: unknown;
-    postChild?: unknown;
     commandExecutions?: unknown[];
     reservedPorts?: number[];
     device?: { udid: string };
@@ -869,8 +675,6 @@ export async function inspectOwnedIosCleanup(options: {
   );
   if (Array.isArray(capture.acquisitionIntents) && capture.acquisitionIntents.length === 0)
     return inspectZeroAcquisitionIosCleanup(artifactRoot, runId, capture);
-  if (capture.partialAcquisition === true)
-    return inspectPartialDetoxCameraCleanup(artifactRoot, runId, capture, options);
   const serverRoot = await realpath(path.resolve(repositoryRoot, '../server'));
   if (!capture.backend)
     return inspectBeforeBackendIosCleanup(artifactRoot, runId, capture, serverRoot, options);

@@ -646,7 +646,7 @@ export function discoverRegisteredTestFiles(root: string): string[] {
         continue;
       }
       const path = normalizePath(relative(root, entryPath));
-      if (/\.(e2e\.test\.js|spec\.ts)$/.test(path)) {
+      if (/\.spec\.ts$/.test(path)) {
         files.add(path);
       }
     }

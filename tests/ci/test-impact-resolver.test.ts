@@ -756,18 +756,23 @@ void test('registered UI spec discovery recurses through nested E2E directories'
 
   try {
     mkdirSync(join(repository, 'e2e', 'web', 'auth'), { recursive: true });
-    mkdirSync(join(repository, 'e2e', 'native', 'student'), { recursive: true });
+    mkdirSync(join(repository, '.maestro', 'suite', 'student-home'), { recursive: true });
+    mkdirSync(join(repository, '.maestro', 'suite', 'common'), { recursive: true });
     writeFileSync(
       join(repository, 'e2e', 'web', 'auth', 'login.spec.ts'),
       'test("login", () => {});\n',
     );
     writeFileSync(
-      join(repository, 'e2e', 'native', 'student', 'home.e2e.test.js'),
-      'describe("home", () => {});\n',
+      join(repository, '.maestro', 'suite', 'student-home', '01-home.yaml'),
+      'appId: com.example\n---\n- launchApp\n',
+    );
+    writeFileSync(
+      join(repository, '.maestro', 'suite', 'common', 'launch.yaml'),
+      'appId: com.example\n---\n- launchApp\n',
     );
 
     assert.deepEqual(discoverRegisteredTestFiles(repository), [
-      'e2e/native/student/home.e2e.test.js',
+      '.maestro/suite/student-home',
       'e2e/web/auth/login.spec.ts',
     ]);
   } finally {

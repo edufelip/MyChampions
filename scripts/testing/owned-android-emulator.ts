@@ -26,7 +26,7 @@ export const androidEmulatorLifecycleCaps = {
 
 /**
  * This is the local macOS image already exercised by the Android Maestro
- * pilot.  Detox may override it for a controlled runner, but an unset
+ * pilot.  A controlled runner may override it, but an unset
  * environment must not turn a supported local Android lane into a manual
  * configuration prerequisite.
  */

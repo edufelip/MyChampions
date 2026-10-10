@@ -69,7 +69,7 @@ export async function startOwnedExpo(options: {
   });
   if (options.surface === 'native') {
     // Native E2E keeps warnings in runner diagnostics while preventing the
-    // development LogBox layer from intercepting Maestro/Detox actions.
+    // development LogBox layer from intercepting Maestro actions.
     env.EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX = 'true';
   }
   const deadlineMs = options.deadlineMs ?? 120_000;

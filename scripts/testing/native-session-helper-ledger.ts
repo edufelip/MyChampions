@@ -133,7 +133,7 @@ export const nativeSessionHelperInputPaths = Object.freeze([
   'scripts/testing/native-android-driver-diagnostics.ts',
   'scripts/testing/native-android-driver-startup-sampling.ts',
   'scripts/testing/native-connection-hierarchy-android.ts',
-  // V4 iOS Detox dispatch helpers: artifact-root acquisition, result publication,
+  // V4 iOS dispatch helpers: artifact-root acquisition, result publication,
   // and the protected native-pilot output-root invocation are producer-owned
   // freshness inputs once the reviewed dispatch is composed.
   'scripts/testing/native-pilot-invocation.ts',

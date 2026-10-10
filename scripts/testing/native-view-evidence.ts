@@ -11,7 +11,11 @@ import {
   realpathSync,
 } from 'node:fs';
 import path from 'node:path';
-import { androidSourceIdentity, inspectOwnedAndroidApk } from './android-build-identity';
+import {
+  androidPilotSdkRoot,
+  androidSourceIdentity,
+  inspectOwnedAndroidApk,
+} from './android-build-identity';
 import {
   androidInputReaderPackage,
   parseAndroidNativeInputObservation,
@@ -1966,7 +1970,7 @@ export async function validateNativeViewReceipt(
     const inspected = await inspectOwnedAndroidApk({
       binaryPath: expectedBinary,
       artifactRoot: root,
-      sdkRoot: '/Users/eduwaldo/Library/Android/sdk',
+      sdkRoot: androidPilotSdkRoot(),
       apiOrigin: capture.build.apiOrigin,
       writeReceipt: false,
     });

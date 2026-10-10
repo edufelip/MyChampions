@@ -19,7 +19,7 @@ export type ReusableIosBuild = {
   apiOrigin: string;
   metroOrigin: string;
   environmentHash: string;
-  /** Captured root-app identity; required when the build crosses into Detox. */
+  /** Captured root-app identity of the qualified binary. */
   binaryIdentity?: ReusableIosBuildIdentity;
 };
 export type ReusableIosBuildIdentity = Readonly<{

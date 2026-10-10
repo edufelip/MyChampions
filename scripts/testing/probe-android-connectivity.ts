@@ -1,9 +1,11 @@
 import { execFile } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import { lstat, mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
+import { androidPilotSdkRoot } from './android-build-identity';
 import {
   acquireOwnedAndroidEmulator,
   inspectPrivateAndroidDirectory,
@@ -27,8 +29,8 @@ async function main() {
   const hostRoot = process.env.MYCHAMPIONS_NATIVE_STATE_ROOT;
   if (!hostRoot) throw new Error('Run through the shared native host-lock wrapper');
   await inspectPrivateAndroidDirectory(hostRoot);
-  const sdkRoot = process.env.ANDROID_SDK_ROOT ?? '/Users/eduwaldo/Library/Android/sdk';
-  const maestro = '/Users/eduwaldo/.maestro/bin/maestro';
+  const sdkRoot = androidPilotSdkRoot();
+  const maestro = process.env.MAESTRO_PILOT_BIN ?? path.join(os.homedir(), '.maestro/bin/maestro');
   const version = (
     await execute(maestro, ['--version'], {
       timeout: 30_000,

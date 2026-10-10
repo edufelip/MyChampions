@@ -7,7 +7,6 @@ import {
   type PendingConnectionTargetMatch,
 } from './native-connection-hierarchy';
 import type { OwnedConnectionSnapshot } from './native-connection-snapshot';
-import type Detox from 'detox';
 
 type DetoxPlatform = 'android' | 'ios';
 type SaxTag = Tag | QualifiedTag;
@@ -37,8 +36,20 @@ export type DetoxElementFrame = {
   height: number;
 };
 
-/** The direct object returned by Detox element.getAttributes(). */
-export type DetoxElementAttributes = Detox.IosElementAttributes | Detox.AndroidElementAttributes;
+/**
+ * The direct object returned by an element.getAttributes() call, reduced to the
+ * fields this parser reads. Other platform-specific fields pass through unread;
+ * the shape is declared locally because the 'detox' package is no longer installed.
+ */
+export type DetoxElementAttributes = {
+  identifier: string;
+  enabled: boolean;
+  visible: boolean;
+  frame: DetoxElementFrame;
+  /** Reported on iOS only. */
+  hittable?: boolean;
+  [field: string]: unknown;
+};
 
 /** The complete Detox getAttributes() return union, including multi-match results. */
 export type DetoxElementAttributesResult =

@@ -40,24 +40,6 @@ module.exports = defineConfig([
   // type-aware rule layers to avoid registering the plugin twice in flat config.
   ...typedTypeScriptConfig.slice(1),
   {
-    files: ['e2e/**/*.{js,jsx,ts,tsx}'],
-    languageOptions: {
-      globals: {
-        afterAll: 'readonly',
-        afterEach: 'readonly',
-        beforeAll: 'readonly',
-        beforeEach: 'readonly',
-        by: 'readonly',
-        describe: 'readonly',
-        device: 'readonly',
-        element: 'readonly',
-        expect: 'readonly',
-        it: 'readonly',
-        waitFor: 'readonly',
-      },
-    },
-  },
-  {
     files: ['features/**/*.{js,jsx,ts,tsx}'],
     rules: {
       'expo/no-dynamic-env-var': 'warn',

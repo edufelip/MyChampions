@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lstat, readFile, realpath, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import {
@@ -14,9 +15,16 @@ import type { NativeSourceIdentity } from './native-build-identity';
 const execute = promisify(execFile);
 export const ANDROID_PILOT_APP_ID = 'com.edufelip.mychampions.dev';
 
+/** The pilot's Android SDK: ANDROID_SDK_ROOT, then ANDROID_HOME, then the default macOS install. */
+export function androidPilotSdkRoot(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): string {
+  return env.ANDROID_SDK_ROOT ?? env.ANDROID_HOME ?? path.join(os.homedir(), 'Library/Android/sdk');
+}
+
 /** The existing capture toolchain, resolved independently of a captured identity JSON. */
 export async function resolveAndroidPilotToolchain() {
-  const sdkRoot = '/Users/eduwaldo/Library/Android/sdk';
+  const sdkRoot = androidPilotSdkRoot();
   const javaHome = (
     await execute('/usr/libexec/java_home', ['-v', '17'], { timeout: 5000 })
   ).stdout.trim();

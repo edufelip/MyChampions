@@ -37,12 +37,20 @@ function scrollsThenTaps(source: string, id: string): boolean {
 }
 
 test('deterministic native flows never tap raw screen coordinates', () => {
-  // Only the live RevenueCat paywall, whose close control is unlabelled, may.
+  // Only the live RevenueCat paywall, whose close control is unlabelled, and the
+  // shared hide-keyboard subflow's documented iOS margin tap may.
+  const hideKeyboardMarginTap =
+    /- runFlow:\n {10}when:\n {12}true: \$\{\(IOS_KEYBOARD \|\| 'margin'\) == 'margin'\}\n {10}commands:\n {12}- tapOn:\n {16}point: "2%,30%"\n/;
   const offenders = allSuiteFlows()
     .filter(({ path }) => !path.startsWith('revenuecat-test-store/'))
-    .filter(({ source }) => /point:/.test(source))
+    .filter(({ path, source }) =>
+      /point:/.test(
+        path === 'common/hide-keyboard.yaml' ? source.replace(hideKeyboardMarginTap, '') : source,
+      ),
+    )
     .map(({ path }) => path);
   assert.deepEqual(offenders, []);
+  assert.match(suite('common/hide-keyboard.yaml'), hideKeyboardMarginTap);
 });
 
 test('professional specialty stories scroll the credential action into view', () => {

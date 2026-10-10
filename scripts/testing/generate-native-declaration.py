@@ -65,7 +65,6 @@ SOURCE_PATHS = {
     "t15-cold-dispatcher-source": "scripts/testing/t15-cold-dispatcher.ts",
     "t15-cold-android-maestro-build-reuse-source": "scripts/testing/t15-cold-android-maestro-build-reuse.ts",
     "native-comparison-source": "scripts/testing/compare-native-pilot.ts",
-    "native-connection-engine-contract-source": "scripts/testing/native-connection-engine-contract.ts",
     # Detox runtime qualification metadata and producer/verifier are explicit
     # declaration inputs. Runtime closure discovery alone is not a source row,
     # so freshness must bind these exact files to the iOS Detox scenario.
@@ -751,7 +750,7 @@ def main():
                 if family == "save-retry":
                     scenario_owners += " android-save-retry-adapter-source android-save-retry-public-evidence-source"
                 if family == "connection":
-                    scenario_owners += " android-connection-terminal-projection-source     native-connection-engine-contract-source  "
+                    scenario_owners += " android-connection-terminal-projection-source"
                 if family == "training":
                     scenario_owners += " android-training-adapter-source training-public-evidence-source"
             owner_keys = unique_paths(scenario_owners.split())

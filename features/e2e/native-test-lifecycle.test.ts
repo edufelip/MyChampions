@@ -148,7 +148,7 @@ test('custom meal quick logging preserves grams and dismisses each native keyboa
 
   assert.match(
     source,
-    /- tapOn:\n    id: meal\.library\.quickLog\.input\n- inputText: "150"\n- assertVisible:\n    id: meal\.library\.quickLog\.input\n    text: "150"\n- runFlow:\n    file: \.\.\/common\/dismiss-keyboard\.yaml\n    env:\n      KEYBOARD_DONE_ID: meal\.library\.quickLog\.keyboard\.done/,
+    /- tapOn:\n    id: meal\.library\.quickLog\.input\n- inputText: "150"\n(#.*\n)*- runFlow:\n    file: \.\.\/common\/hide-keyboard\.yaml\n    env:\n      IOS_KEYBOARD: done\n- assertVisible:\n    id: meal\.library\.quickLog\.input\n    text: "150"\n/,
   );
   assert.match(
     source,

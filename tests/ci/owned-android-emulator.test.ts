@@ -199,7 +199,7 @@ void test('Android acquisition lifecycle deadlines only shorten existing caps', 
   );
 });
 
-void test('Android Detox uses the reviewed local image unless a safe override is supplied', () => {
+void test('owned Android emulator uses the reviewed local image unless a safe override is supplied', () => {
   assert.equal(
     resolveOwnedAndroidSystemImage({}),
     'system-images;android-37.0;google_apis_playstore_ps16k;arm64-v8a',

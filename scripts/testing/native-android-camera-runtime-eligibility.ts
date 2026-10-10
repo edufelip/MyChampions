@@ -60,7 +60,7 @@ const CAMERA_PROFILE = 'dev-debug-arm64';
 const CAMERA_BUILD_PROFILE =
   'Metro-attached devDebug arm64; no app-domain instrumentation; optional separately bound read-only input reader; not bundled release qualification';
 /**
- * Keep the camera eligibility reader aligned with the existing Detox Android build
+ * Keep the camera eligibility reader aligned with the Android pilot build
  * contract. The reader remains finite and streams the artifact instead of buffering it.
  */
 export const ANDROID_CAMERA_APK_MAX_BYTES = 256 * 1024 * 1024;

@@ -108,7 +108,7 @@ function requireAndroidInitialCoachAuth(
 }
 
 /**
- * The shared journey has an optional Detox action channel in its sixth
+ * The shared journey has an optional action channel in its sixth
  * argument.  Maestro's iOS observer uses that position for its private
  * not-visible selector list, so pass only the five Maestro arguments through
  * this adapter.  The shared controller has already resolved and embedded the
@@ -125,9 +125,8 @@ export function adaptIosConnectionObserve(
 }
 
 /**
- * Keep the shared semantic navigation enum intact for both the Maestro
- * lowering boundary and the Detox IPC boundary.  Maestro converts this value
- * to actions in its runtime context; Detox validates and transports the enum.
+ * Keep the shared semantic navigation enum intact for the Maestro lowering
+ * boundary.  Maestro converts this value to actions in its runtime context.
  */
 export function adaptIosContext(
   context: IosConnectionRuntimeContext,

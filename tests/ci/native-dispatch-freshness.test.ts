@@ -37,23 +37,13 @@ const staticDispatchPaths = [
   'scripts/testing/detox-android-session-storage-producer.ts',
   'scripts/testing/detox-connection-actionability.ts',
   'scripts/testing/detox-connection-evidence.ts',
-  'scripts/testing/detox-connection-ipc.ts',
-  'scripts/testing/detox-connection-lifecycle.ts',
-  'scripts/testing/detox-integrated-connection-baseline.ts',
-  'scripts/testing/detox-integrated-connection-driver.ts',
-  'scripts/testing/detox-integrated-session-baseline.ts',
   'scripts/testing/detox-native-hierarchy.ts',
   'scripts/testing/detox-session-cache-observation.ts',
-  'scripts/testing/detox-session-cancel-evidence.ts',
-  'scripts/testing/detox-session-final-transport.ts',
-  'scripts/testing/detox-training-child-client.ts',
-  'scripts/testing/detox-training-child-protocol.mjs',
-  'scripts/testing/detox-training-journey.ts',
-  'scripts/testing/detox-training-owned-dispatch.ts',
   'scripts/testing/native-android-session-adapter.ts',
 ] as const;
 // Keep the exact candidate IDs explicit: this is the transfer contract, not a
-// permissive path-derived fallback. The generator uses the same stable map.
+// permissive path-derived fallback. The generator uses the same stable map
+// (DETOX_DISPATCH_STATIC_SOURCE_PATHS in generate-native-declaration.py).
 const staticSourceIds: Record<string, string> = {
   'scripts/testing/android-session-charter.ts': 'SRC-detox-dispatch-android-session-charter-source',
   'scripts/testing/detox-android-session-storage-producer.ts':
@@ -61,28 +51,9 @@ const staticSourceIds: Record<string, string> = {
   'scripts/testing/detox-connection-actionability.ts':
     'SRC-detox-dispatch-connection-actionability-source',
   'scripts/testing/detox-connection-evidence.ts': 'SRC-detox-dispatch-connection-evidence-source',
-  'scripts/testing/detox-connection-ipc.ts': 'SRC-detox-dispatch-connection-ipc-source',
-  'scripts/testing/detox-connection-lifecycle.ts': 'SRC-detox-dispatch-connection-lifecycle-source',
-  'scripts/testing/detox-integrated-connection-baseline.ts':
-    'SRC-detox-dispatch-integrated-connection-baseline-source',
-  'scripts/testing/detox-integrated-connection-driver.ts':
-    'SRC-detox-dispatch-integrated-connection-driver-source',
-  'scripts/testing/detox-integrated-session-baseline.ts':
-    'SRC-detox-dispatch-integrated-session-baseline-source',
   'scripts/testing/detox-native-hierarchy.ts': 'SRC-detox-dispatch-native-hierarchy-source',
   'scripts/testing/detox-session-cache-observation.ts':
     'SRC-detox-dispatch-session-cache-observation-source',
-  'scripts/testing/detox-session-cancel-evidence.ts':
-    'SRC-detox-dispatch-session-cancel-evidence-source',
-  'scripts/testing/detox-session-final-transport.ts':
-    'SRC-detox-dispatch-session-final-transport-source',
-  'scripts/testing/detox-training-child-client.ts':
-    'SRC-detox-dispatch-training-child-client-source',
-  'scripts/testing/detox-training-child-protocol.mjs':
-    'SRC-detox-dispatch-training-child-protocol-source',
-  'scripts/testing/detox-training-journey.ts': 'SRC-detox-dispatch-training-journey-source',
-  'scripts/testing/detox-training-owned-dispatch.ts':
-    'SRC-detox-dispatch-training-owned-dispatch-source',
   'scripts/testing/native-android-session-adapter.ts':
     'SRC-detox-dispatch-native-android-session-adapter-source',
 };
@@ -130,7 +101,7 @@ void test('selection rejects an omitted dispatch owner path before runtime acqui
   scenario.freshnessInputs.ownerPaths = scenario.freshnessInputs.ownerPaths!.filter(
     (relative) => relative !== staticDispatchPaths[0],
   );
-  await assert.rejects(select(inventory), /omits Detox dispatch owner path|omits producer helper/);
+  await assert.rejects(select(inventory), /omits producer helper/);
 });
 
 void test('selection rejects a swapped dispatch owner path before runtime acquisition', async () => {
@@ -139,7 +110,7 @@ void test('selection rejects a swapped dispatch owner path before runtime acquis
   const index = scenario.ownerPaths!.indexOf(staticDispatchPaths[0]);
   scenario.ownerPaths![index] = 'app/auth/sign-in.tsx';
   scenario.freshnessInputs.ownerPaths![index] = 'app/auth/sign-in.tsx';
-  await assert.rejects(select(inventory), /omits Detox dispatch owner path|omits producer helper/);
+  await assert.rejects(select(inventory), /omits producer helper/);
 });
 
 void test('selection rejects a removed dispatch revision row', async () => {

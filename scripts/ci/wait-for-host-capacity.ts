@@ -21,7 +21,7 @@ import { pathToFileURL } from 'node:url';
 // This module is a bounded, observational preflight: it never blocks CI
 // indefinitely and never fails the job on its own account. It only gives a
 // contended host a chance to calm down before the RAM/CPU-heavy emulator
-// boot and before Detox launches the app under test.
+// boot and before the native runner launches the app under test.
 
 export type HostCapacitySnapshot = {
   loadAverage1m: number;

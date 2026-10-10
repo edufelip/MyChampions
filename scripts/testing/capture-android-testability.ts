@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import { constants as fsConstants, createReadStream, type Stats } from 'node:fs';
 import { chmod, lstat, mkdir, open, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath, URL } from 'node:url';
@@ -10,6 +11,7 @@ import { promisify } from 'node:util';
 import {
   ANDROID_PILOT_APP_ID,
   androidMetroPreference,
+  androidPilotSdkRoot,
   androidSourceIdentity,
   assertAndroidReverseMappings,
   inspectOwnedAndroidApk,
@@ -1560,8 +1562,8 @@ async function executeOwnedAndroidSession(
   const hostRoot = process.env.MYCHAMPIONS_NATIVE_STATE_ROOT;
   if (!hostRoot) throw new Error('Use the shared native host-lock wrapper');
   await inspectPrivateAndroidDirectory(hostRoot);
-  const sdkRoot = '/Users/eduwaldo/Library/Android/sdk';
-  const maestro = '/Users/eduwaldo/.maestro/bin/maestro';
+  const sdkRoot = androidPilotSdkRoot();
+  const maestro = process.env.MAESTRO_PILOT_BIN ?? path.join(os.homedir(), '.maestro/bin/maestro');
   if (
     (
       await execute(maestro, ['--version'], {
@@ -1761,7 +1763,7 @@ async function executeOwnedAndroidSession(
     'native-session-helper-ledger.ts',
     'ios-session-post-tap-diagnostic.ts',
     'partial-backend-boundary.ts',
-    // The Android Detox dispatch imports the save/retry owner and its
+    // The Android pilot dispatch imports the save/retry owner and its
     // producer receipt finalizer transitively. Keep both bytes in the same
     // capture helper ledger so a fresh camera source cannot omit a module
     // that is loaded before native preparation starts.
@@ -1771,7 +1773,7 @@ async function executeOwnedAndroidSession(
     'run-ios-connection-attempt.ts',
     'native-camera-submission-evidence.ts',
     'run-ios-camera-attempt.ts',
-    // Mirror the shared iOS ledger V4 Detox dispatch helpers so Android
+    // Mirror the shared iOS ledger V4 dispatch helpers so Android
     // session freshness cannot omit a cross-platform producer input.
     'native-pilot-invocation.ts',
     't15-cold-ios-reset-producer.ts',
@@ -1798,7 +1800,6 @@ async function executeOwnedAndroidSession(
     'detox-android-session-storage-producer.ts',
     'detox-session-cache-observation.ts',
     'native-detox-camera-android-identity.ts',
-    'native-connection-engine-contract.ts',
     'native-pilot-preflight.ts',
   ];
   const helperIdentity = async () =>
@@ -3056,7 +3057,7 @@ async function executeOwnedAndroidSession(
       ANDROID_HOME: sdkRoot,
       ANDROID_SDK_ROOT: sdkRoot,
       JAVA_HOME: javaHome,
-      GRADLE_USER_HOME: '/Users/eduwaldo/.gradle',
+      GRADLE_USER_HOME: process.env.GRADLE_USER_HOME ?? path.join(os.homedir(), '.gradle'),
       JAVA_TOOL_OPTIONS: `-Dmychampions.native.owner=${path.basename(output)}`,
     };
     const buildDir = path.join(output, 'android-app-build');
