@@ -57,8 +57,18 @@ workflows. Leave every item unchecked until its evidence is attached.
 - [ ] Register a repository-scoped runner with exact labels
       `self-hosted,macOS,ARM64,mychampions-ci,mychampions-ios`.
 - [ ] Verify Xcode 26 and iOS SDK 26+, an `iPhone 17` simulator, CocoaPods,
-      the pinned Maestro CLI (`scripts/testing/install-maestro.sh`), and the
-      expected Homebrew path.
+      and the expected Homebrew path.
+- [ ] Verify the Maestro prerequisites. Maestro is a Java CLI and needs JDK
+      17+: the iOS Maestro jobs (`ios-pr.yml`, `native-protected-full.yml`,
+      `provider-validation.yml`) set up Temurin 17 with `actions/setup-java`,
+      so the runner service needs network access to download it. They then
+      install the pinned Maestro CLI 2.10.0 with
+      `scripts/testing/install-maestro.sh`, which needs `curl`, `unzip`,
+      `shasum`, and network access to the GitHub release zip it checks against
+      a pinned SHA-256.
+- [ ] For `protected-manual-ios-maestro.yml`, verify the native pilot's
+      Maestro 2.6.1 is the `maestro` on the runner service `PATH`; that
+      workflow sets up Temurin 17 itself, and its preflight requires both.
 - [ ] Install the runner as a persistent service and record service-status
       evidence without exposing its registration token.
 - [ ] Configure and prove the Mac host-wide lock shared with the Meer iOS
@@ -89,6 +99,9 @@ workflows. Leave every item unchecked until its evidence is attached.
       `Pixel_10` AVD for Android. Confirm the persistent runner listener itself
       has the effective `kvm` group and that a service-context
       `emulator -accel-check` reports KVM usable.
+- [ ] Verify `curl`, `unzip`, `shasum`, and network access for
+      `scripts/testing/install-maestro.sh`, which the Android full lane runs
+      after setting up Temurin 17.
 - [ ] Install the runner as a persistent service and record service-status
       evidence without exposing registration tokens.
 - [ ] Configure and prove the host-wide lock shared with Meer so only one runner

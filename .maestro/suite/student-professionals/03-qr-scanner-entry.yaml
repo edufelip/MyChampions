@@ -11,7 +11,18 @@ tags: [qr-valid]
       CAMERA_ANSWER: allow
 - waitForAnimationToEnd:
     timeout: 5000
-# The scanner either stays open (close it) or the fixture payload submits at once.
+# The scanner either stays open (close it) or the fixture payload submits at once
+# and the screen shows its outcome: the pending connection or a submit error.
+# A scan button that does nothing fails here.
+- runFlow:
+    when:
+      notVisible:
+        id: student.professionals.qrCloseButton
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "student\\.professionals\\.(?:connectionPending\\.e2e-pending-nutritionist-connection|submitError)"
+          timeout: 10000
 - runFlow:
     when:
       visible:

@@ -679,6 +679,13 @@ else process.stdout.write('');
     assert.match(workflow, /path: server/u);
     assert.doesNotMatch(workflow, /path: \.\.\/server/u);
     assert.match(workflow, /working-directory: client/u);
+    // The job default `client` only exists after checkout, so the pre-checkout
+    // step must run from the workspace root.
+    const preCheckout = workflow.slice(
+      workflow.indexOf('- name: Validate exact manual inputs before checkout'),
+      workflow.indexOf('- name: Checkout exact client revision'),
+    );
+    assert.match(preCheckout, /^\s+working-directory: \$\{\{ github\.workspace \}\}$/mu);
     assert.match(workflow, /MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT/u);
     assert.match(workflow, /build_source:/u);
     assert.match(workflow, /private-restoration/u);

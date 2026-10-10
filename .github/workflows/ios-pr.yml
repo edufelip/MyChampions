@@ -56,6 +56,12 @@ jobs:
           pod install --silent
       - name: List available simulators
         run: xcrun simctl list devices available
+      # Maestro is a Java CLI.
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: 17
       - name: Install Maestro
         run: bash scripts/testing/install-maestro.sh
       # The shared Mac runner owns a dedicated Metro port (not the default 8081).

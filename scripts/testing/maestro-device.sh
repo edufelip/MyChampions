@@ -13,6 +13,9 @@
 # ANDROID_SERIAL when set, otherwise the single attached device.
 set -euo pipefail
 
+export MAESTRO_CLI_NO_ANALYTICS=1
+export MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED=true
+
 platform=""
 app=""
 resolve_only=false

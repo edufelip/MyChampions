@@ -71,3 +71,39 @@ test('native host lock releases after successful and failed commands', () => {
   assert.match(lockRunner, /trap 'forward_signal INT' INT/);
   assert.match(lockRunner, /trap 'forward_signal TERM' TERM/);
 });
+
+test('live runner suppresses the LogBox overlay like the CI fixture phases', () => {
+  assert.match(providerRunner, /^export EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX=true$/m);
+  assert.doesNotMatch(providerRunner, /unset EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX/);
+});
+
+test('live runner tag filters survive an empty filter under set -u (macOS bash 3.2)', () => {
+  // scenario=all with the expiration monitor leaves tag_args empty, and bash
+  // 3.2 treats a plain "${tag_args[@]}" of an empty array as unbound.
+  const tagBlock = providerRunner.match(
+    /^monitor="\$\{REVENUECAT_LIVE_MONITOR_EXPIRATION[\s\S]*?^fi$/m,
+  )?.[0];
+  const expansion = providerRunner.match(/ test (\S*tag_args\S*) \\$/m)?.[1];
+  assert.ok(tagBlock, 'tag-arg block not found');
+  assert.equal(expansion, '${tag_args[@]+"${tag_args[@]}"}');
+  const argsFor = (scenario: string, monitor: string) => {
+    const result = spawnSync(
+      '/bin/bash',
+      [
+        '-c',
+        `set -euo pipefail\nlive_scenario=${scenario}\n${tagBlock}\nfor arg in ${expansion}; do echo "$arg"; done`,
+      ],
+      { env: { ...process.env, REVENUECAT_LIVE_MONITOR_EXPIRATION: monitor }, encoding: 'utf8' },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.split('\n').filter(Boolean);
+  };
+
+  assert.deepEqual(argsFor('all', 'true'), []);
+  assert.deepEqual(argsFor('all', 'false'), ['--exclude-tags', 'expiration-monitor']);
+  assert.deepEqual(argsFor('professional-regression', 'true'), [
+    '--include-tags',
+    'professional-regression,expiration-monitor',
+  ]);
+  assert.deepEqual(argsFor('student-dismiss', 'false'), ['--include-tags', 'student-dismiss']);
+});

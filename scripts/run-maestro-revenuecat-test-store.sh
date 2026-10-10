@@ -53,6 +53,8 @@ export EXPO_PUBLIC_E2E_SOCIAL_AUTH=true
 export EXPO_PUBLIC_E2E_AUTH_UID="$run_uid"
 export EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID="$alternate_uid"
 export EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE=basic
+# Same as the CI fixture phases: no LogBox overlay over the flows' taps.
+export EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX=true
 
 REVENUECAT_TEST_APP_USER_ID="$run_uid" \
   REVENUECAT_TEST_ALT_APP_USER_ID="$alternate_uid" \
@@ -93,8 +95,10 @@ bash scripts/testing/maestro-device.sh --platform ios
 device="$(bash scripts/testing/maestro-device.sh --platform ios --resolve-only)"
 output_dir="${project_root}/.artifacts/ci-diagnostics/revenuecat/${live_scenario}-${run_uid}"
 mkdir -p "$output_dir"
+# tag_args is empty for scenario=all with the monitor on; macOS bash 3.2 treats
+# a plain "${tag_args[@]}" of an empty array as unbound under set -u.
 MAESTRO_CLI_NO_ANALYTICS=1 node --import tsx scripts/testing/run-with-fresh-metro.ts --platform ios -- \
-  "$maestro_bin" --device "$device" test "${tag_args[@]}" \
+  "$maestro_bin" --device "$device" test ${tag_args[@]+"${tag_args[@]}"} \
   --format junit --output "$output_dir/report.xml" --test-output-dir "$output_dir" \
   .maestro/suite/revenuecat-test-store
 

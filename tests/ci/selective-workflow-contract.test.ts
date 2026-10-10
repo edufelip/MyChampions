@@ -1287,3 +1287,36 @@ void test('protected native full validation is manual/release/protected-branch-p
   // authorization/identity-check job should be introduced for this trigger.
   assert.doesNotMatch(workflow, /authoriz/i);
 });
+
+void test('every Maestro lane provisions JDK 17 before installing the Java-based Maestro CLI', () => {
+  const maestroJobs: string[] = [];
+
+  for (const [name, source] of workflows) {
+    const jobsStart = source.indexOf('\njobs:\n');
+    if (jobsStart === -1) continue;
+    const jobNames = [...source.slice(jobsStart).matchAll(/^ {2}([a-zA-Z0-9_-]+):$/gm)].map(
+      ([, job]) => job,
+    );
+    for (const job of jobNames) {
+      const block = jobBlock(source, job);
+      const install = block.indexOf('run: bash scripts/testing/install-maestro.sh');
+      if (install === -1) continue;
+      maestroJobs.push(`${name}#${job}`);
+      const [setupJava] = actionStepBlocks(block, 'actions/setup-java');
+      assert.ok(setupJava, `${name}#${job}: Maestro needs a JDK`);
+      assert.match(setupJava, /^\s+distribution: temurin$/m, `${name}#${job}`);
+      assert.match(setupJava, /^\s+java-version: 17$/m, `${name}#${job}`);
+      assert.ok(
+        block.indexOf(setupJava) < install,
+        `${name}#${job}: set up Java before installing Maestro`,
+      );
+    }
+  }
+
+  assert.deepEqual(maestroJobs.sort(), [
+    'ios-pr.yml#build',
+    'native-protected-full.yml#native-android-full',
+    'native-protected-full.yml#native-ios-full',
+    'provider-validation.yml#ios-test-store',
+  ]);
+});
