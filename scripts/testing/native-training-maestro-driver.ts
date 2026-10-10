@@ -3,7 +3,10 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { requireAndroidNativeInputValue } from './android-native-input-reader';
-import { requireIosItemRemovalPrompt } from './native-training-edit-observation';
+import {
+  nativeItemRemovalBody,
+  requireIosItemRemovalPrompt,
+} from './native-training-edit-observation';
 import { runNativeTrainingJourney } from './native-training-journey';
 import {
   nativeTrainingQuantityContract,
@@ -171,9 +174,9 @@ export function requireAndroidSelectAllMenu(tree: unknown) {
   assert.equal(actions.length, 1, 'Android Select all action is missing or ambiguous');
   assert.equal(actions[0].enabled, 'true', 'Android Select all action is disabled');
 }
-export function requireAndroidItemRemovalPrompt(tree: unknown) {
+export function requireAndroidItemRemovalPrompt(tree: unknown, exerciseName: string) {
   const nodes = allNodes(tree),
-    body = enUS['pro.plan.delete.body'];
+    body = nativeItemRemovalBody(exerciseName);
   const messages = nodes.filter((row) => row['resource-id'] === 'android:id/message');
   assert.equal(messages.length, 1, 'Android removal body anchor is missing or ambiguous');
   assert.equal(messages[0].text, body, 'Android removal body differs');
@@ -673,14 +676,14 @@ function createNativeTrainingMaestroDriver(
           scroll(`pro.training_plan.itemRow.${segment(input.exerciseName)}.remove`) +
           tap(`pro.training_plan.itemRow.${segment(input.exerciseName)}.remove`),
         'STATE-item-removal-confirm',
-        enUS['pro.plan.delete.body'],
+        nativeItemRemovalBody(input.exerciseName),
         'text',
       );
       const prompt = await hierarchy('journey-edit-title');
       const body =
         input.platform === 'ios'
-          ? requireIosItemRemovalPrompt(prompt)
-          : requireAndroidItemRemovalPrompt(prompt);
+          ? requireIosItemRemovalPrompt(prompt, input.exerciseName)
+          : requireAndroidItemRemovalPrompt(prompt, input.exerciseName);
       const confirmRemoval =
         input.platform === 'ios'
           ? `- tapOn:\n    text: ${exact(enUS['common.cta.delete'])}\n    below:\n      text: ${exact(body)}\n    enabled: true\n`

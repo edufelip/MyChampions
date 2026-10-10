@@ -19,9 +19,14 @@ function bounds(value: unknown) {
   assert(match, 'Native confirmation has no usable relational bounds');
   return match.slice(1).map(Number);
 }
+/** The app's confirmation for removing one named exercise from a session. */
+export function nativeItemRemovalBody(exerciseName: string) {
+  assert(typeof exerciseName === 'string' && exerciseName.trim(), 'Exercise name is required');
+  return enUS['pro.plan.session_item.delete.body'].replaceAll('{name}', exerciseName);
+}
 /** Observe before binding the relational Delete selector. Never uses point/index fallback. */
-export function requireIosItemRemovalPrompt(tree: unknown) {
-  const body = enUS['pro.plan.delete.body'];
+export function requireIosItemRemovalPrompt(tree: unknown, exerciseName: string) {
+  const body = nativeItemRemovalBody(exerciseName);
   const all = nodes(tree);
   const anchors = all.filter((row) => row.accessibilityText === body);
   assert.equal(anchors.length, 1, 'Removal body anchor is ambiguous');
@@ -99,13 +104,13 @@ export async function observeIosTrainingLocalEdit(input: {
     scroll('pro.training_plan.itemRow.QA_Exercise.remove') +
       tap('pro.training_plan.itemRow.QA_Exercise.remove'),
     'STATE-item-removal-confirm',
-    enUS['pro.plan.delete.body'],
+    nativeItemRemovalBody('QA Exercise'),
     'text',
   );
   const prompt = JSON.parse(
     await readFile(path.join(output, 'item-removal-prompt-hierarchy.json'), 'utf8'),
   ) as unknown;
-  const body = requireIosItemRemovalPrompt(prompt);
+  const body = requireIosItemRemovalPrompt(prompt, 'QA Exercise');
   await observe(
     'local-edit-removed',
     `- tapOn:\n    text: ${exact(enUS['common.cta.delete'])}\n    below:\n      text: ${exact(body)}\n    enabled: true\n- assertNotVisible:\n    id: pro.training_plan.itemRow.QA_Exercise\n`,

@@ -306,11 +306,16 @@ for (const platform of ['ios', 'android'] as const) {
                     : nativeObservedSelectors[row.viewId].value,
               }
             : nativeObservedSelectors[row.viewId];
+        // The removal prompt names the exercise; the frame check matches the template.
+        const actual =
+          row.viewId === 'STATE-item-removal-confirm'
+            ? 'Remove en QA Exercise 1 from this session?'
+            : selector.value;
         await writeFile(path.join(root, row.screenshotPath), png, { mode: 0o600 });
         await writeFile(
           path.join(root, row.hierarchyPath),
           JSON.stringify({
-            attributes: { [selector.attribute]: selector.value },
+            attributes: { [selector.attribute]: actual },
             children: [],
           }),
           { mode: 0o600 },

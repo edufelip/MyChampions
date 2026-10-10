@@ -276,7 +276,7 @@ void test('Android removal requires actual native dialog ids, exact copy and bot
   const message = {
     attributes: {
       'resource-id': 'android:id/message',
-      text: enUS['pro.plan.delete.body'],
+      text: 'Remove en QA Exercise 1 from this session?',
       bounds: '[20,100][300,150]',
     },
   };
@@ -297,7 +297,11 @@ void test('Android removal requires actual native dialog ids, exact copy and bot
     },
   };
   const tree = { children: [message, yes, no] };
-  assert.equal(requireAndroidItemRemovalPrompt(tree), enUS['pro.plan.delete.body']);
+  assert.equal(
+    requireAndroidItemRemovalPrompt(tree, 'en QA Exercise 1'),
+    'Remove en QA Exercise 1 from this session?',
+  );
+  assert.throws(() => requireAndroidItemRemovalPrompt(tree, 'Other Exercise'));
   const modify = (index: number, attributes: Record<string, unknown>) => ({
     children: tree.children.map((node, i) =>
       i === index ? { attributes: { ...node.attributes, ...attributes } } : node,
@@ -310,6 +314,7 @@ void test('Android removal requires actual native dialog ids, exact copy and bot
     { children: [...tree.children, yes] },
     { children: [...tree.children, message] },
     modify(0, { text: 'Foreign confirmation' }),
+    modify(0, { text: enUS['pro.plan.delete.body'] }),
     modify(0, { bounds: '[20,150][300,100]' }),
     modify(0, { bounds: 'unknown' }),
     modify(1, { enabled: 'false' }),
@@ -319,7 +324,7 @@ void test('Android removal requires actual native dialog ids, exact copy and bot
     modify(2, { bounds: '[60,220][140,180]' }),
     modify(2, { text: 'Continue' }),
   ])
-    assert.throws(() => requireAndroidItemRemovalPrompt(invalid));
+    assert.throws(() => requireAndroidItemRemovalPrompt(invalid, 'en QA Exercise 1'));
 });
 
 void test('platform entry points reject mismatched requests before actions, SQL or files', async () => {

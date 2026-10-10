@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { enUS } from '../../localization/en-US';
-import { requireIosItemRemovalPrompt } from '../../scripts/testing/native-training-edit-observation';
+import {
+  nativeItemRemovalBody,
+  requireIosItemRemovalPrompt,
+} from '../../scripts/testing/native-training-edit-observation';
 
 void test('iOS removal action binding requires unique enabled buttons below the observed body', () => {
   const node = (text: string, box: string, enabled = 'true') => ({
@@ -10,12 +13,28 @@ void test('iOS removal action binding requires unique enabled buttons below the 
   const tree = {
     children: [
       node('Delete', '[10,10][210,210]'),
-      node(enUS['pro.plan.delete.body'], '[20,50][200,110]'),
+      node('Remove QA Exercise from this session?', '[20,50][200,110]'),
       node('Cancel', '[20,120][100,170]'),
       node('Delete', '[110,120][200,170]'),
     ],
   };
-  assert.equal(requireIosItemRemovalPrompt(tree), enUS['pro.plan.delete.body']);
+  assert.equal(nativeItemRemovalBody('QA Exercise'), 'Remove QA Exercise from this session?');
+  assert.equal(
+    requireIosItemRemovalPrompt(tree, 'QA Exercise'),
+    'Remove QA Exercise from this session?',
+  );
+  // Another exercise's prompt or the whole-plan delete copy is not this removal.
+  assert.throws(() => requireIosItemRemovalPrompt(tree, 'Other Exercise'));
+  assert.throws(() =>
+    requireIosItemRemovalPrompt(
+      {
+        children: tree.children.map((row, index) =>
+          index === 1 ? node(enUS['pro.plan.delete.body'], '[20,50][200,110]') : row,
+        ),
+      },
+      'QA Exercise',
+    ),
+  );
   const invalid = [
     { children: tree.children.filter((_, index) => index !== 1) },
     { children: [...tree.children, tree.children[1]] },
@@ -36,5 +55,6 @@ void test('iOS removal action binding requires unique enabled buttons below the 
       ),
     },
   ];
-  for (const changed of invalid) assert.throws(() => requireIosItemRemovalPrompt(changed));
+  for (const changed of invalid)
+    assert.throws(() => requireIosItemRemovalPrompt(changed, 'QA Exercise'));
 });

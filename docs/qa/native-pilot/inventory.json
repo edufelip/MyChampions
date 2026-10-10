@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "985abe27299b818e163282a7a670f76236819a7e",
+    "commit": "c5ea7456fd9da7dbf2589a9f3f518bfb5ccecec2",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -570,7 +570,7 @@
       "paths": [
         "scripts/testing/native-view-evidence.ts"
       ],
-      "revision": "92da34090611583dfd4e709474443e65e81885138324aab0aa349fe5eea36da6"
+      "revision": "37c80daa60b46d7689fdfca2ba41cd2a4731f7af4426c75f9fd602d934110bc2"
     },
     {
       "id": "SRC-testing-start-here-source",
@@ -903,7 +903,7 @@
       "paths": [
         "scripts/testing/native-training-maestro-driver.ts"
       ],
-      "revision": "bc8c7e44c4070b8c67bb84fdc436e3162fdcde2fd333fa3b562b884080397160"
+      "revision": "2f062dfd8727a5be4cdcdc4a7be2c0b062be6007ccd2ce353463de14b320f047"
     },
     {
       "id": "SRC-maestro-quantity-contract",
@@ -948,7 +948,7 @@
       "paths": [
         "scripts/testing/native-view-evidence.ts"
       ],
-      "revision": "92da34090611583dfd4e709474443e65e81885138324aab0aa349fe5eea36da6"
+      "revision": "37c80daa60b46d7689fdfca2ba41cd2a4731f7af4426c75f9fd602d934110bc2"
     },
     {
       "id": "SRC-training-attempt-source",
@@ -1587,7 +1587,7 @@
       "paths": [
         "scripts/testing/native-training-edit-observation.ts"
       ],
-      "revision": "73d86fb53c0787ade74598691c8c7838e9f8ffd0b40d18fb3a760f76bff4b1aa"
+      "revision": "c1b8d892d0417f8befd4464467757f520e983c8e8f0d65c2b087040488a0c803"
     },
     {
       "id": "SRC-load-observer",

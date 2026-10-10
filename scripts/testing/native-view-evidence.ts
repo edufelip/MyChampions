@@ -55,7 +55,9 @@ import type { ProxyObservation } from './owned-api-proxy';
 import type { OwnedDomainSnapshot } from './owned-session';
 import type { Stats } from 'node:fs';
 
-export const nativeObservedSelectors: Record<string, { attribute: string; value: string }> = {
+type NativeSelector = { attribute: string; value: string; template?: boolean };
+
+export const nativeObservedSelectors: Record<string, NativeSelector> = {
   'SCR-sign-in': { attribute: 'resource-id', value: 'auth.signIn.emailInput' },
   'SCR-pro-home': { attribute: 'resource-id', value: 'pro.home.screen' },
   'SCR-account': { attribute: 'resource-id', value: 'settings.account.screen' },
@@ -81,9 +83,12 @@ export const nativeObservedSelectors: Record<string, { attribute: string; value:
   'STATE-camera-prompt': { attribute: 'accessibilityText', value: 'Allow' },
   'STATE-camera-guidance': { attribute: 'resource-id', value: 'student.professionals.submitError' },
   'STATE-native-text-edit-menu': { attribute: 'accessibilityText', value: 'Select All' },
+  // The body names the removed exercise; {name} matches any non-empty name here,
+  // and the journey checks the exact name separately.
   'STATE-item-removal-confirm': {
     attribute: 'accessibilityText',
-    value: enUS['pro.plan.delete.body'],
+    value: enUS['pro.plan.session_item.delete.body'],
+    template: true,
   },
   'STATE-discard-confirm': {
     attribute: 'accessibilityText',
@@ -441,11 +446,18 @@ export function readNativeEvidenceObservationForTest(
   return readNativeEvidenceInternal(root, relative, privateRecord, hooks, rootPolicy);
 }
 
-function treeHasSelector(value: unknown, selector: { attribute: string; value: string }): boolean {
-  return treeHasAttributes(
-    value,
-    (attributes) => attributes[selector.attribute] === selector.value,
-  );
+function treeHasSelector(value: unknown, selector: NativeSelector): boolean {
+  const pattern = selector.template ? localizedTemplatePattern(selector.value) : null;
+  return treeHasAttributes(value, (attributes) => {
+    const actual = attributes[selector.attribute];
+    return pattern ? typeof actual === 'string' && pattern.test(actual) : actual === selector.value;
+  });
+}
+
+/** `{param}` placeholders of a localized template match any non-empty text. */
+function localizedTemplatePattern(template: string) {
+  const escaped = template.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${escaped.replace(/\\\{[A-Za-z_]+\\\}/g, '.+')}$`);
 }
 
 function treeHasAttributes(
@@ -1573,7 +1585,8 @@ function validateSavedTrainingJourneyPreparation(
       readNativeEvidence(root, frame[0].hierarchyPath, true).toString(),
     );
     if (platform === 'android') {
-      if (label === 'journey-edit-title') requireAndroidItemRemovalPrompt(tree);
+      if (label === 'journey-edit-title')
+        requireAndroidItemRemovalPrompt(tree, prep.input.exerciseName);
       else if (label === 'journey-edit-title-keyboard')
         requireAndroidTrainingTitle(tree, expectedTitle);
       else if (label === 'journey-edit-title-selection-menu') requireAndroidSelectAllMenu(tree);
@@ -1587,7 +1600,8 @@ function validateSavedTrainingJourneyPreparation(
           prep.input.exerciseName,
           quantity,
         );
-    } else if (label === 'journey-edit-title') requireIosItemRemovalPrompt(tree);
+    } else if (label === 'journey-edit-title')
+      requireIosItemRemovalPrompt(tree, prep.input.exerciseName);
     else if (label === 'journey-edit-title-keyboard')
       requireIosTrainingTitleKeyboard(tree, expectedTitle);
     else if (label === 'journey-edit-title-paragraph-selection')
@@ -1675,9 +1689,13 @@ function validateCapturedFrameBytes(
   if (!Array.isArray(views) || !views.length) throw new Error('Native observation has no views');
   const seen = new Set<string>();
   for (const row of views) {
-    const androidTrainingSelectors: Record<string, { attribute: string; value: string }> = {
+    const androidTrainingSelectors: Record<string, NativeSelector> = {
       'STATE-native-text-edit-menu': { attribute: 'text', value: 'Select all' },
-      'STATE-item-removal-confirm': { attribute: 'text', value: enUS['pro.plan.delete.body'] },
+      'STATE-item-removal-confirm': {
+        attribute: 'text',
+        value: enUS['pro.plan.session_item.delete.body'],
+        template: true,
+      },
       // Android's native alert exposes the message as the title view's text.
       'STATE-training-save-error': {
         attribute: 'text',
@@ -1717,7 +1735,7 @@ function validateCapturedFrameBytes(
 
 function treeHasPlatformSelector(
   value: unknown,
-  selector: { attribute: string; value: string },
+  selector: NativeSelector,
   platform: 'ios' | 'android',
 ): boolean {
   return (
