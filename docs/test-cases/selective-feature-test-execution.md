@@ -157,7 +157,9 @@ SHA; the lane checks out that detached object and records it alongside the
 mobile exact head. Branch movement after resolution must not change the tested
 backend. This exact-SHA behavior remains a pending promotion gate until verified.
 
-iOS uses `ios.sim.debug`; Android uses `android.emu.debug`/`devDebug` so the
+iOS uses the Debug simulator build (`ios-debug`; locally
+`yarn test:e2e:build:ios:debug`); Android uses the `devDebug` build
+(`android-dev-debug`; locally `yarn test:e2e:build:android:debug`) so the
 dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
 explicit environment. Runtime phase values take precedence over the app config
@@ -284,8 +286,8 @@ Expensive jobs run only when selected. As of the CI web-primary redesign
 There is no macOS or WSL Android expensive job on the PR path any more --
 `detox-ios-selected`/`detox-android-selected` were deleted outright in Step 7,
 not relocated. The equivalent mechanics moved entirely to
-`native-protected-full.yml`, which runs on release/hotfix branch pushes and
-published releases instead of on every PR:
+`native-protected-full.yml`, which runs on manual dispatch from `main`,
+release/hotfix branch pushes and published releases instead of on every PR:
 
 - macOS: one iOS debug build plus the full, hardcoded iOS Maestro suite list
   (not resolver-selected). D-195 promotion additionally requires one recorded

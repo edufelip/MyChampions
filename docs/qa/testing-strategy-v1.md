@@ -1,6 +1,10 @@
+## 2026-10-09 — Native E2E moved to Maestro; Detox retired
+
+Status: **In progress** for testing modernization (D-219 / BL-018). Native E2E moved from Detox to Maestro on 2026-10-09: the five integrated journeys pass on iOS and Android through the native pilot, and the 66 former Detox fixture cases run as 70 tagged Maestro flows in `.maestro/suite` (12 CI suites; the two subscription specs are split per fixture scenario). The 17 live RevenueCat cases became 17 Maestro flows outside CI. Detox, its specs and its CI lanes are retired. Protected hosted receipts and CI promotion remain **Pending**. No product/provider/localization behavior changes.
+
 ## 2026-10-06 — Android camera impact registration
 
-Status: **In progress** for testing modernization (D-219 / BL-018). Native E2E moved from Detox to Maestro on 2026-10-09: the five integrated journeys pass on iOS and Android through the native pilot, and the 67 former Detox fixture cases run as the tagged Maestro suite in `.maestro/suite`. Detox, its specs and its CI lanes are retired. Protected hosted receipts and CI promotion remain **Pending**. No product/provider/localization behavior changes.
+Status: **Superseded** on 2026-10-09. The existing Android Detox camera spec was registered as `detox:integrated-camera-android`, with `owned-integrated-camera` fixtures and `ci:false`, matching the iOS integration entry, to resolve the fast-quality manifest omission without enabling a selective native runner. The Detox spec and its registration were removed with Detox.
 
 # Testing strategy V1
 
@@ -11,13 +15,14 @@ Status: implementation in progress (BL-018 / D-219). The [plan](../plans/2026-09
 SC-205 focused-return freshness has six passing rendered controls, including
 stale request/identity and bulk-completion rejection. Restoring the original
 screen in the isolated owner makes the return control fail (one request instead
-of two). The actual iOS v4 attempt confirmed the connection durably but failed
-the stale active roster; native qualification remains Pending. These component
-controls mock the roster adapter and do not prove transport or persistence.
+of two). The historical iOS v4 attempt confirmed the connection durably but failed
+the stale active roster; the connection journey has since passed natively on
+both platforms (task card). These component controls mock the roster adapter
+and do not prove transport or persistence.
 
-Implemented P0/P1: AST inventory, separate server non-DB/integration commands, owned disposable primary/catalog Postgres, canonical fixtures, real API restart/ownership tests and cancellation/cleanup verification. P2 adds 29 rendered component tests across support, role selection, exercise search and home task themes; each family detects a restored controlled regression. P3/T09 profiles and the real Postgres auth browser matrix are locally verified in their recorded scope. Training is locally verified in all nine browser/locale cells with fresh repeats. See the task card for freshness/receipts and known gaps. Connection approval is locally verified in all nine cells with fresh repeats. Save retry passes two fresh nine-project matrices (144 assertions). All five journeys pass two fresh complete 45-case matrices (90 cases, 702 assertions). Maestro comparison, agent exploration and hosted migration remain pending.
+Implemented P0/P1: AST inventory, separate server non-DB/integration commands, owned disposable primary/catalog Postgres, canonical fixtures, real API restart/ownership tests and cancellation/cleanup verification. P2 adds 29 rendered component tests across support, role selection, exercise search and home task themes; each family detects a restored controlled regression. P3/T09 profiles and the real Postgres auth browser matrix are locally verified in their recorded scope. Training is locally verified in all nine browser/locale cells with fresh repeats. See the task card for freshness/receipts and known gaps. Connection approval is locally verified in all nine cells with fresh repeats. Save retry passes two fresh nine-project matrices (144 assertions). All five journeys pass two fresh complete 45-case matrices (90 cases, 702 assertions). Agent exploration and hosted CI migration remain pending; the Detox-vs-Maestro comparison was dropped by the 2026-10-07 owner decision.
 
-Client Node/tsx checks combine domain logic, architecture policy and source-shape assertions. `yarn test:component` runs Jest/Expo/RNTL only under `tests/component/`; `test:all` runs unit then component suites. Pinned component dependencies are RNTL 14.0.1, test-renderer 1.1.0 and jest-expo 54.0.18; runtime React 19.1/Expo 54 remain unchanged. Client ambient types explicitly include React/React Native/Node/Jest so the sibling Bun workspace's globals do not change fetch mock contracts. Playwright has fixture UI batches and a memory-backed HTTP/session lane (`test:e2e:web:server`); that lane does not prove durable Postgres writes. Detox remains the native engine. Real providers have separate credential-gated lanes.
+Client Node/tsx checks combine domain logic, architecture policy and source-shape assertions. `yarn test:component` runs Jest/Expo/RNTL only under `tests/component/`; `test:all` runs unit then component suites. Pinned component dependencies are RNTL 14.0.1, test-renderer 1.1.0 and jest-expo 54.0.18; runtime React 19.1/Expo 54 remain unchanged. Client ambient types explicitly include React/React Native/Node/Jest so the sibling Bun workspace's globals do not change fetch mock contracts. Playwright has fixture UI batches and a memory-backed HTTP/session lane (`test:e2e:web:server`); that lane does not prove durable Postgres writes. Native E2E runs on Maestro: the fixture suite (`.maestro/suite`, `yarn test:e2e:ios` / `yarn test:e2e:android`, Maestro 2.10.0) and the native pilot's five integrated journeys (`yarn test:e2e:native:pilot`, Maestro 2.6.1). Real providers have separate credential-gated lanes.
 
 Checked-in `trusted-selective-tests.yml` handles authorized workflow-run candidates, main pushes, and explicit dispatch, uses web-only selection and universal unit/lint/type checks. It has no schedule. `native-protected-full.yml` handles manual, published-release, and release/hotfix push validation with the Maestro suite. This is configuration evidence only. Hosted history/promotion is unverified; D-195 remains open.
 
@@ -30,7 +35,7 @@ local installation; it also works when dependencies are hoisted on CI. Initial
 P3 discovery found that mismatch and retained its failing receipts. Successful
 discovery is selection evidence only, never browser execution evidence.
 
-`node scripts/testing/inventory-tests.mjs` enumerates client/server test files, AST test labels and assertion expressions/lines, imports/source owners, requirement references, data/platform categories and known reliability hazards. `--check` rejects stale files, additions, deletions, assertion changes or metadata. Stable IDs derive from owner/path; content hashes invalidate review state on change. Source reference absence is an explicit review gap, not fabricated traceability.
+`node scripts/testing/inventory-tests.mjs` enumerates client/server test files, AST test labels and assertion expressions/lines, imports/source owners, requirement references, data/platform categories and known reliability hazards. It also lists each Maestro flow in `.maestro/suite/<spec>/*.yaml` as a native row (not `common/`, nested `steps/` or `config.yaml`). It reads the server checkout at `../server`; set `MYCHAMPIONS_SERVER_ROOT` to use another one. `--check` rejects stale files, additions, deletions, assertion changes or metadata. Stable IDs derive from owner/path; content hashes invalidate review state on change. Source reference absence is an explicit review gap, not fabricated traceability.
 
 Review mixed assertions individually. Keep retired-provider, localization, secret/build and CI-trust prohibitions. Mark UI source-shape assertions for replacement only after a rendered/native/browser assertion fails on a controlled regression and passes cleanly. No test is removed by inventory generation. Counts are static inventory, never pass/behavior coverage.
 
@@ -161,20 +166,27 @@ uses `run-native-pilot.ts` (recorded substitute for the planned `.mjs`). Strict
 canonical selection and prerequisite checks produce an immutable public V1
 receipt with real client/server identities. Missing ledger/adapter exits 2
 before acquisition; SIGINT/SIGTERM during preflight write cancelled receipts
-with 130/143 and no resources acquired. Only the exact integrated iOS/Maestro training selection has an owned action
-adapter today. It runs through the shared host lock and requires the complete
+with 130/143 and no resources acquired. All ten Maestro integration cells have
+an owned action adapter: the five journeys (session, training, connection,
+camera denial, save-retry) on iOS and Android, each selected as
+`--platform=<ios|android> --engine=maestro --scenario=SCN-<journey>-<platform> --mode=integration`
+with `<journey>` one of `session`, `training`, `connection`, `camera-denied`
+or `save-retry`.
+Each runs through the shared host lock and requires the complete
 runtime UI/API/SQL ledger plus independent cleanup. Candidate success copies
 private proof into the requested attempt root, validates hashes/identities/
 source freshness and final completion, and records actual input fingerprints
-and phase timings. Save-retry and other unsupported selections remain blocked.
-The task card records one actual public training pass at its recorded inputs,
-early runtime SIGINT/SIGTERM controls and configured bootstrap timeout proof.
+and phase timings. Other selections are blocked (exit 2), and a Detox engine
+argument is rejected as invalid.
+The task card records passing attempts for all ten cells, early runtime
+SIGINT/SIGTERM controls and configured bootstrap timeout proof.
 Optional `MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS` accepts integer1000–180000
-for the supported case, with default180000. Invalid values reject before
+for the iOS cells, with default180000. Invalid values reject before
 acquisition; actual timeout is blocked2 with the exact owned simulator identity
 and independently checked partial cleanup. Post-backend lifecycle, explicit
-application-failure classification, both-platform/engine equivalence, T15
-comparison and CI promotion remain pending. Consult immutable task-card
+application-failure classification and CI promotion remain pending; the
+engine-equivalence and T15 comparison gates were dropped by the 2026-10-07
+owner decision. Consult immutable task-card
 executions and their input fingerprints before assigning freshness.
 
 ## Rendered component CI wiring

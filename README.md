@@ -55,7 +55,9 @@ live-worker cancellation and deadline cleanup. Local proof, remaining journeys
 and pending selective CI/native adoption are tracked in
 `docs/qa/testing-modernization-task-card.md`.
 
-The public native pilot executes one integrated iOS/Maestro training case:
+The public native pilot runs ten integrated Maestro cells: the five journeys
+(`session`, `training`, `connection`, `camera-denied`, `save-retry`) on iOS and
+Android, for example
 `yarn test:e2e:native:pilot --platform=ios --engine=maestro --scenario=SCN-training-ios --mode=integration`.
 Set `MYCHAMPIONS_NATIVE_STATE_ROOT` to an existing canonical owned directory
 with mode0700 for the shared host lock. Each attempt writes an immutable receipt
@@ -63,7 +65,7 @@ under `.qa/artifacts/native-pilot-attempts/`. It returns0 only after the complet
 UI/API/SQL ledger, current inputs and independent cleanup pass; unsupported
 selections remain blocked2. SIGINT/SIGTERM return130/143 with retained receipts.
 Optional `MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS` accepts integer1000–180000
-for this case; unset keeps180000. Bootstrap timeout returns blocked2. Optional build, command-step and whole-run
+for the iOS cells; unset keeps180000. Bootstrap timeout returns blocked2. Optional build, command-step and whole-run
 bounds use `MYCHAMPIONS_NATIVE_BUILD_DEADLINE_MS`1000–900000,
 `MYCHAMPIONS_NATIVE_STEP_DEADLINE_MS`1000–600000 and
 `MYCHAMPIONS_NATIVE_WHOLE_DEADLINE_MS`1000–2400000. Defaults are the upper
@@ -73,8 +75,8 @@ Optional `MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID` reuses only qualified immutable
 bytes from a private retained24-hex capture. It validates current app source,
 binary/config/bootstrap and reviewed entry before acquisition; new device,
 fixture/backend, ports and processes are still required. Invalid reuse blocks
-without a compile fallback. The task card records bounded local proof and pending lifecycle/platform/
-engine/reliability/hosted gates.
+without a compile fallback. The task card records bounded local proof and the
+pending reliability/hosted gates.
 
 For native development builds, use:
 

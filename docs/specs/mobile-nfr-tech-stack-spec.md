@@ -64,16 +64,18 @@ Define non-functional architecture constraints and technology options for the mo
   `reactNativeDevServerPort`. The executor uses the same validated
   `NATIVE_METRO_PORT` for prewarming and phase ownership, so an unrelated
   developer process on default port `8081` is neither reused nor signalled.
-- The protected Android lane runs `lintDevDebug` before the Maestro suite. The manually
+- The protected Android lane (`native-protected-full.yml`) reuses the runner's
+  kept-alive emulator through `ANDROID_SERIAL=emulator-5554`, serves Metro on
+  port `18082`, runs `lintDevDebug`, `testDevDebugUnitTest` and
+  `assembleDevDebug`, then runs the Maestro suite. The manually
   maintained native baseline keeps camera hardware optional because manual
   invite entry remains available, declares Android 13 notification capability
   required by the Expo video playback service, and places
   `windowSplashScreenBehavior` in `values-v33` so the API-33 attribute does not
-  violate the API-24 minimum. The lane rejects stale emulator/QEMU/console
-  state, preboots `Pixel_10` on the MyChampions slot's `emulator-5556`, bounds
-  exact AVD readiness to 120 seconds while revalidating PID/UID/Linux start time
-  plus AVD/port command identity, lets Maestro drive that instance, and verifies
-  that no QEMU process, emulator device, or owned port survives teardown.
+  violate the API-24 minimum. The lane does not boot or tear down the emulator.
+  Rejecting stale emulator/QEMU state, prebooting a declared AVD on the
+  MyChampions slot, bounded AVD readiness with PID/UID/start-time identity
+  checks, and verified teardown are D-195 targets, not current behavior.
 
 ## Constraints From Platform Docs
 
@@ -235,6 +237,5 @@ Current local server contract: root-level `server/` plus this migration task car
 - Fastlane docs: https://docs.fastlane.tools/
 - GitHub Actions docs: https://docs.github.com/actions
 - Maestro docs: https://docs.maestro.dev/
-
 
 Testing modernization is tracked under BL-018/D-219 and `docs/qa/testing-strategy-v1.md`. The separate Jest/Expo/RNTL component suite and integrated Postgres browser journeys have recorded local evidence; freshness and scopes are tracked in the task card. The component command is wired into trusted fast-quality before unit checks, with local CI-command and failure-propagation proof. Full quality is still blocked by the recorded password-reset confirmation contract gap; protected hosted component acceptance remains pending. Component tests do not establish native/hosted replacement coverage. Native E2E moved from Detox to Maestro on 2026-10-09 (D-219); Detox is retired.

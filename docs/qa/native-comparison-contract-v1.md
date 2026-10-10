@@ -1,7 +1,15 @@
 # Native comparison collector contract v1
 
-Status: **preparation and receipt-order guard implemented locally; native
-comparison and adoption remain pending**.
+Status: **Superseded.** The 2026-10-07 owner decision dropped the
+Detox-vs-Maestro comparison (the T15 cold matrix and its Detox cells), and
+Detox was retired on 2026-10-09 without it (see the
+[task card](testing-modernization-task-card.md) and the decisions log). The
+collector source remains because the native pilot's cold mode still imports
+parts of the T15 machinery. The rest of this document is the historical
+contract, kept for reference; no comparison run is planned.
+
+Original status: preparation and receipt-order guard implemented locally;
+native comparison and adoption pending.
 
 This document defines the T15-A comparison-collector packet. It records what the
 collector can prove from public receipt artifacts and the evidence that still
@@ -15,15 +23,14 @@ The collector is implemented in
 [`scripts/testing/compare-native-pilot.ts`](../../scripts/testing/compare-native-pilot.ts).
 Focused contract tests are in
 [`tests/ci/compare-native-pilot.test.ts`](../../tests/ci/compare-native-pilot.test.ts).
-The stable Node entry point is
-[`scripts/testing/compare-native-pilot.mjs`](../../scripts/testing/compare-native-pilot.mjs),
-which delegates to the typed collector. This packet does not add a second
-harness or alter shared package/config/schema files.
+There is no separate `.mjs` wrapper; run the typed collector directly with
+`node --import tsx scripts/testing/compare-native-pilot.ts`. This packet does
+not add a second harness or alter shared package/config/schema files.
 
 The CLI accepts one reviewed specification and one or more receipt files:
 
 ```text
-node scripts/testing/compare-native-pilot.mjs \
+node --import tsx scripts/testing/compare-native-pilot.ts \
   --spec <reviewed-matrix.json> \
   --receipt <canonical-receipt-1.json> \
   --receipt <canonical-receipt-2.json> \

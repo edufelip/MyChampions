@@ -15,11 +15,12 @@ qualified as ready. Report platform-specific capture and scenario results;
 one iOS observation cannot qualify Android. Platform denominators are 23 views
 and 40 transitions on iOS, 22 views and 38 transitions on Android.
 
-Training and save-retry declare shared assertion purposes across platforms and
-engines. Save-retry's five assertions and pure platform/binding guards are
-preparation only; its public adapters, platform execution and equivalent Detox
-evidence remain pending. The task card records scoped public training results
-at their original inputs; this portable source graph imports no runtime passes.
+Training and save-retry declare shared assertion purposes across platforms.
+Save-retry's five assertions have public Maestro adapters on iOS and Android,
+and the task card records local passing save-retry runs on both platforms
+(its 2026-10-07 section). Equivalent Detox evidence is no longer required:
+Detox was retired on 2026-10-09. This portable source graph imports no runtime
+passes.
 
 `generate-native-declaration.py` regenerates this portable declaration from the
 named source graph. It deliberately produces no runtime receipts or tested
@@ -38,7 +39,8 @@ Generate the execution index with:
 python3 scripts/testing/vendor/app-flow-maestro/generate_maestro_manifest.py docs/qa/native-pilot/inventory.json
 ```
 
-The generated manifest contains the checked-in Android camera route only as a
+The checked-in `maestro-manifest.json` is regenerated from `inventory.json`
+with that command. It contains the checked-in Android camera route only as a
 selectable declaration. The owned Android camera callback loads that exact
 `.maestro/flows/camera-denied-android.yaml` source, binds its hash and
 `owned-postgres:SCN-camera-denied-android:fresh-attempt` fixture to the selected
@@ -64,9 +66,19 @@ attempt receipts belong in ignored private `.qa/artifacts/native-pilot/` bundles
 Refresh their fingerprints with the vendored freshness helper before reuse.
 Do not store passwords, tokens or sensitive hierarchy values here.
 
-Initial comparison uses dev/test binaries and owned Postgres. Fixture-only
-comparisons remain separately labelled. Retain Detox; no retirement follows
-from this declaration or an entry-screen capture.
+Native runs use dev/test binaries and owned Postgres. Fixture-only runs remain
+separately labelled. Detox was retired on 2026-10-09 under the 2026-10-07
+owner bar (a real passing Maestro run on each platform plus a planted bug the
+flow catches; the task card records the runs and which platforms the planted
+bugs ran on); the Detox comparison was dropped. This declaration and
+entry-screen captures still grant no runtime pass.
+
+The Android pilot entry points run the pinned Maestro 2.6.1 binary from
+`MAESTRO_PILOT_BIN` (default `~/.maestro/bin/maestro`). Keep the file name
+`maestro`: driver-readiness sampling and retry only apply to a command with that
+name. They read the Android SDK from `ANDROID_SDK_ROOT`, then `ANDROID_HOME`,
+then `~/Library/Android/sdk`, and Gradle home from `GRADLE_USER_HOME` (default
+`~/.gradle`).
 
 The task card links a historical private qualified auth/account observation: five iOS
 views have validated screenshots/actual trees and clean resource receipts. This

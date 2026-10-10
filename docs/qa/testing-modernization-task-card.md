@@ -1,28 +1,28 @@
 ## Maestro fixture suite running on devices — 2026-10-09
 
-Status: **Implemented locally** (not pushed; no hosted run yet). The 67 flows ported from Detox (`.maestro/suite`, 13 CI suites, 41 fixture-phase invocations per platform) now run on real devices through `scripts/testing/run-maestro-suite.sh`: iOS on a dedicated en-US simulator ("MyChampions Maestro", iPhone 17, iOS 26.5), Android on a dedicated AVD (`MyChampions_Maestro`, API 37).
+Status: **Implemented locally** (not pushed; no hosted run yet). The 66 Detox fixture cases, ported to 70 tagged Maestro flows (`.maestro/suite`, 12 CI suites; the two subscription specs are split per fixture scenario, 3 cases → 7 flows), now run on real devices through `scripts/testing/run-maestro-suite.sh`: iOS on a dedicated en-US simulator ("MyChampions Maestro", iPhone 17, iOS 26.5), Android on a dedicated AVD (`MyChampions_Maestro`, API 37).
 
 Final clean runs on `3556cc3` (Metro-attached Debug, fixture backend, local Mac):
 
-| Platform | Result | Duration |
-| --- | --- | --- |
-| iOS (simulator, Maestro 2.10.0) | **40/40 flow groups passed on the first attempt**, no retries; exit 0 | 59 min |
-| Android (emulator, Maestro 2.10.0) | **40/40 flow groups passed on the first attempt**, no retries; exit 0 | 61 min |
+| Platform                           | Result                                                                | Duration |
+| ---------------------------------- | --------------------------------------------------------------------- | -------- |
+| iOS (simulator, Maestro 2.10.0)    | **40/40 flow groups passed on the first attempt**, no retries; exit 0 | 59 min   |
+| Android (emulator, Maestro 2.10.0) | **40/40 flow groups passed on the first attempt**, no retries; exit 0 | 61 min   |
 
 (41 invocations per platform: device preparation plus 40 tagged flow groups. The RevenueCat live suite is not part of CI and was not run.) This is local evidence, not a hosted CI run.
 
 What it took (each from a real failing run):
 
-| Problem | Fix |
-| --- | --- |
-| Shared simulator in pt-BR; English assertions failed | dedicated en-US simulator created by `maestro-device.sh` |
-| iOS "Save Password?" and "Open in …?" (deep link) prompts covered later screens, and outlived the app | `dismiss-password-sheet`, `open-link` (confirms the prompt) and `dismiss-stale-system-prompts` before each fresh launch |
-| Random iOS `kAXErrorInvalidUIElement` hierarchy failures on the sign-in screens | suite pinned to Maestro **2.10.0** (2.7.0 added recovery), installed from the release zip into its own folder; the native pilot keeps `~/.maestro` 2.6.1 |
-| iOS strong-password AutoFill wiped the typed create-account password | device prep turns off "AutoFill Passwords and Passkeys" (`.maestro/setup/ios-disable-password-autofill.yaml`); flows also show the password before typing |
-| Simulators cannot pre-grant the camera | `answer-camera-prompt` answers the system prompt in camera flows |
-| Maestro's iOS `hideKeyboard` only swipes; the app's number-pad "Done" bar is not visible by testID | `hide-keyboard` (margin tap, Enter, "Done" by text, or a static element per screen); Android keeps `hideKeyboard`, never called without a keyboard (it presses Back) |
-| iOS merges a row's texts into one label ("Idioma, Português", "10 Active students") | partial text matches |
-| iOS alert buttons share text with the title, the alert body and a trash icon | `confirm-alert` taps the button below the alert message |
+| Problem                                                                                               | Fix                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared simulator in pt-BR; English assertions failed                                                  | dedicated en-US simulator created by `maestro-device.sh`                                                                                                             |
+| iOS "Save Password?" and "Open in …?" (deep link) prompts covered later screens, and outlived the app | `dismiss-password-sheet`, `open-link` (confirms the prompt) and `dismiss-stale-system-prompts` before each fresh launch                                              |
+| Random iOS `kAXErrorInvalidUIElement` hierarchy failures on the sign-in screens                       | suite pinned to Maestro **2.10.0** (2.7.0 added recovery), installed from the release zip into its own folder; the native pilot keeps `~/.maestro` 2.6.1             |
+| iOS strong-password AutoFill wiped the typed create-account password                                  | device prep turns off "AutoFill Passwords and Passkeys" (`.maestro/setup/ios-disable-password-autofill.yaml`); flows also show the password before typing            |
+| Simulators cannot pre-grant the camera                                                                | `answer-camera-prompt` answers the system prompt in camera flows                                                                                                     |
+| Maestro's iOS `hideKeyboard` only swipes; the app's number-pad "Done" bar is not visible by testID    | `hide-keyboard` (margin tap, Enter, "Done" by text, or a static element per screen); Android keeps `hideKeyboard`, never called without a keyboard (it presses Back) |
+| iOS merges a row's texts into one label ("Idioma, Português", "10 Active students")                   | partial text matches                                                                                                                                                 |
+| iOS alert buttons share text with the title, the alert body and a trash icon                          | `confirm-alert` taps the button below the alert message                                                                                                              |
 
 Product findings for owner decision (not changed; the flows work around them so the suites test their own purpose):
 
@@ -37,17 +37,27 @@ Status: **Implemented locally** on `test/testing-modernization` (not pushed; no 
 
 Deliberate-bug checks (Android Maestro, one planted bug per journey on a throwaway branch, never merged):
 
-| Journey | Planted bug | Caught by | Attempt |
-| --- | --- | --- | --- |
-| Session | sign-out keeps the stored session | signed-out relaunch landed on the coach dashboard | `a34a69fc7506b70bce19945c` |
-| Save-retry | a failed save drops the draft sessions | retained-draft check found no `3x8` session row | `08d520d3557a9ed633b71d02` |
-| Training | an edited plan saves its old name | SQL check found no plan with the edited name | `5b4c2ba36b67962b9e4206ee` |
-| Connection | coach Accept never confirms | the pending request stayed after Accept | `072ea0d6dc5681e6e24eaf03` |
+| Journey       | Planted bug                                  | Caught by                                                  | Attempt                    |
+| ------------- | -------------------------------------------- | ---------------------------------------------------------- | -------------------------- |
+| Session       | sign-out keeps the stored session            | signed-out relaunch landed on the coach dashboard          | `a34a69fc7506b70bce19945c` |
+| Save-retry    | a failed save drops the draft sessions       | retained-draft check found no `3x8` session row            | `08d520d3557a9ed633b71d02` |
+| Training      | an edited plan saves its old name            | SQL check found no plan with the edited name               | `5b4c2ba36b67962b9e4206ee` |
+| Connection    | coach Accept never confirms                  | the pending request stayed after Accept                    | `072ea0d6dc5681e6e24eaf03` |
 | Camera denied | manual invite entry drops the last character | SQL check found no pending connection for the coach's code | `a4218277eec80b1afb4336ba` |
 
-Detox retirement (`1d398e1`): the 67 legacy Detox fixture cases now run as tagged Maestro flows in `.maestro/suite` (`11c8245`); selective CI, the protected full validation (`native-protected-full.yml`), the iOS PR smoke and the RevenueCat provider lane run Maestro; Detox is gone from the Android build, the app (`MainActivity` camera bridge), the native pilot (every Detox adapter and route) and the T15 cold-matrix machinery (dropped with the comparison). Shared helpers that the Maestro journeys use keep their `detox-*` file names; T15's cold-reset modules and `compare-native-pilot.ts` remain because the runner's cold mode still imports them.
+Detox retirement (`1d398e1`): the 66 legacy Detox fixture cases now run as 70 tagged Maestro flows in 12 CI suites (`.maestro/suite`, `11c8245`), and the 17 live RevenueCat cases as 17 flows in `.maestro/suite/revenuecat-test-store` (suite `maestro:revenuecat-live`, outside CI, not yet run on Maestro); selective CI, the protected full validation (`native-protected-full.yml`), the iOS PR smoke and the RevenueCat provider lane run Maestro; Detox is gone from the Android build, the app (`MainActivity` camera bridge), the native pilot (every Detox adapter and route) and the T15 cold-matrix machinery (dropped with the comparison). Shared helpers that the Maestro journeys use keep their `detox-*` file names; T15's cold-reset modules and `compare-native-pilot.ts` remain because the runner's cold mode still imports them.
 
-Product follow-up (owner-approved via "fill all of those gaps"): native sign-out now clears cookies before ending the session, so sign-out analytics no longer carry the old access cookie (`bafa0f1`).
+Case mapping (Detox spec/case → Maestro flow): each former `e2e/<spec>.e2e.test.js` became the folder `.maestro/suite/<spec>/`, one flow per Detox case, named after the case title (lightly reworded in a few flows). Exceptions: `professional-subscription-actions` (2 cases → 4 flows) and `professional-subscription-cap` (1 case → 3 flows) are split per fixture scenario. Each flow's `tags:` carries the fixture phase id(s) it runs in. The pre-port specs can be read with `git show 1d398e1^:e2e/<spec>.e2e.test.js`. Not ported: the Detox `auth-sign-in` real-credential mode (`E2E_AUTH_EMAIL` / `E2E_AUTH_PASSWORD`); the Maestro sign-in flow uses only the dev-only fixture account (decisions log, 2026-10-10).
+
+Product follow-up (owner-approved via "fill all of those gaps"): native sign-out now clears the native cookie store before it drops the in-memory bearer (`bafa0f1`). What is verified: `features/auth/server-auth-source.test.ts` checks the call order (cookies cleared before the session ends). What is not verified natively: the session journey's transport check (`requireSignedOutSessionTransport` in `scripts/testing/native-session-profile-checkpoints.ts`) starts its window only after sign-out has finished, so it proves that the signed-out relaunch sends no bearer or cookie (`requestCredentialPresent === false`), but it does not check the analytics requests sent during sign-out itself, where the old cookie was seen. The Android session journey passed on 2026-10-10 (attempt `be99165fca1f9d73d83b5ec8`) on code that includes `bafa0f1`; that pass covers the signed-out relaunch only. A sign-out-window check is an open follow-up (below).
+
+### Open follow-ups (2026-10-10)
+
+- **Trusted gate runs `main`'s YAML.** The PR's required checks come from `trusted-selective-tests.yml`, which GitHub runs from `main` (`workflow_run`). This branch's workflow changes (the component step and every native Maestro lane: `native-protected-full.yml`, `ios-pr.yml`, `protected-manual-ios-maestro.yml`, the Maestro jobs in `provider-validation.yml`) are therefore not exercised by the trusted gate before merge. `ios-pr.yml` exists on `main`, so it can be dispatched against this branch before merge; `native-protected-full.yml` and `protected-manual-ios-maestro.yml` do not exist on `main` yet (it still has `detox-protected-full.yml`), so they can run only after merge or, for `native-protected-full.yml`, on a push to a `release/**` or `hotfix/**` branch that contains it. Owner: client maintainer.
+- **Sign-out window check (sign-out analytics cookie).** Extend the session journey's transport check to the requests sent after the bearer is dropped and before relaunch (`requestCredentialPresent === false`, `knownAccessCookie: 'absent'`), then rerun the session journey on both platforms. Until then, the sign-out fix is implemented and unit-tested, with native verification of the sign-out window pending.
+- **Android device prep does not pin the locale.** `scripts/testing/maestro-device.sh` pins the iOS simulator to en-US, but on Android it only resolves the serial, waits for the device and installs the APK. The app follows the device locale and the suite's text assertions are English, so a non-English emulator can fail them. The 40/40 Android run used the dedicated `MyChampions_Maestro` AVD; the protected lane names the `Pixel_10` AVD (`native-protected-full.yml`), and nothing pins its locale. Owner: client maintainer.
+- **Deliberate-bug checks ran on Android only.** The five planted-bug attempts in the table above are all Android Maestro runs; Detox was retired on both platforms.
+  - TODO (orchestrator): record the iOS planted-bug results here (journey, planted bug, catching check, attempt id), or record that the owner accepted Android-only bug detection for the iOS retirement. No iOS planted-bug run is recorded in this card yet.
 
 ## Direction change: migrate to Maestro, drop Detox comparison — 2026-10-07
 
@@ -55,13 +65,13 @@ Owner decision (2026-10-07): the goal is to move native E2E from Detox to Maestr
 
 Android Maestro status on current code (local, Metro-attached devDebug, owned emulator, owned Postgres):
 
-| Journey | Result | Attempt |
-| --- | --- | --- |
-| Camera denied | **Passed** 4/4 | `9832d7ce3a2d0b7828279e19` |
-| Training | **Passed** 7/7 | `20566dce77ca6a3aa8aca5ca` |
-| Connection | **Passed** 7/7 | `f8d08823cee5f613ac7ed4a4` |
-| Session | **Passed** 6/6 (after the sign-out cookie fix) | `a78c67fad1dfaffc8a1e6aea` |
-| Save-retry | **Passed** 5/5 | `3203d5cc395f3f3b4b872e0b` |
+| Journey       | Result                                         | Attempt                    |
+| ------------- | ---------------------------------------------- | -------------------------- |
+| Camera denied | **Passed** 4/4                                 | `9832d7ce3a2d0b7828279e19` |
+| Training      | **Passed** 7/7                                 | `20566dce77ca6a3aa8aca5ca` |
+| Connection    | **Passed** 7/7                                 | `f8d08823cee5f613ac7ed4a4` |
+| Session       | **Passed** 6/6 (after the sign-out cookie fix) | `a78c67fad1dfaffc8a1e6aea` |
+| Save-retry    | **Passed** 5/5                                 | `3203d5cc395f3f3b4b872e0b` |
 
 Fixes made to get here (each from a real failing run): camera invite code injected after the step that types it (Maestro typed "undefined"); readiness flows asserted later selectors instantly (now wait for each); training result dropped `captureCleanup` (schema-invalid receipt); Maestro CLI blocked ~55 s on analytics during `--version` (now opted out); Maestro storage reader rejected committed SQLite journals, never relaunched after force-stopping for a snapshot (now relaunches, as its contract says), and choked on empty `sqlite3 -json` output; session cleanup compared the capture run id with the backend run id; Android roster rows sit beside (not under) the screen node in Maestro's tree; pending request is below the fold (scroll to it); Android capture build lacked `node`; connection proofs wrote into a missing `assertions/` folder; redacted invite-code frames were registered as copyable command artifacts. Host was cleared first (user's Pixel_10 emulator and seven leftover adb servers were holding the shared adb port).
 
@@ -75,13 +85,13 @@ Other product changes approved 2026-10-08: coach pending requests show the stude
 
 iOS Maestro status on current code (local, Metro-attached Debug, owned simulator, owned Postgres):
 
-| Journey | Result | Attempt |
-| --- | --- | --- |
+| Journey       | Result     | Attempt                    |
+| ------------- | ---------- | -------------------------- |
 | Camera denied | **Passed** | `5edacb62aa32552be3165f70` |
-| Training | **Passed** | `449722648650c0acc45993d2` |
-| Connection | **Passed** | `42457ec92e645c72e29bf6b2` |
-| Session | **Passed** | `a196269e9a42e3e2171493c5` |
-| Save-retry | **Passed** | `10fb2ae42aaa0b38d8da4a26` |
+| Training      | **Passed** | `449722648650c0acc45993d2` |
+| Connection    | **Passed** | `42457ec92e645c72e29bf6b2` |
+| Session       | **Passed** | `a196269e9a42e3e2171493c5` |
+| Save-retry    | **Passed** | `10fb2ae42aaa0b38d8da4a26` |
 
 iOS connection fix: the iOS capture recorded the coach sign-in boundary with an extra `beforeRequestId`, which the controller's exact comparison rejected; the capture now records the same fields as Android. One earlier attempt (`0ba210ec8469dd90e1e210d1`) was correctly blocked when an unrelated CI runner on the same Mac started an `xcodebuild` archive mid-run; its leftover adb server was removed by hand.
 
@@ -109,20 +119,20 @@ Status: **Locally verified** for one cell (T14-D, Android × Detox × postgres).
 
 Handoff: continued by Claude Code after the Codex session hit its usage limit (last Codex attempt `3cad834993a3965a9b78fd80`, capture `f2c7012e7d403e91940f8dd4`). The app journey already passed there; every remaining blocker was a harness gate that had never seen real data. Fixes (each found from a real run, each with an original failing attempt retained):
 
-| Gate / symptom | Root cause | Fix |
-| --- | --- | --- |
-| `changed target profiles` (3cad8349…) | UI sign-in upserts the profile and bumps only `updatedAt` | `native-connection-snapshot.ts`: profiles must match except `updatedAt`, which may only move forward; regression test added |
-| Generic "child failed" diagnostic | Original cause dropped by `errorRecord` | Cause appended to the message (owned session, dispatch `readStable`, runner writes `terminal-verification-failure.private.json`) |
-| `one forwarded POST 201` 3 !== 1 | Coach + student sign-in POSTs are also 201 | Count only `/connections/invite-submissions`, bind to the captured request ID, allow only sign-in otherwise |
-| Runner held host lock ~40 min after receipt | `runDetoxConnectionDriverCleanup` scheduled `child-stop` only with a client; census `setInterval` never cleared | Schedule `child-stop` for client-less callers |
-| `original screenshot path is not an owned Detox capture` | Real `takeScreenshot()` returns `detox-<workerPid>-<rand>.detox.png` | Accept that name bound to `flow.childPid` |
-| `flags hash is missing` | Android qualified build never recorded `environmentHash`/`toolVersions` | `detox-android-qualified-build.ts` records APK config hash + Node/Detox versions |
-| `timing is missing for build` (3 places) | Camera attempt reuses a qualified APK, so `build` = 0 | Allow `build >= 0` for the Android Detox camera adapter only |
-| `camera source …private.bin could not be read` | Evidence reader filename allowlist lacked `.private.bin` | Allow `.private.bin` |
-| Finalizer `98395 !== 98266` | Flow records the Jest worker PID, not the `detox test` launcher PID | Accept a PID the ownership census recorded in the same owned group |
-| Outer `runtime-verification-failed` after `verified-native` | Stage logic only advanced on `'passed'` | Treat Android Detox camera `'verified-native'` as finalization-ready |
-| Intermittent `submission body receipt is missing` / `requires an idle proxy` | Test never called its own `waitForSubmitCaptureReady()` before tapping Connect | Wait for the ack; owner waits for proxy quiescence before arming; proxy retains finalization failure reason |
-| `device still authorizing` during boot | Transient adb state not classified | Added to `isTransientAndroidAdbReadinessError` with a test |
+| Gate / symptom                                                               | Root cause                                                                                                      | Fix                                                                                                                              |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `changed target profiles` (3cad8349…)                                        | UI sign-in upserts the profile and bumps only `updatedAt`                                                       | `native-connection-snapshot.ts`: profiles must match except `updatedAt`, which may only move forward; regression test added      |
+| Generic "child failed" diagnostic                                            | Original cause dropped by `errorRecord`                                                                         | Cause appended to the message (owned session, dispatch `readStable`, runner writes `terminal-verification-failure.private.json`) |
+| `one forwarded POST 201` 3 !== 1                                             | Coach + student sign-in POSTs are also 201                                                                      | Count only `/connections/invite-submissions`, bind to the captured request ID, allow only sign-in otherwise                      |
+| Runner held host lock ~40 min after receipt                                  | `runDetoxConnectionDriverCleanup` scheduled `child-stop` only with a client; census `setInterval` never cleared | Schedule `child-stop` for client-less callers                                                                                    |
+| `original screenshot path is not an owned Detox capture`                     | Real `takeScreenshot()` returns `detox-<workerPid>-<rand>.detox.png`                                            | Accept that name bound to `flow.childPid`                                                                                        |
+| `flags hash is missing`                                                      | Android qualified build never recorded `environmentHash`/`toolVersions`                                         | `detox-android-qualified-build.ts` records APK config hash + Node/Detox versions                                                 |
+| `timing is missing for build` (3 places)                                     | Camera attempt reuses a qualified APK, so `build` = 0                                                           | Allow `build >= 0` for the Android Detox camera adapter only                                                                     |
+| `camera source …private.bin could not be read`                               | Evidence reader filename allowlist lacked `.private.bin`                                                        | Allow `.private.bin`                                                                                                             |
+| Finalizer `98395 !== 98266`                                                  | Flow records the Jest worker PID, not the `detox test` launcher PID                                             | Accept a PID the ownership census recorded in the same owned group                                                               |
+| Outer `runtime-verification-failed` after `verified-native`                  | Stage logic only advanced on `'passed'`                                                                         | Treat Android Detox camera `'verified-native'` as finalization-ready                                                             |
+| Intermittent `submission body receipt is missing` / `requires an idle proxy` | Test never called its own `waitForSubmitCaptureReady()` before tapping Connect                                  | Wait for the ack; owner waits for proxy quiescence before arming; proxy retains finalization failure reason                      |
+| `device still authorizing` during boot                                       | Transient adb state not classified                                                                              | Added to `isTransientAndroidAdbReadinessError` with a test                                                                       |
 
 Validation: affected suites pass; declaration regenerated (23 views, 40 transitions, 10 scenarios). Full `yarn test:unit`: 3,406 tests, 3,345 pass, 27 fail, 34 skipped. The 27 failures are in areas these fixes did not touch and are recorded as pre-existing Codex drift (owner/next action: client maintainer): iOS password-sheet helper tests (missing `createAppNativeObservation`), iOS v14 V19/V22/V23 (fixture lacks `native-detox-camera-ios-ipc.ts`), `native-pilot-invocation` (`runtimeExecutionFailure` not defined in evaluated snippet), `native-session-public-finalization-real-path` and very likely `run-ios-session-attempt` (session helper list contains `.maestro/flows/camera-denied-android.yaml`, outside the source boundary), Maestro camera collector fixture (missing locale binding), two stale source-text greps (`launchCameraApp(true)`, `runDetoxTrainingOnExistingOwner({`). Verified unchanged by reverting the runner edits for the runner group; the rest by code inspection.
 
@@ -901,7 +911,21 @@ Evidence: `camera-permission-label-root-repair-2026-10-03-v1/LABEL-CONTROLS.priv
 
 ## Status
 
-### Current dispatch checkpoint (2026-10-04: camera retention and lifecycle repairs)
+### Current status (2026-10-10)
+
+The 2026-10-07 owner decision replaced the plan's Detox-vs-Maestro comparison with a per-journey bar: a real passing Maestro run on each platform plus a planted bug the flow detects. Detox was retired on 2026-10-09 (`1d398e1`) before any hosted Maestro run and without the plan's hosted retirement gates. The dated sections at the top of this card are current. The checkpoints below are historical: their Detox, T15 cold-matrix and "retain Detox" rows are superseded.
+
+| Lane                                             | State on 2026-10-10                                                                                                                    |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Maestro fixture suite (`.maestro/suite`)         | 66 Detox fixture cases → 70 tagged flows in 12 CI suites. Local 40/40 flow groups on iOS and on Android (`3556cc3`). No hosted run.    |
+| RevenueCat live flows                            | 17 Detox live cases → 17 flows (`maestro:revenuecat-live`, `ci: false`). Not run on Maestro.                                           |
+| Native pilot journeys (5 journeys × iOS/Android) | All ten Maestro integration cells pass locally (Android and iOS tables in the 2026-10-07 section). Planted-bug checks: see follow-ups. |
+| T15 Detox-vs-Maestro cold matrix                 | Dropped by the 2026-10-07 owner decision.                                                                                              |
+| T19 Detox retirement                             | Done locally on 2026-10-09 under the owner bar, without the plan's hosted retirement gates.                                            |
+| T18 hosted CI                                    | Pending. No hosted protected Maestro run yet; the PR's required checks run `main`'s workflow YAML (see open follow-ups).               |
+| T16–T17 exploration and T20 reconciliation       | Pending.                                                                                                                               |
+
+### Historical dispatch checkpoint (2026-10-04: camera retention and lifecycle repairs)
 
 Use the qualified checkout `/Users/eduwaldo/.codex/worktrees/testing-native-regression/mychampions` and its sibling server. Preserve the unrelated dirty primary checkout. Root owns canonical edits and native/backend resources; agents prepare private candidates. The current measured inventory has 505 test files (441 client, 64 server), 23 declared views, 40 transitions and 10 native scenarios. Declaration counts are not runtime coverage.
 
@@ -1021,7 +1045,7 @@ This table retains the 2026-10-02 integration checkpoint. Later dated records be
 | T18 private connection registration                      | Done: source; owned native execution Pending                                                    | Distinct `owned-integrated-connection` profile remains non-selective, empty-phase and `ci: false`. Both-root selective/impact controls pass 70/70; current 690-root qualified Expo typecheck, both-root impact/lint/format/freshness pass. Proof: `parallel-fixture-registration-reviewed-source-integration-2026-10-02-v1/accepted-registration-source-transfer.private.json`.                                                                                                                                                                                                                                                                                                                              |
 | Android session source fixture reliability               | Done: V3 source; native/public Pending                                                          | Exact reviewed V3 replacement is integrated after guarding both canonical V1 base hashes; its V2-based delta was not applied alone. All 26 controls pass in both roots, including concurrent exact child selection, pre-abort no acquisition, cleanup failure and deadline/abort SIGKILL/reap/namespace absence. Qualified full 690-file TypeScript, scoped lint/format and both-root impact/inventory checks pass. Proof: `android-session-fixture-v3-reviewed-source-integration-2026-10-02-v1/accepted-source-transfer.private.json`; native/public zero.                                                                                                                                                 |
 | T12–T17 native qualification, comparison and exploration | Pending                                                                                         | Native/public/cold passing counts are **0**. The reviewed cleanup now exceeds the 20 GiB host disk gate; recheck it before acquisition. The native logout policy is resolved; native runtime acceptance remains pending. Require actual platform/engine evidence, all 400 cold attempts and bounded observed exploration.                                                                                                                                                                                                                                                                                                                                                                                    |
-| T18 hosted adoption / T19 retirement / T20               | Pending                                                                                         | Require exact-head protected hosted evidence and every original plan exit. Retain equivalent Detox coverage; source checks do not authorize retirement or full completion.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| T18 hosted adoption / T19 retirement / T20               | T18/T20 Pending; T19 superseded (Detox retired 2026-10-09)                                      | Historical (2026-10-02). Superseded on 2026-10-09: Detox was retired under the 2026-10-07 owner bar, without the hosted retirement gates. T18 exact-head protected hosted evidence and T20 reconciliation remain required.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | T17 original regression evidence / repository identity   | Done: source and reviewed local product demonstration; observed exploration Pending             | Existing permanent rendered ExerciseSearchModal identity assertion detects a real temporary private source mutation: two fresh Jest processes each fail all three selected locale cases on the wrong ID; clean control and restored source each pass three. Same private mutant path is restored, canonical product/tests unchanged. Independent review verifies four source-control attempts and nineteen original references. Six other discovered cases per run are out of scope, not passes. Proof: t17-exercise-identity-controlled-product-regression-independent-review-2026-10-02-v1; T16 observation, native and full T17 phase acceptance remain Pending.                                          |
 | Android save/retry caller                                | Done: qualified source; native execution Pending                                                | Exact nine-path V4 transfer preserves current T17 framing, bounded iOS fixture and CI registration. Actual current qualified checks pass: 22 save/adjacent controls plus five inventory controls, 13 T17/identity, 36 iOS and 24 runner/closure/contract controls; full 690-root Expo typecheck, scoped zero-warning lint and both-root impact/format/freshness pass. Primary portable controls are 13 passed, two owner-path blocks in preserved dirty source; no full primary qualification. Proof: `android-maestro-save-retry-v4-reviewed-source-integration-2026-10-02-v1/accepted-source-transfer.private.json`; native/public zero.                                                                   |
 | Detox save/retry source                                  | Done: V3 reviewed source seam; real caller/native Pending                                       | Six exact new files are integrated in both roots after non-author acceptance and current proxy guards. Actual qualified canonical controls pass 15/15, closing fault-arm cancellation cleanup and PNG CRC/image-data gaps. Real owned Detox caller, termination/reaping, native evidence and public promotion remain Pending. Proof: `detox-save-retry-v3-reviewed-source-integration-2026-10-02-v1`; source controls qualify zero native cases.                                                                                                                                                                                                                                                             |
@@ -6018,7 +6042,7 @@ T12 full scope and T14/T15 behavior/comparison remain Pending.
 
 ## Goal and non-goals
 
-Implement [the full testing plan](../plans/2026-09-28-testing-structure-and-maestro-plan.md), preserving its phase gates. No production APIs, schema migrations, providers, signing, React/Expo upgrade, schedules, or bulk test deletion.
+Implement [the full testing plan](../plans/2026-09-28-testing-structure-and-maestro-plan.md), preserving its phase gates. The 2026-10-07 owner decision changed the native goal: move native E2E from Detox to Maestro. The plan's Detox-vs-Maestro comparison (T15 cold matrix and Detox cells) is dropped, and Detox was retired on 2026-10-09. No production APIs, schema migrations, providers, signing, React/Expo upgrade, schedules, or bulk test deletion.
 
 ## Affected surfaces and kickoff
 
@@ -6032,26 +6056,26 @@ Implement [the full testing plan](../plans/2026-09-28-testing-structure-and-maes
 
 Consulted: client/ancestor AGENTS; evidence-delivery workflow/template/project adapter; plan; backlog, decisions, open questions, wiring, backend migration; selective execution, browser batches, QA registry/playbook/gap sweep; tech-stack; QA adapter; server README/config/schema/migrations/Postgres tests. Domain references remain authoritative; individual journey docs will be reread before each assertion implementation.
 
-Contradiction resolved: checked-in trusted CI is web-only, without a schedule; protected Detox additionally runs release/hotfix pushes. Earlier broad-native/scheduled prose is corrected without declaring D-195 promotion. The evidence adapter's retired provider prose does not supersede the server baseline.
+Contradiction resolved: checked-in trusted CI is web-only, without a schedule; the protected native lane (Detox until 2026-10-09, now Maestro in `native-protected-full.yml`) additionally runs release/hotfix pushes. Earlier broad-native/scheduled prose is corrected without declaring D-195 promotion. The evidence adapter's retired provider prose does not supersede the server baseline.
 
 Dirty checkout: preserve existing client changes and server untracked docs. Additive test infrastructure is implemented in the current owner checkouts, with no resets, branch changes, commits, or pushes. Phase reports record exact SHAs and dirty state; isolate runtime resources independently of checkout.
 
 ## Acceptance matrix
 
-| ID  | Expected behavior                                                                 | Evidence required                                                   | Status                                                 |
-| --- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
-| P0  | Every client/server test has assertion purposes, disposition, traceability status | Regenerated AST inventory and completeness check                    | Locally verified inventory; baseline failures recorded |
-| P1A | All DB test entrypoints reject defaults/unowned targets before SQL mutation       | Guard negatives, direct invocation rejection, real isolated DB runs | Locally verified                                       |
-| P1B | Durable ownership/connection/persistence outcomes through real server             | DB/API assertions, restart/reset/concurrency receipts               | Locally verified; P0/P1 report                         |
-| P2  | Rendered support/role/search/theme interactions                                   | Component runs and deliberate regression failure                    | Locally verified; baseline route gap and CI pending    |
-| P3  | Equivalent browser profiles and real DB journeys                                  | Alias/profile and integration receipts                              | Locally verified; two complete 45-case matrices pass   |
-| P4  | Both native engines compared per scenario/platform/mode                           | 20 cold attempts per cell, regression and cleanup evidence          | Pending                                                |
-| P5  | Bounded observed exploration and regression conversion                            | Actions, two reproductions/control, deterministic regression        | Pending                                                |
-| P6  | Applicable exact-head hosted gates and safe scenario migration                    | Protected receipts, selection tests, migration ledger               | Pending                                                |
+| ID  | Expected behavior                                                                                                                             | Evidence required                                                             | Status                                                                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| P0  | Every client/server test has assertion purposes, disposition, traceability status                                                             | Regenerated AST inventory and completeness check                              | Locally verified inventory; baseline failures recorded                                                                          |
+| P1A | All DB test entrypoints reject defaults/unowned targets before SQL mutation                                                                   | Guard negatives, direct invocation rejection, real isolated DB runs           | Locally verified                                                                                                                |
+| P1B | Durable ownership/connection/persistence outcomes through real server                                                                         | DB/API assertions, restart/reset/concurrency receipts                         | Locally verified; P0/P1 report                                                                                                  |
+| P2  | Rendered support/role/search/theme interactions                                                                                               | Component runs and deliberate regression failure                              | Locally verified; baseline route gap and CI pending                                                                             |
+| P3  | Equivalent browser profiles and real DB journeys                                                                                              | Alias/profile and integration receipts                                        | Locally verified; two complete 45-case matrices pass                                                                            |
+| P4  | Each native journey passes on Maestro on both platforms and catches a planted bug (2026-10-07 owner decision; replaces the engine comparison) | A passing attempt per journey and platform; a planted-bug attempt per journey | Passing runs locally verified on both platforms; planted-bug checks recorded for Android only (see open follow-ups)             |
+| P5  | Bounded observed exploration and regression conversion                                                                                        | Actions, two reproductions/control, deterministic regression                  | Pending                                                                                                                         |
+| P6  | Applicable exact-head hosted gates and safe scenario migration                                                                                | Protected receipts, selection tests, Detox→Maestro case mapping               | Migration done locally (Detox retired 2026-10-09; case mapping in the 2026-10-09 section); hosted protected Maestro run Pending |
 
 ## Edge cases and review
 
-Missing URL/manifest, shared/remote DB, marker mismatch, stale ownership, concurrent runs, child failure, SIGINT/SIGTERM, cleanup failure, bypass flags, wrong origin, missing requested scenario, expired auth, localized selectors and retry semantics require explicit tests/evidence in their phases. Do not introduce implicit retries. Keep diagnostics and ownership on failed cleanup. Rollback retains existing runners/aliases/Detox and never alters auth/persistence expectations to pass tests.
+Missing URL/manifest, shared/remote DB, marker mismatch, stale ownership, concurrent runs, child failure, SIGINT/SIGTERM, cleanup failure, bypass flags, wrong origin, missing requested scenario, expired auth, localized selectors and retry semantics require explicit tests/evidence in their phases. Do not introduce implicit retries. Keep diagnostics and ownership on failed cleanup. Rollback retains existing runners/aliases (Detox itself was retired on 2026-10-09) and never alters auth/persistence expectations to pass tests.
 
 ## Evidence report
 
