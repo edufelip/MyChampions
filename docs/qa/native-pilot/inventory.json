@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "495ac6007aa3b0225cd3441e37f8ea0a37e34125",
+    "commit": "308d53de7d4ebce0e5740e99537222ff5a35421a",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -462,7 +462,7 @@
       "paths": [
         "scripts/testing/native-connection-password-offer-witness.ts"
       ],
-      "revision": "d0a7b24ecc9a56fc4e9493b1ec43985596e07dcd609285171150daee795465e1"
+      "revision": "b4ee67dcc14fd7844fe243b3ea3b069727527921e5f96afdfc4a2b7847ceaf65"
     },
     {
       "id": "SRC-native-pilot-invocation-source",

@@ -323,7 +323,16 @@ export function requireNativeConnectionPasswordOfferCommandSequence(
         safeLabel(options.promptScreenshotName, 'promptScreenshotName'))
   )
     throw new Error('Connection password-offer screenshot command is not bound to the witness');
+  // Credential entry runs in the same flow before the offer and is not offer
+  // evidence (the iOS email retry carries its own animation wait), so steps are
+  // classified from the first prompt-visible assertion onward.
+  const promptIndex = records.findIndex(
+    (row) =>
+      visibleCondition(row.metadata.evaluatedCommand ?? row.command)?.textRegex ===
+      nativeConnectionPasswordOfferPromptSelector,
+  );
   const steps = records
+    .slice(Math.max(promptIndex, 0))
     .map((row) => classifyCommand(row.metadata.evaluatedCommand ?? row.command, homeSelector))
     .filter((step): step is NativeConnectionPasswordOfferStepKind => step !== null);
   if (steps.filter((step) => step === 'prompt-screenshot').length !== 1)

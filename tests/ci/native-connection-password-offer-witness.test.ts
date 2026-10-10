@@ -281,6 +281,44 @@ void test('command metadata requires the exact completed seven-step witness', ()
   );
 });
 
+void test('credential entry before the offer is not classified as offer evidence', () => {
+  // The iOS email entry retries with its own 3000ms animation wait before submit.
+  const withCredentialEntry = [
+    command({ applyConfigurationCommand: { optional: false } }, 0),
+    command(
+      {
+        tapOnElement: {
+          optional: false,
+          longPress: false,
+          selector: { idRegex: 'auth.signIn.emailInput', optional: false },
+          retryIfNoChange: true,
+          waitUntilVisible: false,
+        },
+      },
+      1,
+    ),
+    command({ waitForAnimationToEndCommand: { optional: false, timeout: '3000' } }, 2),
+    ...validCommands()
+      .slice(1)
+      .map((row) => ({
+        ...row,
+        metadata: { ...row.metadata, sequenceNumber: row.metadata.sequenceNumber + 2 },
+      })),
+  ];
+  assert.deepEqual(
+    requireNativeConnectionPasswordOfferCommandSequence(withCredentialEntry, { homeSelector }),
+    [
+      'prompt-visible',
+      'prompt-screenshot',
+      'dismiss-visible-enabled',
+      'dismiss-animation-settled',
+      'dismiss-tap',
+      'prompt-absent',
+      'home-visible',
+    ],
+  );
+});
+
 void test('witness validation binds private files, actor/request identity, and no hierarchy fabrication', async () => {
   const fixture = await privateFixture();
   try {
