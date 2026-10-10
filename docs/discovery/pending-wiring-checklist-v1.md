@@ -4,7 +4,8 @@
 - `Done` (local): the five integrated native journeys pass on Maestro on iOS and Android through the native pilot (attempts in `docs/qa/testing-modernization-task-card.md`).
 - `Superseded`: the Detox-vs-Maestro comparison (T15 cold matrix and Detox cells), the Detox camera/session registrations and the Detox candidates in the 2026-10-06 entries below. The 2026-10-07 owner decision dropped the comparison, and the Detox code went with the 2026-10-09 retirement. Entries below that still say `In progress` for Detox or T15 work are historical.
 - `Pending`: first hosted protected Maestro run (`native-protected-full.yml`) on the self-hosted iOS and Android runners. Owner: client maintainer.
-- `Pending`: Android device prep does not pin the emulator locale (iOS is pinned to en-US); see the open follow-ups in the task card.
+- `Done` (local): Android device prep (`scripts/testing/maestro-device.sh --platform android`) pins the installed app to en-US and checks the pin. Each flow's `launchApp: clearState` runs `pm clear`, which drops that per-app language, so device prep also refuses to install unless the device is API 33+ with an en-US system language; that guard is what keeps the English assertions deterministic. It passed on the local `MyChampions_Maestro` emulator on 2026-10-10.
+- `Pending`: confirm the CI runner's `Pixel_10` AVD is API 33+ with an English (United States) system language before the first hosted protected Android run; otherwise device prep stops before install. Owner: client maintainer.
 
 ## Android saved-flow/cold-owner composition integrated — 2026-10-06
 

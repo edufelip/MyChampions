@@ -99,6 +99,11 @@ workflows. Leave every item unchecked until its evidence is attached.
       `Pixel_10` AVD for Android. Confirm the persistent runner listener itself
       has the effective `kvm` group and that a service-context
       `emulator -accel-check` reports KVM usable.
+- [ ] Verify the `Pixel_10` AVD is API 33+ and its system language is English
+      (United States): `adb -s emulator-5554 shell getprop persist.sys.locale`
+      (falls back to `ro.product.locale`) must print `en-US` or `en-US-*`.
+      Maestro device prep refuses to install on any other API level or
+      language.
 - [ ] Verify `curl`, `unzip`, `shasum`, and network access for
       `scripts/testing/install-maestro.sh`, which the Android full lane runs
       after setting up Temurin 17.

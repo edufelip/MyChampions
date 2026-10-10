@@ -30,6 +30,19 @@ pilot's 2.6.1); the Android lane targets the runner's
 kept-alive `emulator-5554` through `ANDROID_SERIAL`. The provider-live RevenueCat suite is intentionally
 excluded; it has its own credential-gated lane.
 
+The suite's text assertions are English, so both lanes run in en-US. iOS device
+prep pins its dedicated simulator to `en_US`. Android device prep
+(`scripts/testing/maestro-device.sh`) fails before installing unless the
+emulator (the runner's `Pixel_10` AVD) is API 33+ and its system language
+(`persist.sys.locale`, else `ro.product.locale`) is `en-US`. After installing, it
+pins `com.edufelip.mychampions.dev` to en-US with
+`cmd locale set-app-locales … --user current --locales en-US` and fails unless
+`cmd locale get-app-locales` reports `[en-US]`. That per-app pin does not replace
+the system-language requirement: every flow starts with `launchApp: clearState`,
+which runs `pm clear` on Android, and clearing app data also deletes the
+per-app language. The app then follows the system language again.
+Keep the runner's AVD in English (United States).
+
 Failure diagnostics are uploaded only on failure and retained for one day.
 There is no unattended nightly claim until runner cleanup, duration, and
 reliability evidence establishes a service-level objective.

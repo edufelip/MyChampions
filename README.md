@@ -140,8 +140,13 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    pilot's `~/.maestro` (2.6.1). iOS runs on a dedicated English simulator
    (created on first run as `MyChampions Maestro` from an `iPhone 17`,
    overridable with `MAESTRO_IOS_SIMULATOR` / `MAESTRO_IOS_DEVICE_TYPE`; device
-   prep also turns off password AutoFill, which clears typed passwords); Android
-   on one device (`ANDROID_SERIAL` when several are attached).
+   prep also turns off password AutoFill, which clears typed passwords). Android
+   runs on one device (`ANDROID_SERIAL` when several are attached) that must be
+   API 33+ with an English (United States) system language; device prep checks
+   both before installing, then pins the app to en-US with Android's per-app
+   language setting. The system language still has to be en-US because every
+   flow starts with `launchApp: clearState`, which runs `pm clear` on Android and
+   drops the per-app language.
 
    ```bash
    yarn test:e2e:ios                 # every CI Maestro suite on iOS

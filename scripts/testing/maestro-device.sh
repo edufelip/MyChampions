@@ -10,7 +10,9 @@
 # "MyChampions Maestro"), creating it from MAESTRO_IOS_DEVICE_TYPE (default
 # "iPhone 17") when missing and pinning it to English (en_US) so the suite's
 # text assertions do not depend on a shared simulator's language. Android uses
-# ANDROID_SERIAL when set, otherwise the single attached device.
+# ANDROID_SERIAL when set, otherwise the single attached device; it needs API
+# 33+ and an en-US system language, and the installed app is pinned to en-US
+# with Android's per-app language setting.
 set -euo pipefail
 
 export MAESTRO_CLI_NO_ANALYTICS=1
@@ -31,6 +33,8 @@ done
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 ios_name="${MAESTRO_IOS_SIMULATOR:-MyChampions Maestro}"
+# The devDebug APK's application id: the appId every suite flow targets.
+android_app_id=com.edufelip.mychampions.dev
 
 ios_udid() {
   local name="$ios_name"
@@ -98,8 +102,39 @@ elif [[ "$platform" == "android" ]]; then
   app="${app:-$project_root/android/app/build/outputs/apk/dev/debug/app-dev-debug.apk}"
   [[ -f "$app" ]] || { echo "Android APK not found: $app" >&2; exit 1; }
   adb -s "$serial" wait-for-device
+  # Per-app languages (`cmd locale`) exist from Android 13 (API 33).
+  api="$(adb -s "$serial" shell getprop ro.build.version.sdk | tr -d '\r')"
+  if [[ ! "$api" =~ ^[0-9]+$ ]] || ((api < 33)); then
+    echo "Android device $serial runs API ${api:-unknown}; the suite needs API 33+ (Android 13)" \
+      "to pin the app language. Use an API 33+ emulator, such as the MyChampions_Maestro AVD" \
+      "(API 37)." >&2
+    exit 1
+  fi
+  # Every suite flow starts with `launchApp: clearState`, which runs `pm clear`;
+  # that also deletes the per-app language set below, so flows render in the
+  # system language. The system language must be en-US (an Android 14
+  # regional-preference suffix such as -u-mu-celsius is fine).
+  system_locale="$(adb -s "$serial" shell getprop persist.sys.locale | tr -d '\r')"
+  [[ -n "$system_locale" ]] ||
+    system_locale="$(adb -s "$serial" shell getprop ro.product.locale | tr -d '\r')"
+  if [[ "$system_locale" != en-US && "$system_locale" != en-US-* ]]; then
+    echo "Android device $serial uses system language ${system_locale:-unknown}; the suite needs" \
+      "en-US because each flow's clearState (\`pm clear\`) drops the app's per-app language." \
+      "Set the emulator to English (United States) in Settings > System > Languages." >&2
+    exit 1
+  fi
   adb -s "$serial" install -r -t "$app" >/dev/null
   echo "Installed $(basename "$app") on $serial."
+  # Pin the installed app to en-US (applies until its data is cleared).
+  adb -s "$serial" shell cmd locale set-app-locales "$android_app_id" --user current --locales en-US
+  app_locales="$(adb -s "$serial" shell cmd locale get-app-locales "$android_app_id" --user current |
+    tr -d '\r')"
+  if [[ "$app_locales" != *" are [en-US]" ]]; then
+    echo "Could not pin $android_app_id to en-US on $serial; get-app-locales reported:" \
+      "${app_locales:-nothing}" >&2
+    exit 1
+  fi
+  echo "Pinned $android_app_id to en-US on $serial."
 else
   echo "Usage: $0 --platform ios|android [--app PATH | --resolve-only]" >&2
   exit 2
