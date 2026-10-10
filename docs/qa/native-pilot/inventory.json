@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "c5ea7456fd9da7dbf2589a9f3f518bfb5ccecec2",
+    "commit": "57b3beb79423a4d266512128b9dee5da6b0ac07b",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -903,7 +903,7 @@
       "paths": [
         "scripts/testing/native-training-maestro-driver.ts"
       ],
-      "revision": "2f062dfd8727a5be4cdcdc4a7be2c0b062be6007ccd2ce353463de14b320f047"
+      "revision": "e3b967e19511ce815eb9722d1662a52ae188c1e37d519efa16cae03aea40a2d9"
     },
     {
       "id": "SRC-maestro-quantity-contract",

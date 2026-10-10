@@ -11,7 +11,7 @@ import {
   observeIosTrainingTitleSelection,
   requireAndroidItemRemovalPrompt,
   requireAndroidSelectAllMenu,
-  requireAndroidSessionEditorGuidanceAnchor,
+  requireAndroidSessionEditorVisible,
   requireAndroidTrainingTitle,
   requireAndroidTrainingGuidanceAnchor,
   requireIosClearedTrainingTitle,
@@ -384,51 +384,35 @@ void test('Android new-session swipe requires exact observed guidance outside th
     assert.throws(() => requireAndroidTrainingGuidanceAnchor(tree));
 });
 
-void test('Android session-confirm swipe rejects an ambiguous, foreign, disabled or overlapping input anchor', () => {
-  const anchor = {
-    attributes: {
-      text: enUS['pro.plan.builder.guidance.training.body'],
-      enabled: 'true',
-      class: 'android.widget.TextView',
-      bounds: '[32,142][288,214]',
-    },
-  };
-  const field = {
-    attributes: {
-      'resource-id': 'pro.training_plan.addSession.name',
-      enabled: 'true',
-      class: 'android.widget.EditText',
-      bounds: '[32,531][288,563]',
-    },
-  };
-  requireAndroidSessionEditorGuidanceAnchor({ children: [anchor, field] });
+void test('Android session editor must show the whole form, its name field and both actions on screen', () => {
+  // Bounds from a real 320x640 dp capture after the form scrolled into view.
+  const row = (id: string, bounds: string, extra: Record<string, string> = {}) => ({
+    attributes: { 'resource-id': id, enabled: 'true', bounds, ...extra },
+  });
+  const screen = row('pro.training_plan.screen', '[0,0][320,640]');
+  const form = row('pro.training_plan.addSession.form', '[16,230][304,470]');
+  const name = row('pro.training_plan.addSession.name', '[32,271][288,303]', {
+    class: 'android.widget.EditText',
+  });
+  const confirm = row('pro.training_plan.addSession.confirm', '[32,383][154,429]');
+  const cancel = row('pro.training_plan.addSession.cancel', '[166,383][288,429]');
+  const valid = [screen, form, name, confirm, cancel];
+  requireAndroidSessionEditorVisible({ children: valid });
+  const replace = (index: number, attributes: Record<string, string>) => ({
+    children: valid.map((node, i) =>
+      i === index ? { attributes: { ...node.attributes, ...attributes } } : node,
+    ),
+  });
   for (const tree of [
-    { children: [anchor] },
-    { children: [field] },
-    { children: [anchor, anchor, field] },
-    { children: [anchor, field, field] },
-    {
-      children: [
-        anchor,
-        { attributes: { ...field.attributes, 'resource-id': 'pro.training_plan.name' } },
-      ],
-    },
-    {
-      children: [
-        anchor,
-        {
-          attributes: {
-            ...field.attributes,
-            'resource-id': 'foreign:id/pro.training_plan.addSession.name',
-          },
-        },
-      ],
-    },
-    { children: [anchor, { attributes: { ...field.attributes, enabled: 'false' } }] },
-    {
-      children: [anchor, { attributes: { ...field.attributes, class: 'android.widget.TextView' } }],
-    },
-    { children: [{ attributes: { ...anchor.attributes, bounds: '[32,142][288,550]' } }, field] },
+    { children: [screen, name, confirm, cancel] },
+    { children: [...valid, form] },
+    replace(1, { bounds: '[16,430][304,670]' }),
+    replace(2, { class: 'android.widget.TextView' }),
+    replace(2, { 'resource-id': 'foreign:id/pro.training_plan.addSession.name' }),
+    replace(3, { enabled: 'false' }),
+    replace(3, { bounds: '[32,240][154,286]' }),
+    replace(4, { bounds: '[166,383][320,429]' }),
+    { children: [screen, form, name, confirm] },
   ])
-    assert.throws(() => requireAndroidSessionEditorGuidanceAnchor(tree));
+    assert.throws(() => requireAndroidSessionEditorVisible(tree));
 });

@@ -133,8 +133,48 @@ export function requireAndroidClearedTrainingTitle(
 export function requireAndroidTrainingGuidanceAnchor(tree: unknown) {
   requireAndroidGuidanceAnchor(tree, 'pro.training_plan.name');
 }
-export function requireAndroidSessionEditorGuidanceAnchor(tree: unknown) {
-  requireAndroidGuidanceAnchor(tree, 'pro.training_plan.addSession.name');
+/**
+ * The add-session form opens scrolled into view above the keyboard: the form, its name
+ * field and both actions are on screen, so no swipe is needed to reach Add session.
+ */
+export function requireAndroidSessionEditorVisible(tree: unknown) {
+  const nodes = allNodes(tree);
+  const byId = (id: string) =>
+    nodes.filter((row) =>
+      [id, `com.edufelip.mychampions.dev:id/${id}`].includes(String(row['resource-id'])),
+    );
+  const box = (row: Record<string, unknown>, label: string) => {
+    const match = /^\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]$/.exec(String(row.bounds));
+    assert(match, `${label} bounds missing`);
+    const [left, top, right, bottom] = match.slice(1).map(Number);
+    assert(right > left && bottom > top, `${label} bounds invalid`);
+    return { left, top, right, bottom };
+  };
+  const unique = (id: string, label: string) => {
+    const rows = byId(id);
+    assert.equal(rows.length, 1, `${label} is missing or ambiguous`);
+    assert.equal(rows[0].enabled, 'true', `${label} is disabled`);
+    return rows[0];
+  };
+  const screen = box(unique('pro.training_plan.screen', 'Training builder'), 'Training builder');
+  const form = box(unique('pro.training_plan.addSession.form', 'Session form'), 'Session form');
+  const inside = (inner: ReturnType<typeof box>, outer: ReturnType<typeof box>) =>
+    inner.left >= outer.left &&
+    inner.top >= outer.top &&
+    inner.right <= outer.right &&
+    inner.bottom <= outer.bottom;
+  assert(inside(form, screen), 'Session form is not fully on screen');
+  const nameRow = unique('pro.training_plan.addSession.name', 'Session name field');
+  assert.equal(nameRow.class, 'android.widget.EditText', 'Session name is not a text field');
+  const name = box(nameRow, 'Session name field');
+  assert(inside(name, form), 'Session name field is outside the form');
+  for (const [id, label] of [
+    ['pro.training_plan.addSession.confirm', 'Add session action'],
+    ['pro.training_plan.addSession.cancel', 'Cancel action'],
+  ] as const) {
+    const action = box(unique(id, label), label);
+    assert(inside(action, form) && action.top >= name.bottom, `${label} is not below the name`);
+  }
 }
 function requireAndroidGuidanceAnchor(
   tree: unknown,
@@ -592,13 +632,12 @@ function createNativeTrainingMaestroDriver(
         ['pro.training_plan.addSession.name'],
       );
       if (input.platform === 'android')
-        requireAndroidSessionEditorGuidanceAnchor(await hierarchy('journey-session-editor'));
+        requireAndroidSessionEditorVisible(await hierarchy('journey-session-editor'));
       await observe(
         'journey-session',
         tap('pro.training_plan.addSession.name') +
           enter(values.sessionName) +
           '- hideKeyboard\n' +
-          revealNewSession +
           scroll('pro.training_plan.addSession.confirm') +
           tap('pro.training_plan.addSession.confirm') +
           revealSession,
