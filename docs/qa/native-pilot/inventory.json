@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "308d53de7d4ebce0e5740e99537222ff5a35421a",
+    "commit": "90c5a3f12a7d1fcfa8ade1296a32fb7e7b21a2fd",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -57,7 +57,7 @@
       "paths": [
         "docs/screens/v2/SC-213-account-privacy-settings.md"
       ],
-      "revision": "1cc25cfcc3a7bfdcda8492e04d7457bc059c94f55935a454503fe6d9fce259fe"
+      "revision": "a751144a1c448aba121db714177420c6a3675bfd8c6608e4926354a864b17c1e"
     },
     {
       "id": "SRC-training-doc",
@@ -120,7 +120,7 @@
       "paths": [
         "docs/business-rules/BR-002-role-assignment-and-plan-governance.md"
       ],
-      "revision": "4cc3aaf320e64733fac5dc0c44b38c5f6ba71fb32506eca596a06d5844a17cb7"
+      "revision": "424352cb663ba731d9018419cbc50318a6dfcae0539f4b946a19ee6c5320149c"
     },
     {
       "id": "SRC-test-cases",
@@ -129,7 +129,7 @@
       "paths": [
         "docs/test-cases/TC-002-role-and-assignment-controls.md"
       ],
-      "revision": "ae7f62bee761ae45301329be0cd8415793dc7fcb75e7453a9984daaf46ef7c42"
+      "revision": "b8bc3781d88360cae21fd0f21e90cee3131067ff5859ef0e53ec4355a71bdf20"
     },
     {
       "id": "SRC-plan",
@@ -138,7 +138,7 @@
       "paths": [
         "docs/plans/2026-09-28-testing-structure-and-maestro-plan.md"
       ],
-      "revision": "9639ba46e594be428105dd51ca9de411c13fe685adad31728c3b512fb7788360"
+      "revision": "8781eb50cc7fd52b62995279cfffad0b76df69d27457e820279bcc05d0b04dc7"
     },
     {
       "id": "SRC-native-contract-doc",
@@ -147,7 +147,7 @@
       "paths": [
         "docs/qa/native-pilot/declaration-contract.md"
       ],
-      "revision": "f9b1505f07dbd2bc9013b948450394bd34e8e08e87a082552adf5847f2e6df91"
+      "revision": "eb16aa4a9b42afabfeb10a93aa064dc5cf7a31312e6bc716744cdfb905955f2d"
     },
     {
       "id": "SRC-auth-source",
@@ -282,7 +282,7 @@
       "paths": [
         "scripts/testing/native-connection-journey.ts"
       ],
-      "revision": "8a3dbda6bc580cfeb9df73f95773060f56f75b290a655edfb6bcf9e00a688db5"
+      "revision": "6fc1c81b5a7f2f11b58d166535851c140c62a422d8647767d198ddd21cefc37e"
     },
     {
       "id": "SRC-connection-journey-core-source",
@@ -546,15 +546,6 @@
       "revision": "8c27bc8537713fec9deaa55e164c97ee02ab2f6b9d0f932fc77c7ef4b8d8fa7a"
     },
     {
-      "id": "SRC-native-connection-engine-contract-source",
-      "kind": "source",
-      "ref": "scripts/testing/native-connection-engine-contract.ts",
-      "paths": [
-        "scripts/testing/native-connection-engine-contract.ts"
-      ],
-      "revision": "95776cab81368e0ffad4517c5460f5a795354bc589f6659b706db061df6450ee"
-    },
-    {
       "id": "SRC-android-connection-terminal-projection-source",
       "kind": "source",
       "ref": "scripts/testing/run-ios-training-attempt.ts",
@@ -579,7 +570,7 @@
       "paths": [
         "scripts/testing/native-view-evidence.ts"
       ],
-      "revision": "5c31e8b673b90a1b705999b14c3424d9ffed91bba7f9441b812e4dda3d858387"
+      "revision": "92da34090611583dfd4e709474443e65e81885138324aab0aa349fe5eea36da6"
     },
     {
       "id": "SRC-testing-start-here-source",
@@ -588,7 +579,7 @@
       "paths": [
         "docs/plans/2026-09-29-testing-modernization-start-here.md"
       ],
-      "revision": "bc917b8158b0920e2b46936d6421f53517bc40e777398be697554c942ad5b081"
+      "revision": "f8ad33f7c35de3217390c8ff7c7136ff0e16a1b263a133c057c798a2e760b334"
     },
     {
       "id": "SRC-testing-handoff-source",
@@ -597,7 +588,7 @@
       "paths": [
         "docs/plans/2026-09-29-testing-modernization-implementation-handoff.md"
       ],
-      "revision": "6c201619328cc1a67e4fe80f3c585118f24a663188fb2ca75d863d3781bfdd9a"
+      "revision": "86a920ec992b0270a87a7445b1e9bd043b972338e22b0648276c184221568f1d"
     },
     {
       "id": "SRC-pending-source",
@@ -669,7 +660,7 @@
       "paths": [
         "scripts/testing/native-build-reuse.ts"
       ],
-      "revision": "f1032b26f12eefa4bb44e38ffe28a7bd98de9a964895e29334d523db3e9ca7c4"
+      "revision": "21b26ded10e3a0b493af5014e11157a0d44a2fb22a9b5631ab387f0b3952a773"
     },
     {
       "id": "SRC-ios-incremental-build-cache-source",
@@ -885,7 +876,7 @@
       "paths": [
         "scripts/testing/owned-expo.ts"
       ],
-      "revision": "56fc766853e3949d7ad6570f87239e2ba29956e3220ef0ba9aada40a731297d3"
+      "revision": "7f3581626b07fa1cc3a74ebf9a9f5dd4111cdb1f97220ccf3c031d35978e3acd"
     },
     {
       "id": "SRC-ios-simulator-app-source",
@@ -903,7 +894,7 @@
       "paths": [
         "scripts/testing/generate-native-declaration.py"
       ],
-      "revision": "3094c2b5094565eb9a1c385349dfb35bfa1dc412dce28a3edc908d1ad4f5d2cb"
+      "revision": "f8f38d67a739523bb317d2fa0a4aa939ed87e2f3ffe1d83215b6d1ecbd0fa748"
     },
     {
       "id": "SRC-maestro-training-driver",
@@ -957,7 +948,7 @@
       "paths": [
         "scripts/testing/native-view-evidence.ts"
       ],
-      "revision": "5c31e8b673b90a1b705999b14c3424d9ffed91bba7f9441b812e4dda3d858387"
+      "revision": "92da34090611583dfd4e709474443e65e81885138324aab0aa349fe5eea36da6"
     },
     {
       "id": "SRC-training-attempt-source",
@@ -993,7 +984,7 @@
       "paths": [
         "scripts/testing/verify-owned-ios-cleanup.ts"
       ],
-      "revision": "81c1b836e7f2c1a5d67b315727ac58c29ad71e90a16bcc8529778aab37badd7a"
+      "revision": "6cde0fb32be458dc86d472f46c41539a24d939cfb41bf6037b30628885e69db1"
     },
     {
       "id": "SRC-partial-backend-boundary-source",
@@ -1056,7 +1047,7 @@
       "paths": [
         "scripts/testing/capture-android-testability.ts"
       ],
-      "revision": "0662ee17bcd14a9573f0e30189b8e98654981293c8d6679c73e6edd6fb2dabea"
+      "revision": "a28e4ce0d79ccaa1b64642c713c3bf5aa40ffad517daeac5ee59b0796983fb4f"
     },
     {
       "id": "SRC-android-session-checkpoint-copy-source",
@@ -1092,7 +1083,7 @@
       "paths": [
         "scripts/testing/android-build-identity.ts"
       ],
-      "revision": "0909522db368a1be9db77631950d3a177f53beda049a473a2def3dfebb4de839"
+      "revision": "e4426690feeee55398d8cc186d19be6f8b0d1b2773e72fb25dcd202fb50b9cf5"
     },
     {
       "id": "SRC-android-input-reader-source",
@@ -1128,7 +1119,7 @@
       "paths": [
         "scripts/testing/owned-android-emulator.ts"
       ],
-      "revision": "1f9deb24b0fb218fc81212ac6f2927b50239b9cafef3dd402bffad35a93b1e85"
+      "revision": "87037b494678da707cbe54c0fa73f7d3b60e13fa73f663ca202525b35baeb7f4"
     },
     {
       "id": "SRC-android-port-owner-source",
@@ -1182,7 +1173,7 @@
       "paths": [
         "scripts/testing/native-camera-observation.ts"
       ],
-      "revision": "842633694383e8deda4baee909a9532ccf2cde76a9b27f970bd33d421f0a87b5"
+      "revision": "0c6beea38b95885fc2f12c5423fa550cd3531d2686f1706dd5a0e784e45662ca"
     },
     {
       "id": "SRC-android-camera-capture-adapter-source",
@@ -1326,7 +1317,7 @@
       "paths": [
         "scripts/testing/native-android-camera-runtime-eligibility.ts"
       ],
-      "revision": "a30bc6e3494861f1e9dc796328977952c81893083495e026fb736319d4b38634"
+      "revision": "5dee81db768574dce8708f8066deedebbfe241748a42c7647139c35340503323"
     },
     {
       "id": "SRC-android-camera-runtime-receipt-source",
@@ -1398,7 +1389,7 @@
       "paths": [
         "localization/en-US.ts"
       ],
-      "revision": "d594d022dff4f827c3cae381f4957fecdb7b18aafbd48938b7e2a8583268fe0b"
+      "revision": "469212d8248c9059488e384ea73530b614ea1062c0b664ccdfc63bd886f44a05"
     },
     {
       "id": "SRC-save-retry-observer",
@@ -1542,7 +1533,7 @@
       "paths": [
         "scripts/testing/native-session-helper-ledger.ts"
       ],
-      "revision": "25132f8c819fab5cc78b9751acd5ca0f5dd93fefdb7530fd050f57b53cf331b1"
+      "revision": "d719e104b4f252331d43bee8193ea84df7ba37a3c9c68d43f3cbf8f895cffa10"
     },
     {
       "id": "SRC-session-public-finalization-source",
@@ -1650,7 +1641,7 @@
       "paths": [
         "scripts/testing/detox-native-hierarchy.ts"
       ],
-      "revision": "03924616170f84c72b1c5fdef2592d055798a2a834dba2e168cff3b4c6d84313"
+      "revision": "9aa2597a418e4d9efc22943068558f2e5060151128699497d56267abac829c1b"
     },
     {
       "id": "SRC-detox-dispatch-session-cache-observation-source",
@@ -3495,7 +3486,6 @@
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/native-connection-engine-contract.ts",
         "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
@@ -3778,7 +3768,6 @@
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/native-connection-engine-contract.ts",
           "scripts/testing/native-pilot-preflight.ts"
         ]
       },
@@ -4734,7 +4723,6 @@
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/native-connection-engine-contract.ts",
         "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
@@ -5014,7 +5002,6 @@
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/native-connection-engine-contract.ts",
           "scripts/testing/native-pilot-preflight.ts"
         ]
       },
@@ -6032,7 +6019,6 @@
         "scripts/testing/native-save-retry-observation.ts",
         "scripts/testing/validate-native-inventory.mjs",
         "scripts/testing/run-ios-training-attempt.ts",
-        "scripts/testing/native-connection-engine-contract.ts",
         "scripts/testing/native-session-profile-checkpoints.ts",
         "scripts/testing/native-connection-password-offer-witness.ts",
         "scripts/testing/t15-cold-ios-reset-producer.ts",
@@ -6201,7 +6187,6 @@
           "SRC-save-retry-observer",
           "SRC-inventory-validator-source",
           "SRC-android-connection-terminal-projection-source",
-          "SRC-native-connection-engine-contract-source",
           "SRC-session-profile-checkpoints-source",
           "SRC-connection-password-offer-witness-source",
           "SRC-ios-cold-reset-producer-source",
@@ -6331,7 +6316,6 @@
           "scripts/testing/native-save-retry-observation.ts",
           "scripts/testing/validate-native-inventory.mjs",
           "scripts/testing/run-ios-training-attempt.ts",
-          "scripts/testing/native-connection-engine-contract.ts",
           "scripts/testing/native-session-profile-checkpoints.ts",
           "scripts/testing/native-connection-password-offer-witness.ts",
           "scripts/testing/t15-cold-ios-reset-producer.ts",
@@ -7453,7 +7437,6 @@
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/native-connection-engine-contract.ts",
         "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
@@ -7735,7 +7718,6 @@
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/native-connection-engine-contract.ts",
           "scripts/testing/native-pilot-preflight.ts"
         ]
       },
@@ -8571,7 +8553,6 @@
         "scripts/testing/exploration-budget-policy.ts",
         "scripts/testing/owned-maestro-mcp-stdio.ts",
         "scripts/testing/native-detox-camera-android-identity.ts",
-        "scripts/testing/native-connection-engine-contract.ts",
         "scripts/testing/native-pilot-preflight.ts"
       ],
       "freshnessInputs": {
@@ -8848,7 +8829,6 @@
           "scripts/testing/exploration-budget-policy.ts",
           "scripts/testing/owned-maestro-mcp-stdio.ts",
           "scripts/testing/native-detox-camera-android-identity.ts",
-          "scripts/testing/native-connection-engine-contract.ts",
           "scripts/testing/native-pilot-preflight.ts"
         ]
       },
