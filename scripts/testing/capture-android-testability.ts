@@ -130,6 +130,7 @@ import {
 } from './native-runtime-preflight';
 import {
   requireFinalSessionTransport,
+  requireSignOutSessionTransport,
   requireSignedOutSessionTransport,
   verifyNativeSessionProfileCheckpoints,
 } from './native-session-profile-checkpoints';
@@ -3969,9 +3970,12 @@ async function executeOwnedAndroidSession(
         ['settings.account.signOutConfirm'],
       );
       await authenticatedProxy.waitForQuiescence();
+      // The sign-out window starts exactly where this signed-in relaunch window
+      // ends: everything after it was sent by the sign-out confirmation.
+      const beforeSignOutRequestId = authenticatedProxy.requestIdFence;
       sessionRelaunchWindows.push({
         afterRequestId: beforeReopenRelaunchRequestId,
-        throughRequestId: authenticatedProxy.requestIdFence,
+        throughRequestId: beforeSignOutRequestId,
       });
       await observe('auth-signed-out', sessionActions.confirm, 'SCR-sign-in', [
         'auth.signIn.emailInput',
@@ -4014,6 +4018,23 @@ async function executeOwnedAndroidSession(
       const signedOutThroughRequestId = authenticatedProxy.requestIdFence;
       if (signedOutThroughRequestId !== afterSignedOutRelaunchRequestId)
         throw new Error('Android signed-out transport changed after proxy drain');
+      // Sign-out analytics are sent after the session ends and before the
+      // relaunch; none of them may carry the old bearer or session cookie.
+      const signOutRows = requireSignOutSessionTransport({
+        observations: authenticatedProxy.observations,
+        window: {
+          afterRequestId: beforeSignOutRequestId,
+          throughRequestId: beforeSignedOutRelaunchRequestId,
+        },
+        expectedTargetOrigin: authApiIdentity.targetOrigin,
+      });
+      report.androidSessionSignOutTransport = {
+        status: 'verified',
+        phase: 'sign-out',
+        beforeRequestId: beforeSignOutRequestId,
+        afterRequestId: beforeSignedOutRelaunchRequestId,
+        rows: signOutRows,
+      };
       const signedOutRows = requireSignedOutSessionTransport({
         observations: authenticatedProxy.observations,
         window: {
@@ -4235,6 +4256,7 @@ async function executeOwnedAndroidSession(
             status: 'verified',
             phase: 'signed-out-relaunch',
             sourceReceiptHashes: [
+              receiptHash(report.androidSessionSignOutTransport),
               receiptHash(report.androidSessionSignedOutTransport),
               sessionCheckpointSet[3].profile.sha256,
               sessionCheckpointSet[3].domain.sha256,

@@ -627,6 +627,8 @@ async function createFixture(options: CreateFixtureOptions = {}): Promise<RealFi
         firstRequestId: 2,
         lastRequestId: 2,
       },
+      signOutTransport: [],
+      signOutTransportRange: { afterRequestId: 2, throughRequestId: 2 },
       signedOutRelaunchTransport: [transport[2]],
       signedOutRelaunchTransportRange: { afterRequestId: 2, throughRequestId: 3 },
       transportEvidence: transportReceipt,

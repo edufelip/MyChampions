@@ -133,6 +133,7 @@ export function requireAndroidSessionCaptureShape(value: unknown): Record<string
     'androidSessionStorage',
     'androidSessionAuthIdentity',
     'androidSessionRestoreTransport',
+    'androidSessionSignOutTransport',
     'androidSessionSignedOutTransport',
     'androidSessionCancelStorage',
     'androidSessionCancelIdentity',

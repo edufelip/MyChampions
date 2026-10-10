@@ -41,6 +41,15 @@ export type NativeSessionProfileCheckpointInput = {
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const loginPath = hash('/auth/email/sign-in');
 const hydratePath = hash('/me/hydrate');
+const signOutPath = hash('/auth/session/sign-out');
+const credentialFreeClassification = {
+  authorization: 'absent',
+  cookie: 'absent',
+  knownAccessCookie: 'absent',
+  knownRefreshCookie: 'absent',
+  otherCookiePresent: false,
+  malformedCookiePresent: false,
+} as const;
 
 function windowRows(observations: readonly ProxyObservation[], window: Window) {
   assert.ok(Number.isSafeInteger(window.afterRequestId) && window.afterRequestId >= 0);
@@ -240,6 +249,69 @@ export function verifyNativeSessionProfileCheckpoints(input: NativeSessionProfil
   };
 }
 
+/**
+ * A request sent without a session carries no Authorization or Cookie header.
+ * When the proxy recorded the header shape, it must agree: no bearer, no
+ * cookie at all, and so no access or refresh cookie.
+ */
+function requireCredentialFreeRequest(row: ProxyObservation, message: string) {
+  assert.equal(row.requestCredentialPresent, false, message);
+  if (row.requestCredentialClassification !== undefined)
+    assert.deepEqual(row.requestCredentialClassification, credentialFreeClassification, message);
+}
+
+function requireOwnedNativeRow(row: ProxyObservation, expectedTargetOrigin: string) {
+  assert.equal(row.requestProfile, 'native');
+  assert.equal(row.requestOrigin, null);
+  assert.equal(row.outcome, 'forwarded');
+  assert.equal(row.faultAttemptId, null);
+  assert.equal(row.targetOrigin, expectedTargetOrigin);
+}
+
+/**
+ * Checks the requests the app sent while signing out, using the complete,
+ * stopped proxy stream. The window starts at a fence taken just before the
+ * sign-out confirmation and ends at the fence taken before the signed-out
+ * relaunch, so it holds everything sign-out itself sent (such as analytics).
+ * Only a server sign-out request may still carry the old credentials, since
+ * it needs them to end the server session; every other request in the window
+ * must carry neither the bearer nor a session cookie. Native sign-out is
+ * local, so a native stream normally has no server sign-out request at all.
+ */
+export function requireSignOutSessionTransport(input: {
+  observations: readonly ProxyObservation[];
+  window: Window;
+  expectedTargetOrigin: string;
+}) {
+  requireIntegratedLoopbackOrigin(input.expectedTargetOrigin);
+  const { afterRequestId, throughRequestId } = input.window;
+  assert.ok(Number.isSafeInteger(afterRequestId) && afterRequestId >= 0);
+  assert.ok(Number.isSafeInteger(throughRequestId) && throughRequestId >= afterRequestId);
+  const ids = new Set(input.observations.map((row) => row.requestId));
+  assert.equal(ids.size, input.observations.length, 'Closed session stream repeats request IDs');
+  for (let requestId = 1; requestId <= throughRequestId; requestId++)
+    assert.ok(ids.has(requestId), 'Closed session stream lacks a started request');
+  const rows = input.observations.filter(
+    (row) => row.requestId > afterRequestId && row.requestId <= throughRequestId,
+  );
+  const signOuts = rows.filter((row) => row.pathHash === signOutPath);
+  assert.ok(signOuts.length <= 1, 'Sign-out sent more than one server sign-out request');
+  for (const row of rows) {
+    requireOwnedNativeRow(row, input.expectedTargetOrigin);
+    assert.notEqual(row.pathHash, loginPath, 'Sign-out submitted credentials');
+    assert.notEqual(row.pathHash, hydratePath, 'Sign-out hydrated a session');
+    if (row === signOuts[0]) {
+      assert.equal(row.method, 'POST', 'Server sign-out request is not a POST');
+      continue;
+    }
+    requireCredentialFreeRequest(
+      row,
+      `Request ${row.requestId} sent during sign-out carried credentials`,
+    );
+  }
+  return rows;
+}
+
 /** Checks the complete, stopped proxy stream and a fence taken before termination. */
 export function requireSignedOutSessionTransport(input: {
   observations: readonly ProxyObservation[];
@@ -258,12 +330,8 @@ export function requireSignedOutSessionTransport(input: {
   const rows = input.observations.filter((row) => row.requestId > afterRequestId);
   for (const row of rows) {
     assert.ok(row.requestId <= throughRequestId, 'Session request escaped the closed window');
-    assert.equal(row.requestProfile, 'native');
-    assert.equal(row.requestOrigin, null);
-    assert.equal(row.outcome, 'forwarded');
-    assert.equal(row.faultAttemptId, null);
-    assert.equal(row.targetOrigin, input.expectedTargetOrigin);
-    assert.equal(row.requestCredentialPresent, false, 'Signed-out request carried credentials');
+    requireOwnedNativeRow(row, input.expectedTargetOrigin);
+    requireCredentialFreeRequest(row, 'Signed-out request carried credentials');
     assert.notEqual(row.pathHash, loginPath, 'Signed-out relaunch submitted credentials');
     assert.notEqual(row.pathHash, hydratePath, 'Signed-out relaunch hydrated a session');
   }

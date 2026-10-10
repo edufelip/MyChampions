@@ -845,6 +845,7 @@ void test('the runner unknown-runtime finalization branch survives sidecar failu
   assert.ok(branchEnd > branchStart);
   assert.match(runner.slice(branchStart, branchEnd), /writeNativePilotOptionalPrivateFile/);
   assert.match(runner.slice(branchStart, branchEnd), /runtimeFailurePublished/);
+  assert.match(runner.slice(branchStart, branchEnd), /runtimeExecutionFailure/);
   assert.doesNotMatch(runner.slice(branchStart, branchEnd), /signal:\s*controller\.signal/);
 
   const root = await privateRoot('mc-public-runner-identity-runtime-branch-');
@@ -878,6 +879,9 @@ void test('the runner unknown-runtime finalization branch survives sidecar failu
       'runtimeLinkPublished',
       'writeNativePilotOptionalPrivateFile',
       'nativePilotRuntimeArtifactReferences',
+      // The runner's catch block records the controller error for the
+      // runtime-failure sidecar; the extracted branch reads it from that scope.
+      'runtimeExecutionFailure',
       `${branch}; return { unknownRuntime, runtimeFailurePublished };`,
     );
     const result = (await execute(
@@ -890,6 +894,7 @@ void test('the runner unknown-runtime finalization branch survives sidecar failu
       false,
       writeNativePilotOptionalPrivateFile,
       nativePilotRuntimeArtifactReferences,
+      { name: 'Error', message: 'controlled runtime controller failure' },
     )) as { unknownRuntime: boolean; runtimeFailurePublished: boolean };
     assert.equal(result.unknownRuntime, true);
     assert.equal(result.runtimeFailurePublished, false);

@@ -497,7 +497,7 @@ function domainSnapshot(runId: string): OwnedDomainSnapshot {
 
 function proxyRow(
   requestId: number,
-  pathName: '/auth/email/sign-in' | '/me/hydrate',
+  pathName: '/auth/email/sign-in' | '/me/hydrate' | '/analytics/events',
   status: number,
   requestCredentialPresent: boolean,
   targetOrigin: string,
@@ -637,7 +637,9 @@ async function makeSyntheticInput(options: FixtureFailureOptions = {}) {
     );
     const signIn = proxyRow(1, '/auth/email/sign-in', 201, false, targetOrigin);
     const hydrate = proxyRow(2, '/me/hydrate', 200, true, targetOrigin);
-    const transport = [signIn, hydrate];
+    // Sign-out analytics: sent after the session ends, before the relaunch.
+    const signOutAnalytics = proxyRow(3, '/analytics/events', 202, false, targetOrigin);
+    const transport = [signIn, hydrate, signOutAnalytics];
     assert.equal(
       signIn.requestCredentialPresent,
       false,
@@ -761,8 +763,10 @@ async function makeSyntheticInput(options: FixtureFailureOptions = {}) {
         firstRequestId: 2,
         lastRequestId: 2,
       },
+      signOutTransport: [signOutAnalytics],
+      signOutTransportRange: { afterRequestId: 2, throughRequestId: 3 },
       signedOutRelaunchTransport: [],
-      signedOutRelaunchTransportRange: { afterRequestId: 2, throughRequestId: 2 },
+      signedOutRelaunchTransportRange: { afterRequestId: 3, throughRequestId: 3 },
       transportEvidence: receipt('transport-observations.private.json', transportBytes),
       sessionTerminalTransportDiagnostics: {
         'transport-terminal.private.json': {
@@ -921,6 +925,97 @@ void test('source-only validator rejects terminal transport mutation, incomplete
   } finally {
     await cleanupFixture(fixture);
   }
+});
+
+void test('source-only validator checks every request sent between sign-out and relaunch', async () => {
+  const fixture = await makeSyntheticInput();
+  // structuredClone turns Buffers into plain Uint8Arrays; keep the real bytes.
+  const cloneInput = () => ({
+    ...structuredClone(fixture.input),
+    terminalTransportBytes: fixture.input.terminalTransportBytes,
+    nativeAuthTerminalBytes: fixture.input.nativeAuthTerminalBytes,
+  });
+  try {
+    // The sign-out analytics post still carries the old access cookie, and the
+    // stopped stream, its receipts and the recorded window all say so.
+    const leaked = cloneInput();
+    const observations = leaked.transportObservations as ProxyObservation[];
+    Object.assign(observations[2], {
+      requestCredentialPresent: true,
+      requestCredentialClassification: {
+        authorization: 'absent',
+        cookie: 'present',
+        knownAccessCookie: 'nonempty',
+        knownRefreshCookie: 'absent',
+        otherCookiePresent: false,
+        malformedCookiePresent: false,
+      },
+    });
+    const leakedBytes = Buffer.from(JSON.stringify(observations));
+    leaked.terminalTransportBytes = leakedBytes;
+    const leakedReceipt = { bytes: leakedBytes.length, sha256: hash(leakedBytes) };
+    Object.assign(
+      leaked.capture.sessionTerminalTransportDiagnostics['transport-terminal.private.json'],
+      leakedReceipt,
+    );
+    Object.assign(leaked.capture.transportEvidence, leakedReceipt);
+    leaked.capture.signOutTransport = [observations[2]];
+    assert.throws(
+      () => validateNativeSessionPublicDependency(leaked),
+      /Request 3 sent during sign-out carried credentials/,
+    );
+
+    const withWindow = (signOutTransportRange: {
+      afterRequestId: number;
+      throughRequestId: number;
+    }) => {
+      const value = cloneInput();
+      value.capture.signOutTransportRange = signOutTransportRange;
+      return value;
+    };
+    assert.throws(
+      () =>
+        validateNativeSessionPublicDependency(
+          withWindow({ afterRequestId: 1, throughRequestId: 3 }),
+        ),
+      /sign-out window starts before restoration ended/,
+    );
+    assert.throws(
+      () =>
+        validateNativeSessionPublicDependency(
+          withWindow({ afterRequestId: 2, throughRequestId: 2 }),
+        ),
+      /sign-out window does not end at the signed-out relaunch/,
+    );
+    const unlinked = cloneInput();
+    unlinked.capture.signOutTransport = [];
+    assert.throws(
+      () => validateNativeSessionPublicDependency(unlinked),
+      /sign-out transport range is not linked to stopped stream/,
+    );
+  } finally {
+    await cleanupFixture(fixture);
+  }
+});
+
+void test('an aborted iOS session capture drops every recorded transport window', async () => {
+  const source = await readFile(
+    path.join(__dirname, '../../scripts/testing/capture-native-testability.ts'),
+    'utf8',
+  );
+  const start = source.indexOf("if (charter === 'session' && controller.signal.aborted) {");
+  const end = source.indexOf('delete report[key];', start);
+  assert.ok(start >= 0 && end > start, 'aborted session evidence scrub is missing');
+  const scrubbed = source.slice(start, end);
+  for (const key of [
+    'relaunchTransport',
+    'relaunchTransportRange',
+    'signOutTransport',
+    'signOutTransportRange',
+    'signedOutRelaunchTransport',
+    'signedOutRelaunchTransportRange',
+  ])
+    assert.match(scrubbed, new RegExp(`'${key}',`), `aborted capture keeps ${key}`);
 });
 
 void test('source/helper identity is recomputed from the complete producer ledger and rejects forged capture identity', async () => {

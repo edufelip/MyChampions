@@ -173,6 +173,7 @@ function successfulReport(captureRunId: string): Record<string, unknown> {
       backendAttemptId: `${backendRunId}:first`,
     },
     androidSessionRestoreTransport: {},
+    androidSessionSignOutTransport: {},
     androidSessionSignedOutTransport: {},
     androidSessionCancelStorage: {},
     androidSessionCancelIdentity: {},

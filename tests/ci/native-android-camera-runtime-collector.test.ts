@@ -9,6 +9,10 @@ import {
   androidCameraSelectionHash,
 } from '../../scripts/testing/native-camera-android-contract';
 import {
+  loadAndroidCameraSavedFlow,
+  type AndroidCameraSavedFlow,
+} from '../../scripts/testing/native-camera-android-saved-flow';
+import {
   runAndroidCameraPublicAttempt,
   type AndroidCameraPublicSessionRunner,
 } from '../../scripts/testing/run-android-camera-public-attempt';
@@ -118,12 +122,18 @@ async function writeActualCommandHistory(fixture: Fixture): Promise<Record<strin
   return report;
 }
 
-function boundaryFor(fixture: Fixture): AndroidCameraCaptureBoundary {
+function boundaryFor(
+  fixture: Fixture,
+  savedFlow: AndroidCameraSavedFlow,
+): AndroidCameraCaptureBoundary {
   const producer = fixture.producer;
   return {
     output: fixture.captureRoot,
     fixtures: {} as never,
     selection: fixture.selection,
+    // The owned capture always hands the adapter the saved Maestro flow it
+    // loaded for this selection; load the same repository flow here.
+    savedFlow,
     selectionHash: androidCameraSelectionHash(fixture.selection),
     captureRunId: producer.captureRunId,
     ownerRunId: producer.identity.ownerRunId,
@@ -184,7 +194,13 @@ function sessionRunnerFor(
 ): AndroidCameraPublicSessionRunner {
   return async (options) => {
     assert(options.executeCamera);
-    await options.executeCamera(boundaryFor(fixture));
+    const savedFlow = await loadAndroidCameraSavedFlow({
+      repositoryRoot: process.cwd(),
+      selection: fixture.selection,
+      deadlineAtMonotonicMs: performance.now() + 60_000,
+      signal: options.signal,
+    });
+    await options.executeCamera(boundaryFor(fixture, savedFlow));
     return { artifactRoot: fixture.captureRoot, exitCode: 0, report };
   };
 }

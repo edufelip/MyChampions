@@ -1765,3 +1765,27 @@ The stale-window replay completed the entire Detox journey: it denied the real A
 - **Hold the child through bridge publication (2026-10-07):** Detox acknowledges asynchronous native cleanup as soon as its JavaScript test returns. The Android denied-camera journey therefore keeps the child alive for three bounded seconds after its final pending-connection assertion, allowing the independently running UiAutomator bridge to publish its run-private receipt. This is test-harness lifecycle coordination only; product timing is unchanged.
 
 - **Allow the manual bridge frame to settle (2026-10-07):** `c046` proved all permission and frame artifacts exist, but Android may hold the manual UiAutomator screenshot longer than the initial three-second post-journey grace period. The harness now holds Detox for ten seconds after its final product assertion. The wait is bounded and applies only to the native test process.
+
+## Session sign-out window check — 2026-10-10
+
+The session journey checked only the signed-out relaunch window, which starts
+after sign-out finished, so it never inspected the requests sign-out itself
+sends. Those are where the old access cookie was seen before `bafa0f1` (native
+sign-out now clears the cookie store before dropping the session). Both captures
+now also check the sign-out window, from the sign-out confirmation to the
+signed-out relaunch: only a server sign-out request may carry credentials, and
+every other request must have `requestCredentialPresent: false` with no
+Authorization or Cookie header. The signed-out relaunch check now applies the
+same header-shape rule. The public dependency checks replay both windows.
+
+Offline replay of the new check against saved streams:
+
+| Attempt                    | Platform | Includes `bafa0f1` | Sign-out window | Result                                 |
+| -------------------------- | -------- | ------------------ | --------------- | -------------------------------------- |
+| `be99165fca1f9d73d83b5ec8` | Android  | Yes                | `(71, 74]`      | Accepted: 3 analytics posts, no cookie |
+| `a78c67fad1dfaffc8a1e6aea` | Android  | No                 | `(71, 74]`      | Rejected at request 72 (access cookie) |
+| `a196269e9a42e3e2171493c5` | iOS      | No                 | `(28, 31]`      | Rejected at request 29 (access cookie) |
+
+The iOS capture predates the sign-out fence, so its window was taken from the
+end of restoration. A fresh session run on both platforms is still required
+before the sign-out window counts as natively verified.

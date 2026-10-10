@@ -47,6 +47,7 @@ import {
 import {
   nativeSessionProfileCheckpointIds,
   requireFinalSessionTransport,
+  requireSignOutSessionTransport,
   requireSignedOutSessionTransport,
   verifyNativeSessionProfileCheckpoints,
 } from './native-session-profile-checkpoints';
@@ -1003,9 +1004,21 @@ function requireTransportIdentity(
   );
   const signedOutRows = signedOut.rows;
   assert(Array.isArray(signedOutRows), 'Android signed-out transport rows are missing');
+  const signOut = record(capture.androidSessionSignOutTransport, 'Android sign-out transport');
+  assert.equal(signOut.status, 'verified');
+  assert.equal(signOut.phase, 'sign-out');
+  const signOutBefore = integer(signOut.beforeRequestId, 'Android sign-out fence', 0);
+  const signOutAfter = integer(signOut.afterRequestId, 'Android sign-out end', signOutBefore);
+  assert.equal(
+    signOutAfter,
+    signedOutBefore,
+    'Android sign-out window does not end at the signed-out relaunch',
+  );
+  assert(Array.isArray(signOut.rows), 'Android sign-out transport rows are missing');
   return {
     auth,
     restore,
+    signOut,
     signedOut,
     restoreLifetime,
     signedOutLifetime,
@@ -1013,6 +1026,8 @@ function requireTransportIdentity(
     afterLoginRequestId,
     restoreBefore,
     restoreAfter,
+    signOutBefore,
+    signOutAfter,
     signedOutBefore,
     signedOutAfter,
     signedOutRows,
@@ -1205,6 +1220,7 @@ export function validateAndroidSessionPublicDependencyInput(input: {
     afterLoginAuthUidHash: string;
     afterRestorationAuthUidHash: string;
   };
+  const relaunchWindows = requireRelaunchWindows(input.capture.androidSessionRelaunchWindows);
   const profileVerification = verifyNativeSessionProfileCheckpoints({
     platform: 'android',
     backendRunId: input.backend.runId,
@@ -1221,7 +1237,7 @@ export function validateAndroidSessionPublicDependencyInput(input: {
       afterRequestId: identity.restoreBefore,
       throughRequestId: identity.restoreAfter,
     },
-    relaunchWindows: requireRelaunchWindows(input.capture.androidSessionRelaunchWindows),
+    relaunchWindows,
     persistedCoachIdentity,
   });
   const restoreLifetime = identity.restoreLifetime;
@@ -1241,6 +1257,23 @@ export function validateAndroidSessionPublicDependencyInput(input: {
     expectedProxyOrigin: String(restoreLifetime.proxyOrigin),
   });
   assert.deepEqual(restoreSlice, identity.restore);
+  // Sign-out starts where the last signed-in window ended, so no request the
+  // app sent between the sign-out confirmation and the relaunch goes unchecked.
+  assert.equal(
+    identity.signOutBefore,
+    relaunchWindows.at(-1)?.throughRequestId ?? identity.restoreAfter,
+    'Android sign-out window does not start at the sign-out confirmation',
+  );
+  const signOutRows = requireSignOutSessionTransport({
+    observations: input.transportObservations,
+    window: { afterRequestId: identity.signOutBefore, throughRequestId: identity.signOutAfter },
+    expectedTargetOrigin: input.backend.targetOrigin,
+  });
+  assert.deepEqual(
+    signOutRows,
+    identity.signOut.rows,
+    'Android sign-out rows are not the stopped stream rows',
+  );
   const signedOutRows = requireSignedOutSessionTransport({
     observations: input.transportObservations,
     window: { afterRequestId: identity.signedOutBefore, throughRequestId: identity.signedOutAfter },
@@ -1368,6 +1401,7 @@ export function validateAndroidSessionPublicDependencyInput(input: {
       ...commandHashesFor(4),
     ],
     [
+      hash(JSON.stringify(input.capture.androidSessionSignOutTransport)),
       hash(JSON.stringify(input.capture.androidSessionSignedOutTransport)),
       input.checkpoint.checkpointSet[3].profile.sha256,
       input.checkpoint.checkpointSet[3].domain.sha256,

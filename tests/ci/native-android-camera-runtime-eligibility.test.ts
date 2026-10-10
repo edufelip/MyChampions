@@ -1352,23 +1352,34 @@ void test('Android native finalizer rejects a staged original-byte mutation at t
     assert.equal(first.publicPassingCases, 4);
     const helper = eligibility.evidenceProof.helperInputs[0];
     assert(helper, 'native finalizer source guard lacks a helper input');
-    const helperPath = path.join(ROOT, helper.path);
-    const helperBytes = await readFile(helperPath);
-    await appendFile(helperPath, '\n');
-    try {
-      await assert.rejects(
-        finalizeAndroidCameraNativeRuntime({
-          repositoryRoot: ROOT,
-          eligibility,
-          captureRoot: value.captureRoot,
-          outputRoot: value.outputRoot,
-          deadlineAt,
-        }),
-        /Android helper .* stale/,
-      );
-    } finally {
-      await writeFile(helperPath, helperBytes);
-    }
+    // A helper edited after eligibility no longer matches the hash eligibility
+    // recorded. Model that edit on a copy of the eligibility (the recorded hash
+    // is of the edited bytes) instead of editing the repository file: other
+    // tests hash these sources concurrently, and the finalizer still re-reads
+    // the real file from the repository.
+    const editedHelperBytes = Buffer.concat([
+      await readFile(path.join(ROOT, helper.path)),
+      Buffer.from('\n'),
+    ]);
+    const staleHelperEligibility = {
+      ...eligibility,
+      evidenceProof: {
+        ...eligibility.evidenceProof,
+        helperInputs: eligibility.evidenceProof.helperInputs.map((row) =>
+          row === helper ? { ...row, sha256: sha256(editedHelperBytes) } : row,
+        ),
+      },
+    };
+    await assert.rejects(
+      finalizeAndroidCameraNativeRuntime({
+        repositoryRoot: ROOT,
+        eligibility: staleHelperEligibility,
+        captureRoot: value.captureRoot,
+        outputRoot: value.outputRoot,
+        deadlineAt,
+      }),
+      /Android helper .* stale/,
+    );
     const manifestPath = path.join(value.outputRoot, eligibility.stage.copyManifest.path);
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
       files: readonly { path: string; kind: string }[];

@@ -101,6 +101,7 @@ import { observeIosSaveRetry } from './native-save-retry-observation';
 import { readNativeSessionHelperInputs } from './native-session-helper-ledger';
 import {
   verifyNativeSessionProfileCheckpoints,
+  requireSignOutSessionTransport,
   requireSignedOutSessionTransport,
   requireFinalSessionTransport,
   publishNativeSessionLedger,
@@ -3881,6 +3882,8 @@ async function executeOwnedIosSession(
           'STATE-signout-confirm',
           'settings.account.signOutConfirm',
         );
+        // Everything after this fence was sent by the sign-out confirmation.
+        const signOutAfterRequestId = proxy.requestIdFence;
         await observeSession(
           'signout-confirmed',
           '- tapOn:\n    id: settings.account.signOutConfirmCta',
@@ -4010,12 +4013,24 @@ async function executeOwnedIosSession(
         // requests begun before a boundary but completed after it.
         const sessionTransportProxy = proxy;
         await sessionDirectIo('session-transport-close', () => sessionTransportProxy.stop());
+        const signOutWindow = {
+          afterRequestId: signOutAfterRequestId,
+          throughRequestId: signedOutRelaunchAfterRequestId,
+        };
         const signedOutRelaunchWindow = {
           afterRequestId: signedOutRelaunchAfterRequestId,
           throughRequestId: proxy.requestIdFence,
         };
-        // Retain the actual closed boundary even when validation rejects it.
+        // Retain the actual closed boundaries even when validation rejects them.
+        report.signOutTransportRange = signOutWindow;
         report.signedOutRelaunchTransportRange = signedOutRelaunchWindow;
+        // Sign-out analytics are sent after the session ends and before the
+        // relaunch; none of them may carry the old bearer or session cookie.
+        report.signOutTransport = requireSignOutSessionTransport({
+          observations: proxy.observations,
+          window: signOutWindow,
+          expectedTargetOrigin: session.apiOrigin,
+        });
         const signedOutRelaunchTransport = requireSignedOutSessionTransport({
           observations: proxy.observations,
           window: signedOutRelaunchWindow,
@@ -5024,6 +5039,8 @@ async function executeOwnedIosSession(
         'relaunchTransportRange',
         'authMetadataAfterSignout',
         'nativeLogoutContract',
+        'signOutTransport',
+        'signOutTransportRange',
         'signedOutRelaunchTransport',
         'signedOutRelaunchTransportRange',
         'authMetadataAfterSignedoutRelaunch',

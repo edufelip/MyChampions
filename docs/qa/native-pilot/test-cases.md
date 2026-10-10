@@ -65,6 +65,26 @@ changes to auth, profile persistence, domain rows or server revocation. Missing
 profile observations, missing intermediate snapshots or unbound auth/hydrate
 spans block qualification.
 
+### Session sign-out transport
+
+The stopped proxy stream is checked in two adjoining windows once the session
+ends. The sign-out window runs from a fence taken just before the sign-out
+confirmation tap to the fence taken before the signed-out relaunch; the
+signed-out relaunch window runs from there to the end of the stream. On Android
+the sign-out window starts exactly where the last signed-in relaunch window
+ends, so no request goes unchecked. In both windows every request must be a
+forwarded native request to the owned API with no credentials:
+`requestCredentialPresent` is `false` and, when the proxy recorded the header
+shape, there is no Authorization or Cookie header at all (so
+`knownAccessCookie` and `knownRefreshCookie` are `absent`). Neither window may
+contain a sign-in or a hydrate. The one exception is a single server sign-out
+request (`POST /auth/session/sign-out`) in the sign-out window, which may still
+carry the session it ends; native sign-out is local, so native runs normally
+send none. Captures record the window (`androidSessionSignOutTransport`; iOS
+`signOutTransport` and `signOutTransportRange`), and the public dependency
+check re-derives it from the stopped stream. Android also binds it into the
+last charter assertion's source receipts.
+
 The session contract proves local native restoration and clearing under
 `FR-270`/`BR-342`; it does not claim server revocation. The camera contract
 requires actual platform denial, usable manual entry, and one integrated

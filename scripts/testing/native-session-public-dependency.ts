@@ -21,6 +21,7 @@ import { nativeSessionHelperInputPaths } from './native-session-helper-ledger';
 import {
   nativeSessionProfileCheckpointIds,
   requireFinalSessionTransport,
+  requireSignOutSessionTransport,
   requireSignedOutSessionTransport,
   verifyNativeSessionProfileCheckpoints,
 } from './native-session-profile-checkpoints';
@@ -194,6 +195,8 @@ export type SessionCaptureCandidate = {
   };
   relaunchTransport: readonly ProxyObservation[];
   relaunchTransportRange: OrdinalRange;
+  signOutTransport: readonly ProxyObservation[];
+  signOutTransportRange: SessionWindow;
   signedOutRelaunchTransport: readonly ProxyObservation[];
   signedOutRelaunchTransportRange: SessionWindow;
   transportEvidence: SessionEvidenceReceiptCandidate;
@@ -748,6 +751,27 @@ function requireTerminalTransport(
     }),
     'signed-out transport range is not linked to stopped stream',
   );
+  // The sign-out window runs from the confirmation tap to the signed-out
+  // relaunch, after restoration ended.
+  assert.ok(
+    input.capture.signOutTransportRange.afterRequestId >=
+      input.capture.sessionProfileRestorationWindow.throughRequestId,
+    'sign-out window starts before restoration ended',
+  );
+  assert.equal(
+    input.capture.signOutTransportRange.throughRequestId,
+    input.capture.signedOutRelaunchTransportRange.afterRequestId,
+    'sign-out window does not end at the signed-out relaunch',
+  );
+  assert.deepEqual(
+    input.capture.signOutTransport,
+    requireSignOutSessionTransport({
+      observations: input.transportObservations,
+      window: input.capture.signOutTransportRange,
+      expectedTargetOrigin: input.apiIdentity.targetOrigin,
+    }),
+    'sign-out transport range is not linked to stopped stream',
+  );
   const signIns = input.transportObservations.filter((row) => row.pathHash === signInPathHash);
   assert.equal(signIns.length, 1, 'Native sign-in route must be observed exactly once');
   assert.equal(signIns[0].status, 201);
@@ -1243,6 +1267,8 @@ async function loadNativeSessionPublicDependencyInternal(
     'sessionDomainSnapshots',
     'sessionSqlBefore',
     'sessionSqlAfterSignedoutRelaunch',
+    'signOutTransport',
+    'signOutTransportRange',
     'signedOutRelaunchTransport',
     'signedOutRelaunchTransportRange',
   ])

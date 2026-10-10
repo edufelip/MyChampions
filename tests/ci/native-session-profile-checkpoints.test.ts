@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import test from 'node:test';
 import {
   verifyNativeSessionProfileCheckpoints,
+  requireSignOutSessionTransport,
   requireSignedOutSessionTransport,
   requireFinalSessionTransport,
   publishNativeSessionLedger,
@@ -422,6 +423,252 @@ void test('signed-out window rejects missing completions, repeated IDs and actua
   assert.throws(() => verify([], 1));
   assert.throws(() => verify([base, base], 2));
   assert.throws(() => verify([{ ...base, requestId: 2 }], 1));
+});
+
+// Header shapes as the owned proxy classifies them.
+type CredentialClassification = NonNullable<ProxyObservation['requestCredentialClassification']>;
+const noCredential: CredentialClassification = {
+  authorization: 'absent',
+  cookie: 'absent',
+  knownAccessCookie: 'absent',
+  knownRefreshCookie: 'absent',
+  otherCookiePresent: false,
+  malformedCookiePresent: false,
+};
+const signedIn: CredentialClassification = {
+  ...noCredential,
+  authorization: 'bearer',
+  cookie: 'present',
+  knownAccessCookie: 'nonempty',
+};
+const accessCookieOnly: CredentialClassification = {
+  ...noCredential,
+  cookie: 'present',
+  knownAccessCookie: 'nonempty',
+};
+
+function streamRow(
+  requestId: number,
+  method: string,
+  route: string,
+  status: number,
+  classification: CredentialClassification,
+): ProxyObservation {
+  return {
+    requestId,
+    method,
+    pathHash: hash(route),
+    requestOrigin: null,
+    requestProfile: 'native',
+    // The proxy sets the flag when an Authorization or Cookie header is sent.
+    requestCredentialPresent:
+      classification.authorization !== 'absent' || classification.cookie !== 'absent',
+    requestCredentialClassification: { ...classification },
+    targetOrigin: api.targetOrigin,
+    status,
+    outcome: 'forwarded',
+    faultAttemptId: null,
+    elapsedMs: 5,
+  };
+}
+
+/**
+ * Shaped like a real session run: signed in through request 3, the sign-out
+ * confirmation after request 3, the signed-out relaunch after request 6.
+ * Native sign-out is local; `serverSignOut` adds the web-style server call.
+ */
+function signOutStream(options: { serverSignOut?: boolean } = {}): ProxyObservation[] {
+  return [
+    streamRow(1, 'POST', '/auth/email/sign-in', 201, noCredential),
+    streamRow(2, 'POST', '/me/hydrate', 200, signedIn),
+    streamRow(3, 'GET', '/connections', 200, signedIn),
+    options.serverSignOut
+      ? streamRow(4, 'POST', '/auth/session/sign-out', 204, signedIn)
+      : streamRow(4, 'POST', '/analytics/events', 202, noCredential),
+    streamRow(6, 'POST', '/analytics/events', 202, noCredential),
+    streamRow(5, 'POST', '/analytics/events', 202, noCredential),
+    streamRow(7, 'POST', '/analytics/events', 202, noCredential),
+  ];
+}
+const signOutWindow = { afterRequestId: 3, throughRequestId: 6 };
+const verifySignOut = (observations: ProxyObservation[], window = signOutWindow) =>
+  requireSignOutSessionTransport({
+    observations,
+    window,
+    expectedTargetOrigin: api.targetOrigin,
+  });
+const withRow = (
+  observations: ProxyObservation[],
+  requestId: number,
+  patch: Partial<ProxyObservation>,
+) => observations.map((row) => (row.requestId === requestId ? { ...row, ...patch } : row));
+
+void test('sign-out window accepts a clean native sign-out and a credentialed server sign-out request', () => {
+  const native = signOutStream();
+  assert.deepEqual(
+    verifySignOut(native).map((row) => row.requestId),
+    [4, 6, 5],
+  );
+  // The relaunch window continues exactly where the sign-out window ends.
+  assert.deepEqual(
+    requireSignedOutSessionTransport({
+      observations: native,
+      window: { afterRequestId: 6, throughRequestId: 7 },
+      expectedTargetOrigin: api.targetOrigin,
+    }).map((row) => row.requestId),
+    [7],
+  );
+  // The server sign-out request needs the session to end it, so it may carry it.
+  const server = signOutStream({ serverSignOut: true });
+  assert.equal(server[3].requestCredentialPresent, true);
+  assert.deepEqual(
+    verifySignOut(server).map((row) => row.requestId),
+    [4, 6, 5],
+  );
+  assert.deepEqual(verifySignOut(native, { afterRequestId: 6, throughRequestId: 6 }), []);
+});
+
+void test('sign-out window rejects a request that still carries the old session', () => {
+  // Analytics after the server sign-out request still sends the access cookie.
+  assert.throws(
+    () =>
+      verifySignOut(
+        withRow(
+          signOutStream({ serverSignOut: true }),
+          5,
+          streamRow(5, 'POST', '/analytics/events', 202, accessCookieOnly),
+        ),
+      ),
+    /Request 5 sent during sign-out carried credentials/,
+  );
+  // Native sign-out analytics with the old access cookie (fixed by bafa0f1).
+  assert.throws(
+    () =>
+      verifySignOut(
+        withRow(
+          signOutStream(),
+          4,
+          streamRow(4, 'POST', '/analytics/events', 202, accessCookieOnly),
+        ),
+      ),
+    /Request 4 sent during sign-out carried credentials/,
+  );
+  // The bearer alone is a credential too.
+  assert.throws(
+    () =>
+      verifySignOut(
+        withRow(
+          signOutStream(),
+          6,
+          streamRow(6, 'POST', '/analytics/events', 202, {
+            ...noCredential,
+            authorization: 'bearer',
+          }),
+        ),
+      ),
+    /Request 6 sent during sign-out carried credentials/,
+  );
+  // A recorded cookie state that contradicts the credential flag is not trusted.
+  for (const classification of [
+    accessCookieOnly,
+    { ...noCredential, cookie: 'present' as const, knownRefreshCookie: 'nonempty' as const },
+    { ...noCredential, cookie: 'empty' as const },
+  ])
+    assert.throws(
+      () =>
+        verifySignOut(
+          withRow(signOutStream(), 5, {
+            requestCredentialPresent: false,
+            requestCredentialClassification: classification,
+          }),
+        ),
+      /Request 5 sent during sign-out carried credentials/,
+    );
+  assert.throws(
+    () => verifySignOut(withRow(signOutStream(), 5, { requestCredentialPresent: undefined })),
+    /Request 5 sent during sign-out carried credentials/,
+  );
+});
+
+void test('sign-out window rejects a repeated or non-POST server sign-out, a new session and an incomplete stream', () => {
+  const server = signOutStream({ serverSignOut: true });
+  assert.throws(
+    () => verifySignOut(withRow(server, 5, { pathHash: hash('/auth/session/sign-out') })),
+    /more than one server sign-out request/,
+  );
+  assert.throws(() => verifySignOut(withRow(server, 4, { method: 'GET' })), /not a POST/);
+  assert.throws(
+    () => verifySignOut(withRow(signOutStream(), 5, { pathHash: hash('/me/hydrate') })),
+    /Sign-out hydrated a session/,
+  );
+  assert.throws(
+    () => verifySignOut(withRow(signOutStream(), 5, { pathHash: hash('/auth/email/sign-in') })),
+    /Sign-out submitted credentials/,
+  );
+  for (const patch of [
+    { outcome: 'upstream-failed' as const },
+    { faultAttemptId: 'unexpected' },
+    { targetOrigin: 'http://127.0.0.1:19002' },
+    { requestOrigin: 'http://127.0.0.1:19002' },
+    { requestProfile: 'browser' as const },
+  ])
+    assert.throws(() => verifySignOut(withRow(signOutStream(), 5, patch)));
+  assert.throws(
+    () => verifySignOut(signOutStream().filter((row) => row.requestId !== 5)),
+    /lacks a started request/,
+  );
+  assert.throws(
+    () =>
+      verifySignOut([
+        ...signOutStream(),
+        streamRow(5, 'POST', '/analytics/events', 202, noCredential),
+      ]),
+    /repeats request IDs/,
+  );
+  assert.throws(() => verifySignOut(signOutStream(), { afterRequestId: 6, throughRequestId: 3 }));
+  assert.throws(() =>
+    requireSignOutSessionTransport({
+      observations: signOutStream(),
+      window: signOutWindow,
+      expectedTargetOrigin: 'https://api.example.com',
+    }),
+  );
+});
+
+void test('sign-out and signed-out windows together check every request after the session ends', () => {
+  // Signed-in requests before the sign-out confirmation are outside both windows.
+  const stream = signOutStream();
+  assert.equal(stream[1].requestCredentialPresent, true);
+  assert.doesNotThrow(() => verifySignOut(stream));
+  // A credentialed request after the relaunch fence is the relaunch check's to reject.
+  const lateLeak = withRow(
+    stream,
+    7,
+    streamRow(7, 'POST', '/analytics/events', 202, accessCookieOnly),
+  );
+  assert.doesNotThrow(() => verifySignOut(lateLeak));
+  assert.throws(
+    () =>
+      requireSignedOutSessionTransport({
+        observations: lateLeak,
+        window: { afterRequestId: 6, throughRequestId: 7 },
+        expectedTargetOrigin: api.targetOrigin,
+      }),
+    /Signed-out request carried credentials/,
+  );
+  // The relaunch check also refuses a cookie state that contradicts its flag.
+  assert.throws(
+    () =>
+      requireSignedOutSessionTransport({
+        observations: withRow(stream, 7, {
+          requestCredentialPresent: false,
+          requestCredentialClassification: accessCookieOnly,
+        }),
+        window: { afterRequestId: 6, throughRequestId: 7 },
+        expectedTargetOrigin: api.targetOrigin,
+      }),
+    /Signed-out request carried credentials/,
+  );
 });
 
 void test('final transport binds saved bytes to the stopped stream and rejects late mutation', () => {

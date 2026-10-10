@@ -1112,6 +1112,8 @@ async function fullSessionFixture(options: FullSessionFixtureOptions = {}) {
     const observations = [
       fullProxyObservation(1, 'POST', '/auth/email/sign-in', 201, false, apiOrigin),
       fullProxyObservation(2, 'POST', '/me/hydrate', 200, true, apiOrigin),
+      // Sign-out analytics: sent after the session ends, before the relaunch.
+      fullProxyObservation(3, 'POST', '/analytics/events', 202, false, apiOrigin),
     ];
     const nativeAuthIdentities: NativeAuthIdentityObservation[] = [
       {
@@ -1164,11 +1166,18 @@ async function fullSessionFixture(options: FullSessionFixtureOptions = {}) {
       hydrationRequestIds: [2],
       signInRequestIds: [],
     };
+    const signOut = {
+      status: 'verified',
+      phase: 'sign-out',
+      beforeRequestId: 2,
+      afterRequestId: 3,
+      rows: [observations[2]],
+    };
     const signedOut = {
       status: 'verified',
       phase: 'signed-out-relaunch',
-      beforeRequestId: 2,
-      afterRequestId: 2,
+      beforeRequestId: 3,
+      afterRequestId: 3,
       rows: [],
       apiLifetime: restoreLifetime,
     };
@@ -1251,6 +1260,7 @@ async function fullSessionFixture(options: FullSessionFixtureOptions = {}) {
         ...commandHashesFor(4),
       ],
       [
+        sha256(Buffer.from(JSON.stringify(signOut))),
         sha256(Buffer.from(JSON.stringify(signedOut))),
         copied.checkpoints[3].profile.sha256,
         copied.checkpoints[3].domain.sha256,
@@ -1314,6 +1324,7 @@ async function fullSessionFixture(options: FullSessionFixtureOptions = {}) {
         fixtureAuthUidAllowlistHash,
       },
       androidSessionRestoreTransport: restore,
+      androidSessionSignOutTransport: signOut,
       androidSessionSignedOutTransport: signedOut,
       androidSessionCancelStorage: storage['auth-after-cancel'].observation,
       androidSessionCancelIdentity: cancelIdentity,
@@ -1396,6 +1407,69 @@ void test('Android full source validator accepts a real-shaped six-purpose sessi
     ]);
     assert.equal(result.nativePassingCases, 0);
     assert.equal(result.publicPromotionEligible, false);
+  } finally {
+    await rm(value.maestro.root, { recursive: true, force: true });
+    await rm(value.checkpointSource.root, { recursive: true, force: true });
+  }
+});
+
+void test('Android full source validator checks every request sent between sign-out and relaunch', async () => {
+  const value = await fullSessionFixture();
+  try {
+    const signOut = value.capture.androidSessionSignOutTransport as Record<string, unknown>;
+    const validate = (
+      capturePatch: Record<string, unknown>,
+      observations = value.transportObservations,
+    ) =>
+      validateAndroidSessionPublicDependencyInput({
+        ...value,
+        capture: { ...value.capture, ...capturePatch },
+        transportObservations: observations,
+        transportBytes: Buffer.from(JSON.stringify(observations)),
+      } as never);
+    // The sign-out analytics post still carries the old access cookie.
+    const leaked = value.transportObservations.map((row) =>
+      row.requestId === 3
+        ? {
+            ...row,
+            requestCredentialPresent: true,
+            requestCredentialClassification: {
+              ...row.requestCredentialClassification!,
+              cookie: 'present' as const,
+              knownAccessCookie: 'nonempty' as const,
+            },
+          }
+        : row,
+    );
+    assert.throws(
+      () => validate({ androidSessionSignOutTransport: { ...signOut, rows: [leaked[2]] } }, leaked),
+      /Request 3 sent during sign-out carried credentials/,
+    );
+    // A window that starts after the sign-out confirmation would skip requests.
+    assert.throws(
+      () =>
+        validate({
+          androidSessionSignOutTransport: { ...signOut, beforeRequestId: 3, rows: [] },
+        }),
+      /does not start at the sign-out confirmation/,
+    );
+    assert.throws(
+      () =>
+        validate({ androidSessionSignOutTransport: { ...signOut, afterRequestId: 2, rows: [] } }),
+      /does not end at the signed-out relaunch/,
+    );
+    // The recorded rows must be the rows the stopped stream actually holds.
+    assert.throws(
+      () => validate({ androidSessionSignOutTransport: { ...signOut, rows: [] } }),
+      /Android sign-out rows are not the stopped stream rows/,
+    );
+    const withoutSignOut = { ...value.capture };
+    delete withoutSignOut.androidSessionSignOutTransport;
+    assert.throws(
+      () =>
+        validateAndroidSessionPublicDependencyInput({ ...value, capture: withoutSignOut } as never),
+      /Android capture field is missing: androidSessionSignOutTransport/,
+    );
   } finally {
     await rm(value.maestro.root, { recursive: true, force: true });
     await rm(value.checkpointSource.root, { recursive: true, force: true });
