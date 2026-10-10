@@ -9,13 +9,22 @@ tags: [nutrition]
     timeout: 10000
 - waitForAnimationToEnd:
     timeout: 2000
-- tapOn:
-    id: meal.library.row.e2e-custom-meal.log
-    retryTapIfNoChange: true
-- extendedWaitUntil:
-    visible:
-      id: meal.library.quickLog.panel
-    timeout: 5000
+# Tap again only while the panel is still closed: a blind repeat tap can land on
+# the open panel's backdrop, which cancels it.
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              id: meal.library.quickLog.panel
+          commands:
+            - tapOn:
+                id: meal.library.row.e2e-custom-meal.log
+      - extendedWaitUntil:
+          visible:
+            id: meal.library.quickLog.panel
+          timeout: 5000
 - tapOn:
     id: meal.library.quickLog.cta.confirm
 - extendedWaitUntil:
