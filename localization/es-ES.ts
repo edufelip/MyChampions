@@ -1050,6 +1050,7 @@ export const esES: Record<TranslationKey, string> = {
   'settings.account.support.cta_submit': 'Enviar mensaje',
   'settings.account.support.success': '¡Mensaje enviado con éxito!',
   'settings.account.support.error': 'Error al enviar el mensaje. Inténtalo de nuevo.',
+  'settings.account.support.cooldown': 'Espera {seconds} segundos antes de enviar otro mensaje.',
   'settings.account.support.validation.subject_required': 'El asunto es obligatorio.',
   'settings.account.support.validation.body_required': 'El mensaje es obligatorio.',
 };

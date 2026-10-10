@@ -140,7 +140,7 @@ Owned native Expo sessions enable the existing development-only `EXPO_PUBLIC_E2E
 ## Native logout owner decision (2026-10-03, 18:58 UTC)
 
 The owner instructed: “Only clear on device ! Now go ahead with the next steps,
-you’re owning that now! Go ahead”. D-218 / BL-018 therefore selects the existing
+you’re owning that now! Go ahead”. D-219 / BL-018 therefore selects the existing
 FR-270 / BR-342 device-local native logout contract. AC-539 and TC-333 require
 persisted credential/session and authenticated identity clearing, signed-out
 relaunch, inaccessible protected UI and no authenticated hydrate after relaunch.

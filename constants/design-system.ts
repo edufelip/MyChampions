@@ -34,6 +34,7 @@ export type DsTheme = {
     accentCyan: string;
     accentCyanSoft: string;
     onAccent: string;
+    overlayNeutral: string;
     overlaySoft: string;
     overlayStrong: string;
   };
@@ -76,6 +77,7 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       accentCyan: '#06b6d4',
       accentCyanSoft: '#06b6d420',
       onAccent: '#fbf9f5',
+      overlayNeutral: 'rgba(38, 36, 29, 0.32)',
       overlaySoft: 'rgba(31,122,76,0.4)',
       overlayStrong: 'rgba(31,122,76,0.85)',
     },
@@ -116,6 +118,7 @@ const THEME_BY_SCHEME: Record<DsColorScheme, DsTheme> = {
       accentCyan: '#22d3ee',
       accentCyanSoft: '#22d3ee29',
       onAccent: '#0e1a12',
+      overlayNeutral: 'rgba(8, 8, 8, 0.48)',
       overlaySoft: 'rgba(74,222,128,0.3)',
       overlayStrong: 'rgba(74,222,128,0.7)',
     },

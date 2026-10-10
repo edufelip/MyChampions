@@ -192,16 +192,16 @@ Define the target functional scope for a subscription-based student wellness app
 - `FR-271`: Pull-request UI testing shall resolve changed paths against the target branch merge base, select affected Maestro and Playwright suites from explicit feature ownership plus reverse dependency data, widen cross-cutting changes to every applicable platform suite, and fail closed to the complete relevant matrix when impact cannot be determined safely. Each selected Maestro phase shall own a fresh Metro process, fully prewarm the current platform's Expo development bundle under that phase's exact runtime environment before launching the app, suppress only the in-app development LogBox overlay while preserving terminal diagnostics, terminate and verify every runner-owned member of that process group, and fail if bundle prewarming is incomplete or cleanup leaves a runner-owned member or occupied Metro port. The selected iOS job shall reserve dedicated non-ephemeral port `18081`, reject an existing listener before the expensive native build, compile that port as React Native's debug fallback, route every debug-app launch to it through `RCT_jsLocation`, and pass it to every selective Metro phase; an unrelated process on the developer-default port `8081` must remain untouched. New iOS test-only jobs are default-on and may be skipped only when repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` is exactly the lowercase string `false`; unset, `true`, and every other value keep testing enabled, and already-running jobs are not cancelled. This toggle does not gate release/distribution workflows. The selected Android lane shall retain its coordinated fixed port `8081`, reject stale emulator state, preboot the declared AVD on console port `5554`, prove its exact serial, AVD name, completed boot, and captured PID/UID/Linux start-time plus AVD/port command identity before Maestro drives it, and fail if any QEMU process, emulator device, validated PID, or owned port survives cleanup. The Android Debug app shall reach Metro on the emulator's host loopback at the port compiled through `reactNativeDevServerPort`.
 - `FR-272`: The supported pull-request path for target bases `main`,
   `release/**`, and `hotfix/**` shall begin with a protected-`main`,
-  GitHub-hosted-only `pull_request_target` freshness workflow that checks out no
+  self-hosted, source-free `pull_request_target` freshness workflow that checks out no
   candidate code and replaces reusable exact-head success with an
   event-fingerprinted pending status only for a live owner-authored same-upstream
-  pull request. A GitHub-hosted-only `pull_request` preflight with
+  pull request. A self-hosted, source-free `pull_request` preflight with
   `statuses: read` shall wait for the pending description matching the canonical
   fingerprint of its exact event,
   then dispatch persistent self-hosted execution from
   `.github/workflows/trusted-selective-tests.yml`, sourced from protected default
   branch `main` and triggered after the preflight by `workflow_run`.
-  Before candidate checkout or self-hosted scheduling, a GitHub-hosted
+  Before candidate checkout or any credentialed workload, a self-hosted
   authorization job shall compare triggering-run provenance with the live
   pull-request API and validate the exact head SHA, same upstream/base, owner
   actor/triggering actor/sender, workflow path/ref/SHA, and event/ref/base.
@@ -211,7 +211,7 @@ Define the target functional scope for a subscription-based student wellness app
   malformed, identity-mismatch, workflow-mismatch, or stale-head runs shall fail
   closed. Merge-group authorization shall validate every associated live pull
   request for the same upstream and owner provenance. Candidate and self-hosted
-  jobs shall have only `contents: read`. Only the trusted GitHub-hosted freshness
+  jobs shall have only `contents: read`. Only the trusted self-hosted freshness
   invalidator, authorization/status initializer, and always-run finalizer shall
   have `statuses: write`. All three shall share one repository-global
   `queue: max` writer group. The initializer and finalizer shall each require the
@@ -280,6 +280,16 @@ Define the target functional scope for a subscription-based student wellness app
   fail closed unless Linux, writable KVM, the declared AVD, exact serial, and
   slot ports validate before launch, and cleanup shall prove absence of only
   that slot's process, device, recovery record, and ports.
+- `FR-274`: Support-message submission shall be enforced by the MyChampions
+  server's PostgreSQL transaction per authenticated user: at most three accepted
+  messages in fifteen minutes and ten in twenty-four hours. The client shall
+  send one idempotency key per logical draft; a replay returns the original
+  accepted result without another row or quota charge. A rejected over-limit
+  request shall create no support row and return `429 support_rate_limited` with
+  an accurate `Retry-After`; the client shall preserve the draft, display a
+  localized cooldown, disable submission without auto-retry, and prevent
+  synchronous duplicate sends. Temporary dialog dismissal during the cooldown
+  shall preserve the draft, cooldown, and idempotency key until expiry.
 
 ## Non-Functional Direction (Draft)
 

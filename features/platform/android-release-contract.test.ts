@@ -14,7 +14,7 @@ test('production Android releases fail closed onto CI versioning and private rel
   const gitignore = readFileSync(join(root, '.gitignore'), 'utf8');
 
   assert.match(buildGradle, /gradle\.taskGraph\.whenReady/);
-  assert.match(buildGradle, /productionReleaseInGraph/);
+  assert.match(buildGradle, /productionReleaseRequested/);
   assert.match(buildGradle, /rootProject\.file\("keystore\.properties"\)/);
   assert.match(
     buildGradle,
@@ -30,19 +30,34 @@ test('production Android releases fail closed onto CI versioning and private rel
   assert.match(buildGradle, /versionCode resolvedVersionCode/);
   assert.match(buildGradle, /signingConfig signingConfigs\.release/);
   assert.match(buildGradle, /debug signing is never used/);
-
+  assert.match(buildGradle, /devReleaseWithDebugSigning/);
+  assert.match(buildGradle, /devReleaseRequested/);
+  assert.match(buildGradle, /productionReleaseRequested/);
   assert.match(
     buildGradle,
     /devReleaseWithDebugSigning && devReleaseRequested && !productionReleaseRequested/,
-    'only an explicitly requested dev release may use the checked-in debug certificate',
+    'debug signing is permitted only for the explicit development distribution task',
   );
+
   assert.match(
     buildGradle,
     /Production release requires android\/keystore\.properties; debug signing is never used\./,
     'production releases must remain fail-closed on the private signing key',
   );
 
+  const releaseBuildType = buildGradle.slice(buildGradle.indexOf('    buildTypes {'));
+  assert.doesNotMatch(
+    releaseBuildType,
+    /release \{\s*signingConfig signingConfigs\.debug/,
+    'release build type must not unconditionally fall back to the Android debug certificate',
+  );
+
   assert.match(workflow, /cat <<EOF > keystore\.properties/);
+  assert.match(
+    workflow,
+    /runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]/,
+    'credentialed Android release builds must use the repository Linux runner',
+  );
   assert.match(workflow, /- name: Decode keystore[\s\S]*?working-directory: android/);
   assert.match(workflow, /- name: Create keystore\.properties[\s\S]*?working-directory: android/);
   assert.match(workflow, /-PCI_VERSION_CODE=\$\{\{ env\.CI_VERSION_CODE \}\}/);

@@ -12,7 +12,7 @@ Implemented as a code-structure phase on 2026-07-15. MyChampions supports Androi
 - `yarn test:e2e:web` runs the full Playwright matrix in Chromium, Firefox, and WebKit. Focused smoke, functional, accessibility, and evidence commands are documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`.
 - Playwright runs write timestamped, gitignored screenshot/report packages under `.artifacts/web-e2e`; screenshots are review evidence, not tracked visual baselines.
 - Pull requests into `main`, `release/**`, and `hotfix/**` use
-  `.github/workflows/pr-selective-tests.yml` only as a GitHub-hosted preflight.
+  `.github/workflows/pr-selective-tests.yml` only as a Source-free preflight.
   After it completes,
   `.github/workflows/trusted-selective-tests.yml` is loaded from protected
   default branch `main`, authorizes the triggering run against the live PR, and
@@ -32,8 +32,8 @@ Implemented as a code-structure phase on 2026-07-15. MyChampions supports Androi
   Successful selective runs upload no web export, screenshots, reports, or
   GitHub Actions cache. Only bounded web failure diagnostics may be uploaded,
   with one-day retention. The combined WSL web/Android runner is registered and
-  serialized by the shared physical-host lock. D-195's GitHub-hosted-only PR
-  preflight, protected-`main` `workflow_run` provenance, GitHub-hosted
+  serialized by the shared physical-host lock. D-195's self-hosted, source-free PR
+  preflight, protected-`main` `workflow_run` provenance, self-hosted
   triggering-run/live-PR authorization, isolated token permissions,
   action-policy gates, and remote exact-head proof remain required before
   authoritative promotion; the resource lock is not an authorization boundary.

@@ -1046,6 +1046,7 @@ export const ptBR: Record<TranslationKey, string> = {
   'settings.account.support.cta_submit': 'Enviar mensagem',
   'settings.account.support.success': 'Mensagem enviada com sucesso!',
   'settings.account.support.error': 'Erro ao enviar mensagem. Tente novamente.',
+  'settings.account.support.cooldown': 'Aguarde {seconds} segundos antes de enviar outra mensagem.',
   'settings.account.support.validation.subject_required': 'O assunto é obrigatório.',
   'settings.account.support.validation.body_required': 'A mensagem é obrigatória.',
 };

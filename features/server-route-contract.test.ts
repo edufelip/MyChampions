@@ -9,8 +9,9 @@ const rootServerAppPath = configuredServerAppPath
   ? isAbsolute(configuredServerAppPath)
     ? configuredServerAppPath
     : resolve(mobileRoot, configuredServerAppPath)
-  : join(mobileRoot, '../server/src/app.ts');
-const serverRouteContractTest = existsSync(rootServerAppPath) ? test : test.skip;
+  : undefined;
+const serverRouteContractTest =
+  rootServerAppPath && existsSync(rootServerAppPath) ? test : test.skip;
 
 function collectFeatureSourceFiles(relativeDir = 'features'): string[] {
   const absoluteDir = join(mobileRoot, relativeDir);
@@ -40,6 +41,10 @@ function normalizeRoute(route: string): string {
 }
 
 function registeredRootRoutes(): Set<string> {
+  if (!rootServerAppPath) {
+    throw new Error('MYCHAMPIONS_SERVER_APP_PATH is required to run the server route contract.');
+  }
+
   const source = readFileSync(rootServerAppPath, 'utf8');
 
   return new Set(

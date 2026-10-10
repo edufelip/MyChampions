@@ -127,7 +127,7 @@ print(json.dumps([event_fingerprint(event) for event in events]))
   return JSON.parse(result.stdout) as string[];
 }
 
-void test('candidate preflight is hosted-only and cannot receive secrets or a write token', () => {
+void test('candidate preflight is source-free, self-hosted, and cannot receive secrets or a write token', () => {
   const source = workflow('pr-selective-tests.yml');
   const triggers = triggerBlock(source);
 
@@ -142,13 +142,16 @@ void test('candidate preflight is hosted-only and cannot receive secrets or a wr
     /^  (?:pull_request_target|workflow_run|push|schedule|workflow_dispatch):/m,
   );
   assert.match(triggers, /^permissions: \{\}$/m);
-  assert.doesNotMatch(source, /runs-on: \[self-hosted,/);
+  assert.match(source, /runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]/);
   assert.doesNotMatch(source, /\bsecrets\./);
   assert.doesNotMatch(source, /\bstatuses:\s*write\b/);
   assert.doesNotMatch(source, /\bactions\/checkout@/);
   assert.doesNotMatch(source, /^    name: Selective CI gate$/m);
   assert.match(triggers, /^      - edited$/m);
-  assert.match(jobBlock(source, 'hosted-preflight'), /^    runs-on: ubuntu-latest$/m);
+  assert.match(
+    jobBlock(source, 'hosted-preflight'),
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]$/m,
+  );
   assert.match(jobBlock(source, 'hosted-preflight'), /^      statuses: read$/m);
   assert.match(
     jobBlock(source, 'hosted-preflight'),
@@ -191,14 +194,17 @@ void test('default-branch freshness invalidates stale PR-head success without ca
     triggers,
     /group: trusted-selective-freshness-\$\{\{ github\.event\.pull_request\.number \}\}[\s\S]*?cancel-in-progress: true/,
   );
-  assert.match(invalidator, /^    runs-on: ubuntu-latest$/m);
+  assert.match(
+    invalidator,
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]$/m,
+  );
   assert.match(
     invalidator,
     /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m,
   );
   assert.match(invalidator, /^      pull-requests: read$/m);
   assert.match(invalidator, /^      statuses: write$/m);
-  assert.doesNotMatch(source, /runs-on: \[self-hosted,/);
+  assert.match(source, /runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]/);
   assert.doesNotMatch(source, /\bsecrets\./);
   assert.doesNotMatch(source, /\bactions\/checkout@/);
   assert.match(
@@ -335,7 +341,10 @@ void test('trusted workflow is default-branch sourced and authorizes exact candi
   assert.doesNotMatch(triggers, /^  (?:pull_request|pull_request_target|merge_group|schedule):/m);
   assert.match(triggers, /^permissions: \{\}$/m);
 
-  assert.match(authorization, /^    runs-on: ubuntu-latest$/m);
+  assert.match(
+    authorization,
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]$/m,
+  );
   assert.match(authorization, /^      actions: read$/m);
   assert.match(authorization, /^      contents: read$/m);
   assert.match(authorization, /^      pull-requests: read$/m);
@@ -396,7 +405,7 @@ void test('trusted workflow is default-branch sourced and authorizes exact candi
   // Detox left the PR path (Step 7): a PR targeting release/**|hotfix/** no
   // longer auto-forces the complete matrix by virtue of its base branch —
   // only an explicit ci:full label or an already-forced upstream signal
-  // does. Full Detox validation for those branches now comes exclusively
+  // does. Full native (Maestro) validation for those branches now comes exclusively
   // from native-protected-full.yml's push trigger.
   assert.match(authorization, /^\s+force_full = force_full or label_force_full$/m);
   assert.doesNotMatch(authorization, /force_full or label_force_full or base_ref/);
@@ -885,7 +894,38 @@ void test('iOS PR smoke builds once and runs its Maestro phases on that build', 
     /run-maestro-suite\.sh --platform ios maestro:auth maestro:connections$/,
   );
   assert.doesNotMatch(legacyIos, /applesimutils|detox/i);
+  assert.doesNotMatch(legacyIos, /xcodebuild/);
 });
+
+void test('iOS PR smoke owns a dedicated fresh Metro on the shared Mac runner', () => {
+  const legacyIos = workflow('ios-pr.yml');
+  const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+    scripts: Record<string, string>;
+  };
+  const executor = readFileSync(join(root, 'scripts', 'ci', 'execute-selected-tests.ts'), 'utf8');
+
+  // The port is compiled into the debug build, so build and smoke must agree.
+  assert.match(
+    legacyIos,
+    /- name: Build \(simulator debug\)\n        env:\n          NATIVE_METRO_PORT: '18081'\n        run: yarn test:e2e:build:ios:debug/,
+  );
+  assert.match(
+    legacyIos,
+    /- name: Run Maestro smoke\n        env:\n          NATIVE_METRO_PORT: '18081'\n[\s\S]*?        run: yarn test:e2e:ios:smoke/,
+  );
+  assert.equal((legacyIos.match(/NATIVE_METRO_PORT: '18081'/g) ?? []).length, 2);
+  assert.match(
+    packageJson.scripts['test:e2e:build:ios:debug'],
+    /RCT_METRO_PORT=\$\{NATIVE_METRO_PORT:-8081\}/,
+  );
+  // Each smoke phase starts its own cache-cleared Metro and never reuses a listener.
+  assert.match(
+    executor,
+    /'expo', 'start', '--dev-client', '--localhost', '--port', String\(port\), '--clear'/,
+  );
+  assert.match(executor, /refuses to reuse occupied Metro port/);
+});
+
 void test('web-selected lane is authorized, self-hosted, and per-PR-scoped', () => {
   // Detox left the PR path (Step 7 of the CI web-primary redesign):
   // detox-ios-selected/detox-android-selected (and their host-capacity
@@ -929,7 +969,7 @@ void test('web-selected lane is authorized, self-hosted, and per-PR-scoped', () 
   assert.doesNotMatch(source, /detox-ios-selected|detox-android-selected/);
 });
 
-void test('only hosted freshness, authorization, and final publication can write the stable exact-head status', () => {
+void test('only local freshness, authorization, and final publication can write the stable exact-head status', () => {
   const source = workflow('trusted-selective-tests.yml');
   const freshness = jobBlock(
     workflow('trusted-selective-freshness.yml'),
@@ -942,15 +982,24 @@ void test('only hosted freshness, authorization, and final publication can write
   );
 
   assert.equal(statusWriteOccurrences.length, 3);
-  assert.match(freshness, /^    runs-on: ubuntu-latest$/m);
+  assert.match(
+    freshness,
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]$/m,
+  );
   assert.match(freshness, /^      statuses: write$/m);
-  assert.match(authorization, /^    runs-on: ubuntu-latest$/m);
+  assert.match(
+    authorization,
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]$/m,
+  );
   assert.match(
     authorization,
     /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m,
   );
   assert.match(authorization, /^      statuses: write$/m);
-  assert.match(publisher, /^    runs-on: ubuntu-latest$/m);
+  assert.match(
+    publisher,
+    /^    runs-on: \[self-hosted, Linux, X64, mychampions-ci, mychampions-android\]$/m,
+  );
   assert.match(
     publisher,
     /^    concurrency:\n      group: mychampions-selective-status-writer\n      queue: max$/m,
@@ -999,12 +1048,23 @@ void test('only hosted freshness, authorization, and final publication can write
   assert.doesNotMatch(publisher, /or base_ref != "main"/);
   assert.doesNotMatch(source, /^    name: Selective CI gate$/m);
 
+  const statusWriterJobs = new Set([
+    'trusted-selective-freshness.yml:invalidate-stale-status',
+    'trusted-selective-tests.yml:authorize-candidate',
+    'trusted-selective-tests.yml:publish-selective-status',
+  ]);
+
   for (const [name, workflowSource] of workflows) {
     for (const runner of workflowSource.matchAll(
       /\n  ([a-zA-Z0-9_-]+):\n([\s\S]*?)(?=\n  [a-zA-Z0-9_-]+:\n|$)/g,
     )) {
       if (/runs-on: \[self-hosted,/.test(runner[2])) {
-        assert.doesNotMatch(runner[2], /statuses:\s*write/, `${name}:${runner[1]}`);
+        const jobKey = `${name}:${runner[1]}`;
+        if (statusWriterJobs.has(jobKey)) {
+          assert.match(runner[2], /statuses:\s*write/, jobKey);
+        } else {
+          assert.doesNotMatch(runner[2], /statuses:\s*write/, jobKey);
+        }
       }
     }
   }
@@ -1052,6 +1112,21 @@ void test('legacy platform workflows are manual-only and have no PR-event job gu
     assert.doesNotMatch(source, /github\.event\.pull_request/);
     assert.match(source, /^jobs:$/m);
     assert.match(source, /^    runs-on:/m);
+  }
+});
+
+void test('every CI/CD workflow routes work to repository self-hosted runners', () => {
+  for (const [name, source] of workflows) {
+    assert.doesNotMatch(
+      source,
+      /^\s+runs-on:\s*(?:ubuntu|macos)-latest$/m,
+      `${name} must not depend on GitHub-hosted runner capacity`,
+    );
+    assert.match(
+      source,
+      /^\s+runs-on:\s*\[self-hosted, /m,
+      `${name} must select a repository self-hosted runner`,
+    );
   }
 });
 

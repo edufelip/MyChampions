@@ -37,10 +37,7 @@ try {
 }
 
 gradle.taskGraph.whenReady { taskGraph ->
-    def productionReleaseInGraph = taskGraph.allTasks.any {
-        it.path.toLowerCase(Locale.ROOT).contains("productionrelease")
-    }
-    if (!productionReleaseInGraph) {
+    if (!productionReleaseRequested) {
         return
     }
     if (!releaseKeystorePropertiesFile.isFile()) {

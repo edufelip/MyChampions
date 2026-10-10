@@ -358,7 +358,7 @@ for (const scenario of [
     expectedAndroidSuites: [],
   },
   {
-    name: 'an unowned iOS-only CI Detox spec',
+    name: 'an unowned iOS-only CI Maestro suite',
     path: '.maestro/suite/unowned-ios-ci',
     expectedSelectedSuites: ['maestro:a', 'maestro:unowned-ios-ci'],
     expectedWebSuites: [],

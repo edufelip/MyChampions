@@ -1,9 +1,11 @@
 # Mobile NFR And Tech Stack Spec (Draft)
 
 ## Purpose
+
 Define non-functional architecture constraints and technology options for the mobile app stack.
 
 ## Scope
+
 - Mobile framework/runtime strategy.
 - Build/release strategy without EAS dependency.
 - Backend-as-a-service and storage foundation.
@@ -13,6 +15,7 @@ Define non-functional architecture constraints and technology options for the mo
 - CI/CD orchestration options.
 
 ## Confirmed Decisions
+
 - Mobile app uses React Native with Expo.
 - Project must not rely on EAS services as a hard dependency for build/release.
 - Android and iOS native packages/pipelines are managed independently.
@@ -42,7 +45,8 @@ Define non-functional architecture constraints and technology options for the mo
   - max upload size: `1.5 MB`.
   - max image dimension: `1600 px` on longest side.
 - Localization baseline requires all user-facing strings to ship in `en-US`, `pt-BR`, and `es-ES`.
-- Native E2E automation uses Maestro (pinned CLI 2.6.1). The fixture suite lives
+- Native E2E automation uses Maestro. The fixture suite pins CLI 2.10.0
+  (`scripts/testing/install-maestro.sh`; the native pilot keeps 2.6.1), lives
   in `.maestro/suite/<spec>/`, one tagged flow per case, and runs against the
   secret-free `devDebug` (Android) and `Debug` (iOS) builds; it never needs
   release signing inputs. The five integrated journeys run through the native
@@ -72,6 +76,7 @@ Define non-functional architecture constraints and technology options for the mo
   that no QEMU process, emulator device, or owned port survives teardown.
 
 ## Constraints From Platform Docs
+
 - Expo local builds support CI and local machine execution and work with managed and bare workflows.
 - Native server-backed flows require `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL` and a MyChampions bearer session.
 - Direct Google/Apple token verification requires configured server audiences and deep-link handling before production traffic.
@@ -81,6 +86,7 @@ Define non-functional architecture constraints and technology options for the mo
 ## Technology Options
 
 ### 1) Tailwind-Style UI
+
 - Option A: NativeWind.
   - Pros: Tailwind-compatible API, strong Expo/React Native adoption, utility-first workflow.
   - Cons: Build/runtime considerations for dynamic class composition.
@@ -93,6 +99,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Selected for MVP: NativeWind.
 
 ### 2) Navigation
+
 - Option A: Expo Router.
   - Pros: File-based routes, good fit with existing Expo baseline.
   - Cons: Requires strict route conventions.
@@ -102,6 +109,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: Keep Expo Router.
 
 ### 3) Server-State And Caching
+
 - Option A: TanStack Query + lightweight local state (Zustand).
   - Pros: Excellent async cache primitives, retries, invalidation, optimistic updates.
   - Cons: More moving parts if overused for simple local state.
@@ -111,6 +119,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: TanStack Query + Zustand.
 
 ### 4) Forms And Validation
+
 - Option A: React Hook Form + Zod.
   - Pros: Strong performance, type-safe schemas, good RN ergonomics.
   - Cons: Schema duplication risk if backend schemas diverge.
@@ -120,6 +129,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: React Hook Form + Zod.
 
 ### 5) Local Persistence For Offline Read-Only
+
 - Option A: MyChampions server snapshots + SQLite (`expo-sqlite`) tables.
   - Pros: Reliable structured offline reads, explicit TTL policies.
   - Cons: Additional sync layer complexity.
@@ -129,6 +139,7 @@ Define non-functional architecture constraints and technology options for the mo
 - Recommended starting point: SQLite snapshots for core lists + MMKV/AsyncStorage for session/preferences.
 
 ### 6) CI/CD Without EAS
+
 - Option A: GitHub Actions + Fastlane + native toolchains (`gradlew`, `xcodebuild`).
   - Pros: Maximum control, transparent pipelines, no EAS lock-in.
   - Cons: More initial setup for signing and caching.
@@ -150,17 +161,17 @@ selection for affected Playwright. Both-platform Maestro runs separately through
 protected manual, published-release and release/hotfix-push validation. No
 schedule is configured. Full/fail-closed resolver selection remains broader
 than the surfaces actually executed by the trusted workflow. D-195 makes persistent-runner
-promotion conditional on a GitHub-hosted-only PR preflight, a
+promotion conditional on a self-hosted, source-free PR preflight, a
 `workflow_run`-triggered trusted workflow sourced from protected default branch
-`main`, a GitHub-hosted triggering-run/live-PR authorization job before
-candidate checkout, read-only candidate/self-hosted tokens, trusted hosted
+`main`, a self-hosted triggering-run/live-PR authorization job before
+candidate checkout, read-only candidate/self-hosted tokens, trusted self-hosted
 pending/terminal exact-status publishers with stale-run protection, all-external fork approval, pinned-action
 policy, an exact recorded backend SHA, ephemeral mode-`0600` environment
 cleanup, owned disposable iOS simulator cleanup, required `main` PR/status
 enforcement, and one complete exact-head matrix. Host hooks remain resource
 locks only. Those promotion controls remain pending verified workflow,
 repository, and exact-head evidence.
-The hosted preflight covers PR bases `main`, `release/**`, and `hotfix/**` plus
+The Source-free preflight covers PR bases `main`, `release/**`, and `hotfix/**` plus
 merge groups. Release/hotfix PRs use the protected-`main` workflow-run path and
 force the complete matrix; the trusted workflow is not sourced or triggered
 directly from those branches.
@@ -182,6 +193,7 @@ the test engine. Successful runs create no GitHub
 Actions artifact or cache.
 
 ## High-Level Architecture (Target)
+
 1. Expo/React Native client handles UI, routing, and offline read models.
 2. MyChampions server and Postgres manage identity and sessions.
 3. MyChampions server enforces domain rules through route guards and Postgres persistence.
@@ -194,6 +206,7 @@ Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 Current local server contract: root-level `server/` plus this migration task card.
 
 ## Suggested Default NFR Targets For MVP
+
 - App cold start: <= 2.5s median on modern mid-tier devices.
 - Crash-free sessions: >= 99.5%.
 - API p95 latency (critical endpoints): <= 800ms (region-adjusted).
@@ -202,6 +215,7 @@ Current local server contract: root-level `server/` plus this migration task car
 - Observability: structured logs with no sensitive token/link leakage.
 
 ## Traceability Links
+
 - Functional requirements: `FR-192`, `FR-193`, `FR-194`, `FR-195`, `FR-196`, `FR-197`, `FR-198`, `FR-199`, `FR-200`, `FR-201`, `FR-202`, `FR-217`, `FR-227`, `FR-228`, `FR-271`, `FR-272`.
 - Business rules: `BR-253`, `BR-254`, `BR-255`, `BR-256`, `BR-257`, `BR-258`, `BR-259`, `BR-260`, `BR-261`, `BR-275`, `BR-284`, `BR-285`, `BR-344`.
 - Acceptance criteria: `AC-501`, `AC-502`, `AC-503`, `AC-504`, `AC-505`, `AC-506`, `AC-507`, `AC-508`, `AC-509`, `AC-510`, `AC-511`, `AC-512`, `AC-513`, `AC-514`, `AC-515`, `AC-540`, `AC-542`.
@@ -209,9 +223,11 @@ Current local server contract: root-level `server/` plus this migration task car
 - Diagram: `docs/diagrams/mobile-stack-high-level-v1.md`.
 
 ## Open Questions
+
 - None currently.
 
 ## References
+
 - Expo local app builds: https://docs.expo.dev/build-reference/local-builds/
 - Expo local builds: https://docs.expo.dev/build-reference/local-builds/
 - Elysia: https://elysiajs.com/
@@ -221,4 +237,4 @@ Current local server contract: root-level `server/` plus this migration task car
 - Maestro docs: https://docs.maestro.dev/
 
 
-Testing modernization is tracked under BL-018/D-218 and `docs/qa/testing-strategy-v1.md`. The separate Jest/Expo/RNTL component suite and integrated Postgres browser journeys have recorded local evidence; freshness and scopes are tracked in the task card. The component command is wired into trusted fast-quality before unit checks, with local CI-command and failure-propagation proof. Full quality is still blocked by the recorded password-reset confirmation contract gap; protected hosted component acceptance remains pending. Component tests do not establish native/hosted replacement coverage. Native E2E moved from Detox to Maestro on 2026-10-09 (D-218); Detox is retired.
+Testing modernization is tracked under BL-018/D-219 and `docs/qa/testing-strategy-v1.md`. The separate Jest/Expo/RNTL component suite and integrated Postgres browser journeys have recorded local evidence; freshness and scopes are tracked in the task card. The component command is wired into trusted fast-quality before unit checks, with local CI-command and failure-propagation proof. Full quality is still blocked by the recorded password-reset confirmation contract gap; protected hosted component acceptance remains pending. Component tests do not establish native/hosted replacement coverage. Native E2E moved from Detox to Maestro on 2026-10-09 (D-219); Detox is retired.

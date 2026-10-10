@@ -128,23 +128,23 @@ Validation: affected suites pass; declaration regenerated (23 views, 40 transiti
 
 Environment: host disk is ~99% full; `.qa/artifacts` holds ~186 GB (`native-pilot` 137 GB, attempts 49 GB) and the emulator needs 7.4 GB free. Superseded builds c048–c060 created in this session were removed. Nothing is committed; the worktree is a detached HEAD at `9d0c3f4`.
 
-Remaining (unchanged gates): the other T14 cells (iOS camera, both engines for session/training/connection/save-retry), the T15 400-attempt cold matrix, T16–T17 observed exploration, T18 hosted CI, T19 retirement, T20 reconciliation. D-218 / BL-018 remain **In progress**. No product, provider or localized-copy behavior changed.
+Remaining (unchanged gates): the other T14 cells (iOS camera, both engines for session/training/connection/save-retry), the T15 400-attempt cold matrix, T16–T17 observed exploration, T18 hosted CI, T19 retirement, T20 reconciliation. D-219 / BL-018 remain **In progress**. No product, provider or localized-copy behavior changed.
 
 ## Android saved-flow/cold-owner composition integrated — 2026-10-06
 
 Root integrated 34 source rows after exact current-Q preimage and sealed candidate checks, independent acceptance of both input packets, independent composition validation and root full-Q overlay TypeScript (930 roots, 2,030 sources, zero diagnostics). The three-way composition preserves the production saved-flow route/action hash/deadline/invite injection and the cold-owner platform-neutral training/connection boundaries. Narrow reconciliations register the actual saved-flow module and route, retain all three existing iOS helper-ledger inputs, allow only the exact declared Maestro route at helper boundaries and bind the camera control to the merged capture hash. No private generated inventory was copied.
 
-Evidence: `/Users/eduwaldo/.codex/private-overlays/android-saved-flow-cold-composition-root-integration-20261006-v1/TRANSFER.private.json`; independent seal: `/Users/eduwaldo/.codex/private-overlays/android-saved-flow-v2-v4-composition-independent-review-20261006-v1/COMPOSITION-SEAL.private.json`. Canonical validation passes 116/116 controls (no skips/cancellations), full TypeScript, strict 31-file lint (zero errors/warnings), formatting and fresh declaration generation (537 test files; 23 source views, 40 transitions, 10 scenarios; zero runtime passes). All 34 integrated source hashes remain exact. Result: `/Users/eduwaldo/.codex/private-overlays/android-saved-flow-cold-composition-root-integration-20261006-v1/CANONICAL-RESULT.private.json`. D-218 / BL-018 remain **In progress**; current-source APK/native qualification, complete camera run, final configured unit cohort and cold attempts remain **Pending** with zero new runtime credit. This harness change alters no product/provider/localized-copy behavior.
+Evidence: `/Users/eduwaldo/.codex/private-overlays/android-saved-flow-cold-composition-root-integration-20261006-v1/TRANSFER.private.json`; independent seal: `/Users/eduwaldo/.codex/private-overlays/android-saved-flow-v2-v4-composition-independent-review-20261006-v1/COMPOSITION-SEAL.private.json`. Canonical validation passes 116/116 controls (no skips/cancellations), full TypeScript, strict 31-file lint (zero errors/warnings), formatting and fresh declaration generation (537 test files; 23 source views, 40 transitions, 10 scenarios; zero runtime passes). All 34 integrated source hashes remain exact. Result: `/Users/eduwaldo/.codex/private-overlays/android-saved-flow-cold-composition-root-integration-20261006-v1/CANONICAL-RESULT.private.json`. D-219 / BL-018 remain **In progress**; current-source APK/native qualification, complete camera run, final configured unit cohort and cold attempts remain **Pending** with zero new runtime credit. This harness change alters no product/provider/localized-copy behavior.
 
 ## Fresh current-source iOS entry build timeout — 2026-10-06
 
-D-218 / BL-018 remain **In progress**. The actual fresh entry capture `ee3a001b94bbe88140b1e204` ran under the native host lock and hit the original 900,000 ms build deadline while compiling native dependencies. Child exit was 2; the producer reports harness-blocked, cleanup cleaned, no observed views and zero native passing cases. No usable app binary or entry observation was produced. Root and independent cleanup inspections confirm owned processes, four ports, simulator, backend and Expo cache are absent; foreign devices and containers are preserved. All 1,362 client and 204 server source files and file sets remain exact. The source hold is released.
+D-219 / BL-018 remain **In progress**. The actual fresh entry capture `ee3a001b94bbe88140b1e204` ran under the native host lock and hit the original 900,000 ms build deadline while compiling native dependencies. Child exit was 2; the producer reports harness-blocked, cleanup cleaned, no observed views and zero native passing cases. No usable app binary or entry observation was produced. Root and independent cleanup inspections confirm owned processes, four ports, simulator, backend and Expo cache are absent; foreign devices and containers are preserved. All 1,362 client and 204 server source files and file sets remain exact. The source hold is released.
 
 Evidence: `/Users/eduwaldo/.codex/private-overlays/ios-camera-v22-current-app-entry-root-run-20261006-v1`; independent verdict `cleanup-audit-passed-entry-unqualified`: `/Users/eduwaldo/.codex/private-overlays/ios-camera-v22-current-app-entry-root-run-independent-audit-20261006-v1/REVIEW.private.json`. A bounded incremental compilation handoff repair and an entry evidence-path contract repair are **In progress** in private candidates. Neither is integrated or qualified yet. A new actual build, real entry screenshot/hierarchy review, source-qualified app reuse and complete camera run remain **Pending**. The fresh remote helper build remains build-only evidence. No product/provider/localized-copy behavior changes or runtime/cold credit are claimed.
 
 ## iOS V22 protected-auth/helper source integration — 2026-10-06
 
-Status: **In progress** (D-218 / BL-018). Root integrated the independently accepted 22-row iOS camera/helper candidate and one declaration-generator supplement after verifying every current-source preimage, absent new path and sealed candidate hash. The protected report now retains actual proxy auth observations with exact fixture-allowlist binding, verified reason, fresh student/coach/student ordinals and request IDs, hashed identities and report/stage/terminal/verifier propagation. Two new runtime helper paths are explicitly registered in the generator; the read-only 210-path closure audit reports zero missing source revisions.
+Status: **In progress** (D-219 / BL-018). Root integrated the independently accepted 22-row iOS camera/helper candidate and one declaration-generator supplement after verifying every current-source preimage, absent new path and sealed candidate hash. The protected report now retains actual proxy auth observations with exact fixture-allowlist binding, verified reason, fresh student/coach/student ordinals and request IDs, hashed identities and report/stage/terminal/verifier propagation. Two new runtime helper paths are explicitly registered in the generator; the read-only 210-path closure audit reports zero missing source revisions.
 
 Pre-transfer root validation passes 42/42 source controls, full-Q overlay TypeScript and strict 17-file lint. Canonical checks after transfer pass: 42/42 source controls, full TypeScript, strict 17-file lint and formatting. Root generation inventories 535 tests and validates 23 views, 40 transitions and 10 scenarios; this grants no runtime credit. The author’s formatting log was stale because its executable path was absent; an independent valid 18-file recheck passed, and the stale log remains preserved. The author’s V22 patch is incremental against V21; root composed and dry-run checked the full 22-row patch against verified current-Q preimages without changing candidate bytes. Transfer: `/Users/eduwaldo/.codex/private-overlays/ios-camera-v22-auth-root-integration-20261006-v1/TRANSFER.private.json`; independent review: `/Users/eduwaldo/.codex/private-overlays/ios-detox-camera-save-password-remote-helper-contract-v22-independent-review-20261006-v1/REVIEW.private.json`.
 
@@ -154,19 +154,19 @@ The separately sealed V22 build wrapper passes five root controls and preserves 
 
 Root integrated the independently accepted one-row test repair after verifying the exact current-source preimage, candidate hash and unchanged production producer. Cancellation now occurs at actual proxy quiescence entry after the live abort listener is installed. The existing signal and no-publication assertions remain; an explicit assertion preserves the original 5,000 ms quiescence budget. Canonical controls pass 7/7 with no failures, skips or cancellations. Root full-Q overlay TypeScript passes with zero diagnostics. Transfer and evidence: `/Users/eduwaldo/.codex/private-overlays/t15-cold-ios-reset-race-root-integration-20261006-v1/TRANSFER.private.json` and `canonical-controls.log`.
 
-This repairs one of the five failures in the latest configured full unit cohort; the other four remain under repair and a new full cohort is required after final integration/declaration refresh. Production behavior, product/provider/localized copy and native acceptance are unchanged. D-218 / BL-018 remain In progress; no native qualification or cold credit is granted.
+This repairs one of the five failures in the latest configured full unit cohort; the other four remain under repair and a new full cohort is required after final integration/declaration refresh. Production behavior, product/provider/localized copy and native acceptance are unchanged. D-219 / BL-018 remain In progress; no native qualification or cold credit is granted.
 
 ## iOS V21 root validation and protected auth retention gap — 2026-10-06
 
 Root verifies all 22 candidate rows and exact current-source preimages, clean patch applicability, and the existing `plist@^3.0.5` lock entry resolving to 3.1.0. Full-Q overlay TypeScript passes with 924 roots, 2,024 sources and zero diagnostics. A private regular copy of 1,354 current source files overlaid with the candidate passes 41/41 source controls and strict lint across all 17 changed JS/TS files, with zero errors or warnings. The three root qualification-wrapper controls also pass; none executes a native command. Root evidence: `/Users/eduwaldo/.codex/private-overlays/ios-camera-v21-root-overlay-20261006-v1/RESULT.private.json`. Earlier compiler-cwd, lint path and physical-resolver failures remain preserved and do not count as source acceptance.
 
-Independent review finds a remaining protected evidence gap: runtime native-auth guards fail closed, but verified student/coach/student observations are not retained in the protected report, stage and terminal for later verifier reread. A successor must retain run-bound auth observations or exact receipt/hash projections and reject missing or substituted proof. V21 remains unintegrated; build qualification and a complete owned camera run follow accepted source repair. Review: `/Users/eduwaldo/.codex/private-overlays/ios-detox-camera-save-password-remote-helper-v21-independent-review-20261006/REVIEW.private.json`. D-218 / BL-018 remain In progress; native and cold credit remain zero. This harness evidence repair changes no product/provider/localized-copy behavior.
+Independent review finds a remaining protected evidence gap: runtime native-auth guards fail closed, but verified student/coach/student observations are not retained in the protected report, stage and terminal for later verifier reread. A successor must retain run-bound auth observations or exact receipt/hash projections and reject missing or substituted proof. V21 remains unintegrated; build qualification and a complete owned camera run follow accepted source repair. Review: `/Users/eduwaldo/.codex/private-overlays/ios-detox-camera-save-password-remote-helper-v21-independent-review-20261006/REVIEW.private.json`. D-219 / BL-018 remain In progress; native and cold credit remain zero. This harness evidence repair changes no product/provider/localized-copy behavior.
 
 ## Latest configured unit result and camera gates — 2026-10-06
 
 After the Android cold-owner integration, the full configured cohort exits 1: 3,365 tests, 3,326 passed, five failed, 34 skipped and zero cancelled. All 1,354 frozen source paths and their file set remain exact through terminal. The failures cover two connection helper-boundary controls, an obsolete Android capture source hash, an Android training dependency that imports an iOS dispatcher, and cancellation firing before the iOS reset quiescence stage. Repairs must preserve declared platform boundaries, exact reviewed source guards, the original deadline and late-publication prohibition. Exact result: `/Users/eduwaldo/.codex/private-overlays/t15-cold-android-maestro-v3-root-integration-20261006-v1/FULL-UNIT-RESULT.private.json`; original log: `full-unit-after-cold-owner.log`. Earlier passing cohorts remain historical evidence.
 
-The sealed 22-row iOS V21 helper successor is under independent review and root full-Q overlay validation. It is not integrated or build-qualified. The next complete camera attempt requires accepted source integration, applicable validation, a fresh qualified helper build and an owned run with protected receipts and independent cleanup. Native qualification and cold credit remain zero for these changes. D-218 / BL-018 remain In progress. Product/provider/localized-copy behavior is unchanged; no functional or screen copy update is required.
+The sealed 22-row iOS V21 helper successor is under independent review and root full-Q overlay validation. It is not integrated or build-qualified. The next complete camera attempt requires accepted source integration, applicable validation, a fresh qualified helper build and an owned run with protected receipts and independent cleanup. Native qualification and cold credit remain zero for these changes. D-219 / BL-018 remain In progress. Product/provider/localized-copy behavior is unchanged; no functional or screen copy update is required.
 
 ## Cold-run controls join normal unit discovery — 2026-10-06
 
@@ -182,7 +182,7 @@ The impact validator now passes with 12 features, 47 suites and 66 UI specs. And
 
 ## Android cold-owner V3 source integration — 2026-10-06
 
-Status: **In progress** for T15 (D-218 / BL-018). Root verified the immutable seal, all 17 candidate hashes, 11 current-source preimages and six absent new paths, patch applicability and the independent source-only acceptance. The 17-row source integration preserves actual producer wiring through the owned camera bridge and adds asynchronous bounded helper reads with cancellation/deadline checks, event-loop yields, descriptor/ancestor identity fences and terminal rereads. Root overlay TypeScript reports 920 roots, 2,019 sources and zero diagnostics; independent controls report 14/14 with strict zero-warning authored-row lint and formatting.
+Status: **In progress** for T15 (D-219 / BL-018). Root verified the immutable seal, all 17 candidate hashes, 11 current-source preimages and six absent new paths, patch applicability and the independent source-only acceptance. The 17-row source integration preserves actual producer wiring through the owned camera bridge and adds asynchronous bounded helper reads with cancellation/deadline checks, event-loop yields, descriptor/ancestor identity fences and terminal rereads. Root overlay TypeScript reports 920 roots, 2,019 sources and zero diagnostics; independent controls report 14/14 with strict zero-warning authored-row lint and formatting.
 
 Canonical affected validation and declaration refresh are next. Fresh qualified APK/native execution, protected public receipts, cleanup and actual T15 cold attempts remain **Pending**; native passing cases and cold credit remain zero. Private generated artifacts were not copied. Exact guarded source transfer: `/Users/eduwaldo/.codex/private-overlays/t15-cold-android-maestro-v3-root-integration-20261006-v1/TRANSFER.private.json`. This internal harness integration changes no product/provider/localized-copy behavior.
 
@@ -648,7 +648,7 @@ The independently accepted Android camera projection fix is integrated in the ca
 
 The component Jest configuration now excludes `.qa/` artifact modules from its module crawl. The actual rerun passes all 7 suites and 60 tests without the previous artifact package naming collision warnings. No product behavior, screen copy, functional requirements, or localization changed. iOS process-transition repair remains pending independent acceptance. Current accepted native passes remain 0 and T15 cold attempts remain 0/400.
 
-# Task Card: Testing modernization (BL-018 / D-218)
+# Task Card: Testing modernization (BL-018 / D-219)
 
 - Current component/declaration verification (2026-10-05): actual rendered Jest component suite passes7/7 suites and60/60 tests in8.341s against the canonical worktree. This refreshes rendered-interaction evidence only; it is not fresh controlled-regression, browser, native, cold or hosted proof. Both exact Android Maestro and iOS Detox camera selections pass the strict current declaration after adding the protected iOS runner-input helper to the generator source revision/owner mapping. Current camera blockers remain Android expected target-connection snapshot preservation and iOS stable launch-process identity/census; successors are private. Web clean-close V2 is rejected for concurrent-stop, contradictory-receipt, acquired-to-ready provenance and production-hook gaps; no transfer. T15 source rebase and T20 full criterion audit are running privately without resource acquisition. Product/provider/copy/localization unchanged. Evidence: `/Users/eduwaldo/.codex/private-overlays/component-current-root-20261005/RESULT.private.json` and `/Users/eduwaldo/.codex/private-overlays/ios-v27-root-integration-20261005/DECLARATION-CLOSURE.private.json`.
 
@@ -1033,13 +1033,13 @@ This table retains the 2026-10-02 integration checkpoint. Later dated records be
 
 Current inventories contain **430 files (367 client, 63 server) in each root**. Both inventory freshness and test-impact checks pass (12 features, 45 suites, 64 UI specs). Qualified full TypeScript and scoped zero-warning lint/format pass after current runtime-fence integration. Evidence: `ios-detox-runtime-fence-v4-current-integration-2026-10-03-v1/VALIDATION.private.json`. The primary deletion of `features/plans/plan-source.ts` remains preserved and broader primary graph/native generation is not claimed. One retained iOS Maestro training smoke passed seven assertions; no cold comparison or full matrix pass is claimed.
 
-BL-018 / D-218 shared native evidence reader is **Done (source); runtime/public qualification Pending**. The independently reviewed exact two-file patch is integrated in both roots: finite 64 KiB descriptor reads within 8 MiB, no-follow opens, single-link ownership/mode checks, complete pre/post descriptor/path identity and guaranteed close. Actual filesystem growth, rename, hardlink and mode drift controls pass. The current qualified Expo graph typechecks; 42 reader/adjacent/declaration controls pass after qualified declaration regeneration. Primary reader/portable controls pass; broader primary declaration checks remain blocked by the preserved deleted plan source. Both-root zero-warning lint, formatting, impact and test inventories are required in the integration proof. Both inventories retain 394 files. The initial stale-declaration failures are preserved. Caller-owned cancellation, Android consumer/dispatch and native/public/cold qualification remain Pending / zero. Evidence: `native-view-evidence-reader-reviewed-source-integration-2026-10-02-v1/root-source-validation.private.json`. This QA-only infrastructure change requires no product requirements, screen, localization, provider or authentication update.
+BL-018 / D-219 shared native evidence reader is **Done (source); runtime/public qualification Pending**. The independently reviewed exact two-file patch is integrated in both roots: finite 64 KiB descriptor reads within 8 MiB, no-follow opens, single-link ownership/mode checks, complete pre/post descriptor/path identity and guaranteed close. Actual filesystem growth, rename, hardlink and mode drift controls pass. The current qualified Expo graph typechecks; 42 reader/adjacent/declaration controls pass after qualified declaration regeneration. Primary reader/portable controls pass; broader primary declaration checks remain blocked by the preserved deleted plan source. Both-root zero-warning lint, formatting, impact and test inventories are required in the integration proof. Both inventories retain 394 files. The initial stale-declaration failures are preserved. Caller-owned cancellation, Android consumer/dispatch and native/public/cold qualification remain Pending / zero. Evidence: `native-view-evidence-reader-reviewed-source-integration-2026-10-02-v1/root-source-validation.private.json`. This QA-only infrastructure change requires no product requirements, screen, localization, provider or authentication update.
 
-BL-018 / D-218 T00 test inventory formatting is **Done (source, locally verified); independent review recorded separately**. The generator uses the existing repository Prettier dependency and configuration before writing or comparing exact bytes. Actual generation → formatter → freshness passes in both roots, while the original generator fails freshness after formatting. All parsed inventory content is exactly preserved: 394 files, classifications, assertions, owners and pilot scenarios. Both-root source/JSON formatting, zero-warning scoped lint, impact validation and touched diff checks pass; the current qualified Expo typecheck is required in the proof. No dependency or product/provider/authentication/localization behavior changes. Native/public/cold and full-plan qualification remain Pending. Evidence: `test-inventory-format-reviewed-source-integration-2026-10-02-v1/root-source-validation.private.json`.
+BL-018 / D-219 T00 test inventory formatting is **Done (source, locally verified); independent review recorded separately**. The generator uses the existing repository Prettier dependency and configuration before writing or comparing exact bytes. Actual generation → formatter → freshness passes in both roots, while the original generator fails freshness after formatting. All parsed inventory content is exactly preserved: 394 files, classifications, assertions, owners and pilot scenarios. Both-root source/JSON formatting, zero-warning scoped lint, impact validation and touched diff checks pass; the current qualified Expo typecheck is required in the proof. No dependency or product/provider/authentication/localization behavior changes. Native/public/cold and full-plan qualification remain Pending. Evidence: `test-inventory-format-reviewed-source-integration-2026-10-02-v1/root-source-validation.private.json`.
 
 Historical T14-D/T14-E readiness audit (superseded for source status by the current resume table): full platform/engine qualification remained **Pending** at this checkpoint. The current source audit found no owned Android Maestro camera/save-retry callback, charter, runner or public dispatch; the Android save observer wrapper alone supplies no ownership proof. Camera currently depends on iOS TCC evidence. Detox camera/save callers are absent and dispatch remains null. Android save-retry private source preparation is **In progress**, owned by `android_session_review`: bind the existing real observer to owned UI/API/SQL receipts, scoped pre-forward failure, unchanged baseline, retained draft, real retry and exactly one durable write. Then prepare Android permission/manual-code camera evidence and installed-Detox callers. Coordinate additive capture/dispatch wiring with the Android session repair; no canonical or runtime success is claimed from preparation. The primary camera declaration and broader declaration checks remain gated by the preserved deleted source. Evidence: `t14-camera-save-retry-readiness-audit-2026-10-02-v1/review.private.json` (15 source controls passed, two generic runner failures preserved) and `detox-connection-adapter-independent-review-v3-2026-10-02-v2/review.private.json`. No product, auth-policy, provider or localization change is authorized by these QA gaps.
 
-BL-018 / D-218 T16-B budget policy is **Done (source); execution and observed exploration Pending**. The exact independently reviewed module/test is integrated in both roots: fixed budgets imported from preparation, all UI outcomes counted, overlapping/foreign/duplicate completions rejected, monotonic inclusive deadline, cancellation, 100-action limit and immediate two-unchanged-failure stop. Both-root policy/preparation controls pass **14/14**, source/test/inventory formatting, zero-warning scoped lint, impact and freshness pass; the actual qualified Expo graph typechecks with 661 root files. A controlled private action-limit mutation fails one control, and the unchanged original source passes seven clean controls; this is unit policy evidence, not native product regression/restoration. Inventories now contain **395 files (332 client, 63 server)**. The actual owned connector/controller, append-only evidence ledger, in-flight deadline cancellation, cleanup audit, observed exploration and T17 conversion remain Pending. A policy permit is no observation or passing receipt; native/public/cold passing counts remain zero and full T20 Pending. Evidence: `exploration-budget-policy-reviewed-source-integration-2026-10-02-v1/root-source-validation.private.json`. No product/provider/authentication/localization change.
+BL-018 / D-219 T16-B budget policy is **Done (source); execution and observed exploration Pending**. The exact independently reviewed module/test is integrated in both roots: fixed budgets imported from preparation, all UI outcomes counted, overlapping/foreign/duplicate completions rejected, monotonic inclusive deadline, cancellation, 100-action limit and immediate two-unchanged-failure stop. Both-root policy/preparation controls pass **14/14**, source/test/inventory formatting, zero-warning scoped lint, impact and freshness pass; the actual qualified Expo graph typechecks with 661 root files. A controlled private action-limit mutation fails one control, and the unchanged original source passes seven clean controls; this is unit policy evidence, not native product regression/restoration. Inventories now contain **395 files (332 client, 63 server)**. The actual owned connector/controller, append-only evidence ledger, in-flight deadline cancellation, cleanup audit, observed exploration and T17 conversion remain Pending. A policy permit is no observation or passing receipt; native/public/cold passing counts remain zero and full T20 Pending. Evidence: `exploration-budget-policy-reviewed-source-integration-2026-10-02-v1/root-source-validation.private.json`. No product/provider/authentication/localization change.
 
 Parallel private source frontier (2026-10-02): iOS v5 source review is accepted in `native-session-public-finalization-independent-review-v5-2026-10-02-v1/review.private.json`; its 31 controls are source fixtures. T15 comparison collector v2, repository-identity/T17 v2 and Android Maestro save/retry v1 are prepared for independent review. The T16 execution controller and Detox v5 cleanup/signal repair are being prepared separately. These packets do not change canonical runtime status or create native/public/cold passes. No product, screen, localization, provider or authentication behavior changed; corresponding FR/UC/AC/BR artifacts require no update.
 
@@ -1280,7 +1280,7 @@ spans; every other field/actor/table is unchanged, and post-restoration through
 logout is strictly unchanged. The existing plans/connections-only snapshot
 cannot qualify this assertion. Android, iOS and Detox candidate adapters are
 being corrected; no native/public passing case is added. This is test-contract
-preparation under BL-018/D-218, not a product/auth/provider change. Proof packet:
+preparation under BL-018/D-219, not a product/auth/provider change. Proof packet:
 `session-profile-snapshot-contract-preparation-2026-10-01-v1`.
 
 T16-A source completeness is **Done (isolated mirror)**. The existing
@@ -1320,7 +1320,7 @@ Pending, public locale stays null and native passing cases stay zero. Private
 proof: `locale-native-collector-entry-2026-10-01-v1/sealed-terminal.private.json`.
 Canonical source is unfrozen after this seal.
 
-Locale capture binding integration is **Done (source)** under D-218.
+Locale capture binding integration is **Done (source)** under D-219.
 The reviewed v5 patch connects actual owned OS-locale command records and
 private stdout to the existing canonical binding/parser and hierarchy-file
 adapter. Expected inputs come from pre-capture source/helper/device/build
@@ -1551,7 +1551,7 @@ remains **Pending** because of the separate evidence-contract failure above.
 Current-UID/focus/latest-request guards reject stale roster and bulk completions.
 Six rendered controls pass, and the original isolated screen fails the return
 control (expected two roster reads, received one). SC-205/FR-105/FR-121/UC-002.2/
-UC-002.3/AC-206/AC-214/TC-206/TC-214 and D-218 trace this correction.
+UC-002.3/AC-206/AC-214/TC-206/TC-214 and D-219 trace this correction.
 
 T15 bounded locale and malformed-receipt guards are **Done** with 15 focused
 controls. Schema-invalid bindable attempts remain in the denominator and cannot
@@ -1690,7 +1690,7 @@ suite before the final guard-predicate repair: 1,921/1,922, with the existing
 regression was rerun after that repair. Earlier server unit controls: 249/249.
 Native declaration remains 23 views/40 transitions/10 untested scenarios with
 zero new public receipts. No native acquisition, auth/product/copy/provider or
-hosted change occurred. BL-018/D-218 and full plan remain **In progress**.
+hosted change occurred. BL-018/D-219 and full plan remain **In progress**.
 
 Current source packet: `connection-ledger-source-preparation-2026-10-01-v1`
 (source implementation, transfer and validation **Done**; runtime **Pending**).
@@ -3398,7 +3398,7 @@ runtime acceptance. Current focused lifecycle/owner/Android/inventory checks:
 named reuse paths, touched-document formatting and diff checks pass. No actual
 Android capture, comparison or hosted run was launched by this planning refresh.
 Real T13-J controls remain Pending. Product/FR/UC/BR/screen/copy/localization
-unchanged; existing BL-018/D-218 and deferred-wiring tracking remain authoritative.
+unchanged; existing BL-018/D-219 and deferred-wiring tracking remain authoritative.
 
 Actual T13-J controls: whole-timeout-v1 capture a46a20931f9ad54339d7ebfc
 returned expected blocked2/whole-capture deadline, zero views and passing cases.
@@ -4804,7 +4804,7 @@ before this candidate can be used in the full saved training journey. No
 optional core title/SQL assertion, coordinate, storage injection or product
 change is permitted.
 
-### D-218 title gesture qualification and full saved binding
+### D-219 title gesture qualification and full saved binding
 
 Actual diagnostic `fda9030c4b10062a133109c0` is terminal exit 0/cleaned.
 The original exact title and keyboard are captured; triple selector tap
@@ -4828,7 +4828,7 @@ its failed diagnostic remains immutable. Full saved journey, Android,
 public runtime and reliability qualification are Pending. This changes only
 test infrastructure; no product, copy, localization or auth behavior changes.
 
-### D-218 full iOS saved-training debug proof
+### D-219 full iOS saved-training debug proof
 
 Fresh capture `aa3ae890e28cb19631472ac4`, backend
 `28bd07204bdcecd56e9c8825`, is terminal exit 0/cleaned
@@ -5133,7 +5133,7 @@ Bound network/body reads; restart/stop invalidate credentials. Real disposable
 Postgres controls must show unchanged SQL and independent owned cleanup. This
 proves an HTTP/API binding only; UI/engine/public runtime and T13/T14 completion
 remain Pending. Implement in existing proxy, add explicit local verifier; update
-strategy/handoff, D-218 and BL-018 wiring. No FR/BR/UC/localization update needed.
+strategy/handoff, D-219 and BL-018 wiring. No FR/BR/UC/localization update needed.
 
 Status: locally verified API binding; native runtime remains Pending.
 `readObservedNativeTrainingPlan` is implemented in the existing proxy and bound
@@ -5166,7 +5166,7 @@ Exact commands and terminal evidence:
   all 10 PID/start records plus owned Compose resources. Receipt beside the
   final read receipt: `external-cleanup.private.json`.
 
-Strategy/handoff/D-218/wiring updated. Existing native captures now have an old
+Strategy/handoff/D-219/wiring updated. Existing native captures now have an old
 proxy-helper fingerprint; preserved observations cannot qualify this changed
 helper as current runtime proof. No native UI/engine execution or T13/T14
 completion is claimed. Next: real platform lifecycle and training driver binding,
@@ -7698,7 +7698,7 @@ focused load/view/inventory tests pass/zero skips; typecheck/lint, impact
 (12/43/62) and diff checks pass. Native inputs frozen while live. Actual
 visibility, full original recovery and cleanup remain Pending.
 
-### D-218 canonical training title recipe alignment (In progress)
+### D-219 canonical training title recipe alignment (In progress)
 
 Current FLW-training still lists the old menu-open/menu-clear transitions,
 while actual iOS saved debug proof aa3ae890e28cb19631472ac4 executes the
@@ -7765,12 +7765,12 @@ Pending; no public native pass or complete training execution is claimed.
 Updated `docs/plans/2026-09-29-testing-modernization-start-here.md` with six
 ordered delivery outcomes and a mandatory packet handoff. Removed its duplicated
 current-dispatch claim; the top work card remains the sole dispatch authority.
-Specification T00–T20, acceptance thresholds, BL-018/D-218 status and original
+Specification T00–T20, acceptance thresholds, BL-018/D-219 status and original
 receipts are unchanged. Existing dirty implementation work is preserved.
 
 Consulted applicable AGENTS, parent evidence-delivery/project-adapter, the
 specification, entry point, task-card status, QA adapter, package scripts and
-BL-018/D-218 discovery references. Official Maestro React Native/MCP docs were
+BL-018/D-219 discovery references. Official Maestro React Native/MCP docs were
 refreshed. No product, API, schema, localization or CI behavior changed; no
 FR/UC/BR/AC/screen/copy update is required for this planning clarification.
 
@@ -7784,7 +7784,7 @@ acceptance receipt; full implementation remains in progress.
 
 ## Shared native connection source integration — 2026-10-01
 
-**Done (source)** under BL-018/D-218/T14-C: one shared seven-purpose journey/evidence core with thin iOS/Android adapters. Actual capture, adapter and shared-journey imports are included in both helper ledgers and scenario freshness, including CI runner-slot and Java/XML reader inputs. Initial native coach auth must match the fixture UID allowlist, verified principal, API process/origin and one forwarded 201 within its exact transport window. The iOS setup requires four same-flow private prompt screenshot/command witnesses and actual post-dismissal home trees; the separate inventory prompt tree is not a connection assertion frame. Original failed attempts remain immutable. Canonical transfer, 92 focused controls, full isolated typecheck, zero-warning scoped lint and format pass. The corrected generator derives unique connection/training owner inputs from actual imports, and all three closure regressions plus 16 inventory/receipt controls pass. The exact validator .mjs mapper boundary correction is integrated; the earlier 98-control focused cohort is historical, and all 98 focused controls passed with the then-current declarations. The 100/100 YAML-repair cohort is also historical. The pre-recipe source cohort is 109 controls: YAML 100 + file-adapter 3 + web-profile 6. These source/static controls do not qualify native or public runtime evidence.
+**Done (source)** under BL-018/D-219/T14-C: one shared seven-purpose journey/evidence core with thin iOS/Android adapters. Actual capture, adapter and shared-journey imports are included in both helper ledgers and scenario freshness, including CI runner-slot and Java/XML reader inputs. Initial native coach auth must match the fixture UID allowlist, verified principal, API process/origin and one forwarded 201 within its exact transport window. The iOS setup requires four same-flow private prompt screenshot/command witnesses and actual post-dismissal home trees; the separate inventory prompt tree is not a connection assertion frame. Original failed attempts remain immutable. Canonical transfer, 92 focused controls, full isolated typecheck, zero-warning scoped lint and format pass. The corrected generator derives unique connection/training owner inputs from actual imports, and all three closure regressions plus 16 inventory/receipt controls pass. The exact validator .mjs mapper boundary correction is integrated; the earlier 98-control focused cohort is historical, and all 98 focused controls passed with the then-current declarations. The 100/100 YAML-repair cohort is also historical. The pre-recipe source cohort is 109 controls: YAML 100 + file-adapter 3 + web-profile 6. These source/static controls do not qualify native or public runtime evidence.
 
 The later frame-path source correction is **Done (source)**: 64/64 current
 focused connection controls, isolated typecheck, zero-warning lint and format,
@@ -7811,7 +7811,7 @@ Status: **Done (source)**; actual native qualification **Pending**. The exact sh
 
 ### 2026-10-02 connection diagnostic integration worksheet
 
-BL-018 / D-218, T13/T14 source integration is Done (source); runtime Pending. Integrate the independently
+BL-018 / D-219, T13/T14 source integration is Done (source); runtime Pending. Integrate the independently
 reviewed connection post-tap diagnostic delta onto the reviewed camera capture
 source, preserving the current helper closure. The initial sign-out CTA and mandatory
 confirmation CTA retain their existing selectors and final signed-out assertion.
@@ -7869,7 +7869,7 @@ diagnostic attempt and does not count as a cold comparison attempt.
 
 ### 2026-10-02 iOS locale library source transfer
 
-BL-018 / D-218 locale library integration is **In progress (source)**. Transfer
+BL-018 / D-219 locale library integration is **In progress (source)**. Transfer
 only the independently accepted v7 runtime/storage/quiescence helpers and 29
 portable controls using the current isolated v2 packet. Root independently
 verified the current c8ab66f capture, 72-helper closure and portable transfer
@@ -7884,7 +7884,7 @@ Proof: `locale-runtime-ios-adapter-v7-current-integration-2026-10-02-v2`.
 
 ### 2026-10-02 reviewed camera dispatch and Detox session source transfer
 
-BL-018 / D-218 source integration is **In progress**. The independently reviewed
+BL-018 / D-219 source integration is **In progress**. The independently reviewed
 camera v2 dispatch requires the actual iOS/Maestro/integration selection, separate
 API/app/Metro origins, four explicit assertion evidence bindings (including
 training isolation), and byte-preserved runtime/adapter/independent cleanup
@@ -7941,7 +7941,7 @@ product copy or auth/provider behavior. Proof:
 
 ### 2026-10-02 initial API lifetime producer/consumer repair
 
-BL-018 / D-218 source integration is **In progress** for the independently
+BL-018 / D-219 source integration is **In progress** for the independently
 reviewed initial API-lifetime repair. Read the actual protected
 `api-session-start.json` ledger, validate run/owner/PID/start/script/origin and
 current manifest, then return logical `runId:first` while preserving the physical
@@ -8262,7 +8262,7 @@ Product behavior, localization, and backend-provider contracts are unchanged;
 no functional requirement, use case, business rule, or screen-copy update is
 needed for this internal testing integration.
 
-2026-10-02 execution checkpoint for BL-018 / D-218: reviewed cache cleanup is
+2026-10-02 execution checkpoint for BL-018 / D-219: reviewed cache cleanup is
 **Done** for the exact 15 cleaned task runs / 55 compiler-cache targets. Executor
 exit is 0, partial/unknown states are false, all 15 post-apply binary hashes
 match, and actual free space increased from 2,409,064 KiB to 25,991,064 KiB
@@ -8442,35 +8442,35 @@ The one-file test repair now consumes the actual iOS shared helper ledger and ch
 
 ### Detox save/retry V3 source integration (2026-10-02)
 
-Under BL-018/D-218/T14-E, the independently reviewed six-file source seam is integrated in both roots after absence and current proxy guards. Actual qualified canonical controls pass 15/15, including cancellation after fault arming and PNG provenance/CRC/image-data checks. Evidence: primary private `detox-save-retry-v3-reviewed-source-integration-2026-10-02-v1/accepted-source-transfer.private.json` and `canonical-validation.private.json`.
+Under BL-018/D-219/T14-E, the independently reviewed six-file source seam is integrated in both roots after absence and current proxy guards. Actual qualified canonical controls pass 15/15, including cancellation after fault arming and PNG provenance/CRC/image-data checks. Evidence: primary private `detox-save-retry-v3-reviewed-source-integration-2026-10-02-v1/accepted-source-transfer.private.json` and `canonical-validation.private.json`.
 
 Status: source seam **Done**; real owned caller, child termination/reaping, fresh iOS/Android Detox receipts, independent cleanup and public promotion **Pending**. The existing integrated Detox owner must supply the authenticated child and current proxy/API/SQL readers; no second process or cleanup owner is authorized. Native/public/cold counts are unchanged. No product, provider, screen, or localization behavior changed.
 
 ### Native runner and cold reset ownership reviews (2026-10-02)
 
-BL-018/D-218/T13–T15 remain **In progress**. Independent runner review accepts the V5 fixture correction and its 26/26 source controls in each root, but blocks the V4 helper and runner transfer: replacing an ancestor before path-based output-root creation creates a directory outside the owned namespace before the later identity rejection. Repair must create the child relative to an anchored parent and prove the interleaving creates no outside directory or bytes. Evidence: primary private `t15-public-runner-identity-pq-independent-review-2026-10-02-v2/REVIEW.private.json`.
+BL-018/D-219/T13–T15 remain **In progress**. Independent runner review accepts the V5 fixture correction and its 26/26 source controls in each root, but blocks the V4 helper and runner transfer: replacing an ancestor before path-based output-root creation creates a directory outside the owned namespace before the later identity rejection. Repair must create the child relative to an anchored parent and prove the interleaving creates no outside directory or bytes. Evidence: primary private `t15-public-runner-identity-pq-independent-review-2026-10-02-v2/REVIEW.private.json`.
 
 Independent cold CLI review also reproduces `EEXIST` with the actual helpers: the reset producer precreates the public output directory that the runner must create exclusively. Repair is In progress through protected reset staging and an explicit handoff after exclusive runner directory creation; accepting arbitrary existing output roots is not an equivalent fix. Evidence: primary private `t15-cold-dispatcher-cli-output-root-compatibility-review-2026-10-02-v1/REVIEW.private.md` and `validation/reproduction.json`. Neither candidate has been transferred. Native/public qualifying passes remain zero, and real cold comparison remains Pending. No product, backend-provider, screen, or localization behavior changed.
 
 ### Training staging lifecycle review (2026-10-02)
 
-BL-018/D-218/T13–T14 staging lifecycle is **In progress**. Root review blocks the private V1 candidate: an actual extracted directory-creation branch with a replacement injected immediately before filesystem mutation creates a directory under an outside symlink target. Parent inspection followed by path-based creation does not prevent that mutation. Require anchored directory creation and review file publication/rollback for the same race; cancellation controls alone do not establish ownership safety. Evidence: primary private `native-training-staging-root-review-2026-10-02-v1/review.private.json` and `ancestor-race.mjs`. The owned temporary test tree was removed. No candidate was transferred; no native/backend resources were acquired; native/public counts remain zero. No product, provider or localization behavior changed.
+BL-018/D-219/T13–T14 staging lifecycle is **In progress**. Root review blocks the private V1 candidate: an actual extracted directory-creation branch with a replacement injected immediately before filesystem mutation creates a directory under an outside symlink target. Parent inspection followed by path-based creation does not prevent that mutation. Require anchored directory creation and review file publication/rollback for the same race; cancellation controls alone do not establish ownership safety. Evidence: primary private `native-training-staging-root-review-2026-10-02-v1/review.private.json` and `ancestor-race.mjs`. The owned temporary test tree was removed. No candidate was transferred; no native/backend resources were acquired; native/public counts remain zero. No product, provider or localization behavior changed.
 
 ### Qualified source drift audit (2026-10-02)
 
-BL-018/D-218 source reconciliation is **In progress**. Root census confirms the qualified runner differs from its prior `03993d` preimage and is now `26691b040d53c1549d2dc2d70c595d5b076a61f3c113065699ed3dedee127b4b`; its delta adds Android camera public acquisition/finalization. Mutation ownership remains unconfirmed. The camera author separately reports that an initial validation overlay followed a symlink while copying the declaration generator. Root confirms the qualified generator is now `51f5bbc757ae16629bd89e2ed89011139c4f47bd8ae3962688acbcdd979686b5`, while the primary retains `033e4eeadaf53de4489148ac7c3490a2741ea2a9ad2a2bc14bacac9abb3af70b`. The exact generator difference is three Android public owner-path registrations. These changes are preserved as current state, not accepted integration or freshness proof.
+BL-018/D-219 source reconciliation is **In progress**. Root census confirms the qualified runner differs from its prior `03993d` preimage and is now `26691b040d53c1549d2dc2d70c595d5b076a61f3c113065699ed3dedee127b4b`; its delta adds Android camera public acquisition/finalization. Mutation ownership remains unconfirmed. The camera author separately reports that an initial validation overlay followed a symlink while copying the declaration generator. Root confirms the qualified generator is now `51f5bbc757ae16629bd89e2ed89011139c4f47bd8ae3962688acbcdd979686b5`, while the primary retains `033e4eeadaf53de4489148ac7c3490a2741ea2a9ad2a2bc14bacac9abb3af70b`. The exact generator difference is three Android public owner-path registrations. These changes are preserved as current state, not accepted integration or freshness proof.
 
 Private regular-file backups, current inode/mode/hash census and generator delta are retained under primary `current-generator-and-runner-drift-audit-2026-10-02-v1`. Rebase minimal reviewed patches against current bytes and requalify the complete closure; never overwrite the current runner with a historical snapshot. No native/backend execution or product/provider/localization change is claimed.
 
 ### Caller and staging follow-up reviews (2026-10-02)
 
-BL-018/D-218/T14-E owned Detox save/retry caller remains **In progress**, with source transfer held. Independent review confirms the preceding connection journey ends as the student while Save/retry binds the coach without a proven account transition. It also requires current canonical selection comparison, structured terminal Save failure retention, bounded IPC draining before aggregate cleanup, shared fault identity, and protected screenshot publication. Four IPC controls do not prove actual caller composition. Evidence: primary private `detox-save-retry-owned-caller-independent-review-2026-10-02-v1/REVIEW.private.json` (SHA-256 `9ece5a6f7c69818d41498fd67818d7b0425d02c7f110ba13657581d13e28086c`).
+BL-018/D-219/T14-E owned Detox save/retry caller remains **In progress**, with source transfer held. Independent review confirms the preceding connection journey ends as the student while Save/retry binds the coach without a proven account transition. It also requires current canonical selection comparison, structured terminal Save failure retention, bounded IPC draining before aggregate cleanup, shared fault identity, and protected screenshot publication. Four IPC controls do not prove actual caller composition. Evidence: primary private `detox-save-retry-owned-caller-independent-review-2026-10-02-v1/REVIEW.private.json` (SHA-256 `9ece5a6f7c69818d41498fd67818d7b0425d02c7f110ba13657581d13e28086c`).
 
 Training staging V2 closes the tested ancestor replacement during directory creation; its two synthetic platform controls pass. Transfer remains held because post-create writer failures can leave untracked files, rollback has a replacement race, and cancellation during mutation-lock waiting lacks a final fence. V3 repair is In progress with actual write/rollback controls and minimal current P/Q runner deltas. Evidence: primary private `native-training-staging-lifecycle-v2-independent-review-2026-10-02-v1/REVIEW.private.json`. No source-only pass qualifies native/public execution; no product, provider or localization behavior changed.
 
 ### Shared publication and runner V6 reviews (2026-10-02)
 
-BL-018/D-218/T13–T15 source repair remains **In progress**. Independent runner V6 review reproduces unsafe default-parent segment creation, restoration through a replaced cwd path, and cancellation after directory creation losing truthful recovery ownership. Its 27/27 overlay controls and focused typecheck do not cover those failures. V7 repair is assigned; no helper or runner integration is accepted. Proof: primary private `t15-public-runner-identity-pq-repair-2026-10-02-v6-independent-review-2026-10-02-v1/REVIEW.private.json`.
+BL-018/D-219/T13–T15 source repair remains **In progress**. Independent runner V6 review reproduces unsafe default-parent segment creation, restoration through a replaced cwd path, and cancellation after directory creation losing truthful recovery ownership. Its 27/27 overlay controls and focused typecheck do not cover those failures. V7 repair is assigned; no helper or runner integration is accepted. Proof: primary private `t15-public-runner-identity-pq-repair-2026-10-02-v6-independent-review-2026-10-02-v1/REVIEW.private.json`.
 
 iOS dispatcher V6 preserves partial bridge facts and passes nine lifecycle controls; ten shared evidence controls also pass. Independent review nevertheless reproduces an outside temporary file when the checked output ancestor is replaced immediately before shared writer publication. Descriptor reread detects the replacement afterward but does not prevent the outside mutation. Transfer is held while the shared writer receives an ancestor-safe publication/recovery repair. Proof: primary private `ios-detox-dispatch-v6-independent-review-2026-10-02-v1/REVIEW.private.json` (SHA-256 `b371559017b6d01f7e12182276267660b2ba4d2bea64d73912e167c8c156b1f9`). Current inventory/format/dependency drift must also be reconciled before whole-graph qualification. Source tests create zero native/public/cold passing attempts. No product/provider/localization behavior changed.
 
@@ -8520,7 +8520,7 @@ provider, domain requirement or localized copy change is introduced.
 
 ### Native publication and selection frontier (2026-10-03)
 
-BL-018/D-218/T13–T15 remain **In progress**. Root independently reproduces
+BL-018/D-219/T13–T15 remain **In progress**. Root independently reproduces
 foreign replacement deletion in shared writer V8: replacement immediately inside
 the final `unlinkat` call is deleted while the helper reports `removed`
 (output `12335a`). Preserve the sealed V8 candidate and prepare atomic
@@ -8564,7 +8564,7 @@ product/provider/localization behavior change.
 
 ### Cold cancellation V7 and caller ownership (2026-10-03)
 
-BL-018/D-218/T15 cold handoff remains **In progress**. Root replay confirms the
+BL-018/D-219/T15 cold handoff remains **In progress**. Root replay confirms the
 narrow cancellation repair: 3/3 new controls and 15/15 retained patched controls
 pass (`d69cfb`, `6abe99`). Abort before actual handoff publishes no final receipt,
 and abort after the awaited handoff prevents successful preflight return.
@@ -8582,7 +8582,7 @@ changed; native/public/cold passing counts remain zero.
 
 ### Parallel source review frontier (2026-10-03)
 
-BL-018/D-218/T13–T15 remain **In progress**. Root replayed the frozen Android
+BL-018/D-219/T13–T15 remain **In progress**. Root replayed the frozen Android
 camera public-dispatch V5 candidate: all four candidate files match the regular
 validation overlay, and 21/21 focused controls pass (`6f74f8`). The last
 identity check followed by conditional file/directory removal still requires
@@ -8607,7 +8607,7 @@ implementation state only, with no product, provider, or localization change.
 
 ### Final cleanup boundary review (2026-10-03)
 
-BL-018/D-218/T13–T15 remain **In progress**. Cold handoff V8 is independently
+BL-018/D-219/T13–T15 remain **In progress**. Cold handoff V8 is independently
 accepted for source integration: the actual caller receives the prepared owned
 invocation before handoff failure. Its review is
 `t15-cold-dispatcher-cli-subprocess-runner-v8-independent-review-2026-10-03-v1`;
@@ -8628,7 +8628,7 @@ In progress. No native/public/cold pass or product behavior change is claimed.
 
 ### Save/retry V5 independent cleanup review (2026-10-03)
 
-BL-018/D-218/T14-E remains **In progress**. Independent review retains 19/19
+BL-018/D-219/T14-E remains **In progress**. Independent review retains 19/19
 focused source passes and confirms V5's complete terminal and transition source
 repairs. Transfer is held because a not-verified Save drain becomes an ordinary
 cleanup failure while aggregate recovery can remain `verified`, allowing later
@@ -8641,7 +8641,7 @@ No V5 source transfer or native/public qualification is claimed.
 
 ### Runner identity V9 helper integration (2026-10-03)
 
-BL-018/D-218/T13–T15 remain **In progress**. The independently accepted V9
+BL-018/D-219/T13–T15 remain **In progress**. The independently accepted V9
 invocation helper is integrated into both roots. Current React Native ambient
 types required a bounded integration repair: runtime narrowing for optional
 Node timer `unref` and the filtered worker environment's explicit `NODE_ENV`.
@@ -8667,7 +8667,7 @@ Both current test inventories pass freshness at 425 files (362 client, 63 server
 
 ### Detox evidence writer V12 guarded source transfer — 2026-10-03
 
-BL-018/D-218/T14-C evidence-writer source integration is **Done (source)** in both current roots. The guarded transfer installed exactly five frozen V12 files: the TypeScript writer, Python ancestor-safe sidecar, IPC schema/validator, V10 focused regression, and adjacent connection regression. Private P/Q preimages, symlink checks, source hashes, and installed hashes are retained in `detox-connection-evidence-v12-source-integration-2026-10-03-v1/transfer.private.json`; the immutable V12 source freeze is `detox-connection-evidence-v12-validation-repair-2026-10-03-v1/FREEZE.private.json` (SHA-256 `a0d82e9fef959d4ee92a27e37c0b475fe13776f4c90af1bc1bec1fb8c741a1d1`).
+BL-018/D-219/T14-C evidence-writer source integration is **Done (source)** in both current roots. The guarded transfer installed exactly five frozen V12 files: the TypeScript writer, Python ancestor-safe sidecar, IPC schema/validator, V10 focused regression, and adjacent connection regression. Private P/Q preimages, symlink checks, source hashes, and installed hashes are retained in `detox-connection-evidence-v12-source-integration-2026-10-03-v1/transfer.private.json`; the immutable V12 source freeze is `detox-connection-evidence-v12-validation-repair-2026-10-03-v1/FREEZE.private.json` (SHA-256 `a0d82e9fef959d4ee92a27e37c0b475fe13776f4c90af1bc1bec1fb8c741a1d1`).
 
 The actual source cohorts pass 23/23 in each root (13 V10 controls and 10 adjacent controls). Changed TypeScript inputs pass no-ignore zero-warning ESLint and Prettier; the Python sidecar compiles. Qualified full TypeScript remains blocked by existing current-runner diagnostics in `scripts/testing/run-native-pilot.ts` (camera staging argument shape and nullable capture-run identity); none points to the transferred writer files. Inventory freshness is intentionally left for the root-owned refresh: both checks report 427 discovered test files versus the stored 425. Caller-owned artifact-root precreation remains **Pending**, and no native, device, backend, hosted, public, or cold passing attempt is claimed. No product, provider, authentication, localization, or screen-copy behavior changed.
 
@@ -8739,7 +8739,7 @@ Root independently inspected cleanup after terminal exit: passed, 61 PID/start p
 
 The prior owned `entry` command completed with exit 0, but capture `c4c5406ff9e8f8856b3846d1` contains only `SCR-sign-in`, zero diagnostic stages and zero native pilot passes. Root independently inspected cleanup: passed, 39 PID/start pairs, no survivors/unknown queries/missing foreign devices, owned simulator/cache absent and no owned Docker resources. Source inspection establishes the old nested `entry` diagnostic condition was unreachable under the outer authenticated charter allowlist. This corrects earlier source-only claims of capture-used reachability; original packets and receipts remain unchanged.
 
-After updating the stable declaration contract and D-218/pending-wiring entries, root minimally added `credential-entry-diagnostic` to the CLI grammar and actual authenticated prelude route in both roots, leaving default `entry` snapshot-only. The existing no-retry staged diagnostic and password-only continuation are retained. The existing all-charter control now supplies required locale args for its locale charters; its first 43/44 failure and initial formatting/lint warnings are retained. Final diagnostic/lifecycle cohorts pass 44/44 in each root; qualified full TypeScript, zero-warning lint, formatting and native validator pass. Qualified declaration regeneration retains 23 views, 40 transitions, ten pilot scenarios and zero portable runtime receipts. Both unit inventories retain 430 files. Proof: `ios-credential-diagnostic-route-integration-2026-10-03-v1/VALIDATION.private.json`. Independent source review and fresh native diagnostic remain Pending. No product, provider, authentication-policy, localization or screen-copy behavior changed.
+After updating the stable declaration contract and D-219/pending-wiring entries, root minimally added `credential-entry-diagnostic` to the CLI grammar and actual authenticated prelude route in both roots, leaving default `entry` snapshot-only. The existing no-retry staged diagnostic and password-only continuation are retained. The existing all-charter control now supplies required locale args for its locale charters; its first 43/44 failure and initial formatting/lint warnings are retained. Final diagnostic/lifecycle cohorts pass 44/44 in each root; qualified full TypeScript, zero-warning lint, formatting and native validator pass. Qualified declaration regeneration retains 23 views, 40 transitions, ten pilot scenarios and zero portable runtime receipts. Both unit inventories retain 430 files. Proof: `ios-credential-diagnostic-route-integration-2026-10-03-v1/VALIDATION.private.json`. Independent source review and fresh native diagnostic remain Pending. No product, provider, authentication-policy, localization or screen-copy behavior changed.
 
 ### 2026-10-03 — Explicit credential diagnostic blocked before entry
 
@@ -8835,11 +8835,11 @@ Android Detox V2 current-Q review is sealed: 148 private content files verified,
 
 A fresh actual iOS/Maestro connection run is prepared under `ios-connection-logbox-repair-public-live-2026-10-03-v1/LIVE.private.json`, with the same 20-minute budget and no requested cold reset or automatic retry. Its existing Metro-attached Debug source/binary was requalified after the helper change; this is not a bundled-release/device qualification. Source hold begins only at actual dispatch and ends after terminal independent cleanup. Preparation supplies no runtime pass. T14–T20/full public qualification remain In progress/Pending.
 
-2026-10-03 — BL-018 / D-218 latest iOS Maestro connection attempt is terminal: `952f47b3f6a401ccb4e93e29`, capture `324a61f4fb04b78074f61683`, child exit 2, public `harness-blocked/runtime-cleanup-failed`, no app commands or assertions and zero passing cases. Backend acquisition emitted `EISDIR` before publishing a manifest. Two untracked scratch dependency-directory symlinks are a candidate cause because the backend fingerprints untracked paths with `readFile`; this remains under source review. The LogBox repair was not exercised.
+2026-10-03 — BL-018 / D-219 latest iOS Maestro connection attempt is terminal: `952f47b3f6a401ccb4e93e29`, capture `324a61f4fb04b78074f61683`, child exit 2, public `harness-blocked/runtime-cleanup-failed`, no app commands or assertions and zero passing cases. Backend acquisition emitted `EISDIR` before publishing a manifest. Two untracked scratch dependency-directory symlinks are a candidate cause because the backend fingerprints untracked paths with `readFile`; this remains under source review. The LogBox repair was not exercised.
 
 The original cleanup failure and partial-acquisition inspector rejection are retained unchanged. A separate root audit observed every recorded owned process and backend PID absent, no remaining runtime process or test Compose resource, the owned simulator absent, all six preexisting containers and the foreign Booted simulator preserved, and all 171 frozen paths unchanged. The backend start identity/run ID were never published; the empty bootstrap namespace is inferred from creation time/source ordering, not an original manifest. No PID-only termination or global cleanup was performed. The source hold is released. Evidence: `ios-connection-logbox-repair-public-live-2026-10-03-v1/ROOT-PARTIAL-CLEANUP.private.json` and `TERMINAL.private.json`. Bootstrap diagnostics and the unsupported partial-acquisition cleanup path remain In progress. This Debug integration failure contributes zero T15 cold attempts; T14–T20/full-plan qualification remain In progress/Pending. No product, auth-policy, provider or localization behavior changed.
 
-2026-10-03 — BL-018 / D-218 scratch-isolated iOS Maestro attempt is terminal: `5a14040ecad12985dc2b8a4a`, capture `dbe854c3ef25c8e2550c9719`, child exit 2, public `harness-blocked/runtime-execution-failed`, empty assertions and zero passing cases. Backend acquisition, install, launch, locale read and entry readiness completed. The first coach-home flow completed the email tap and text command but failed the exact email-value assertion. The retained screenshot shows the empty email placeholder and no keyboard; the failure hierarchy reports the input unfocused. The account-tab step was not reached, and no cause or product defect is established.
+2026-10-03 — BL-018 / D-219 scratch-isolated iOS Maestro attempt is terminal: `5a14040ecad12985dc2b8a4a`, capture `dbe854c3ef25c8e2550c9719`, child exit 2, public `harness-blocked/runtime-execution-failed`, empty assertions and zero passing cases. Backend acquisition, install, launch, locale read and entry readiness completed. The first coach-home flow completed the email tap and text command but failed the exact email-value assertion. The retained screenshot shows the empty email placeholder and no keyboard; the failure hierarchy reports the input unfocused. The account-tab step was not reached, and no cause or product defect is established.
 
 Independent cleanup passed 55 PID/start pairs with no survivors or unknown queries and absent owned device/cache/Docker resources. All six preexisting containers and the foreign Booted simulator remain present; all 171 frozen source paths match. The source hold is released. Immutable evidence: `ios-connection-scratch-isolation-public-live-2026-10-03-v1/TERMINAL.private.json` and captured `root-independent-cleanup.private.json`. This Debug integration run requested no cold reset and contributes zero T15 attempts.
 
@@ -8921,7 +8921,7 @@ No product behavior, auth policy, provider baseline or user-facing copy changed;
 
 ### 2026-10-03 independent Training V6 and protected manual workflow review
 
-BL-018 / D-218 remains **In progress**. Training V6 passes the independent current-qualified-worktree full TypeScript graph (778 roots, 1886 source files, 12 overrides, zero diagnostics) and strict full-context ESLint (zero warnings). Its private source controls pass five of six tests after using the candidate generated inventory: public selection rejects the omitted `partial-backend-boundary.ts` producer ownership entry. The client maintainer is repairing declaration closure against the current startup helper ledger; no V6 transfer or native promotion has occurred. Evidence: `t14-training-v6-independent-root-review-2026-10-03-v1/REVIEW.private.json`.
+BL-018 / D-219 remains **In progress**. Training V6 passes the independent current-qualified-worktree full TypeScript graph (778 roots, 1886 source files, 12 overrides, zero diagnostics) and strict full-context ESLint (zero warnings). Its private source controls pass five of six tests after using the candidate generated inventory: public selection rejects the omitted `partial-backend-boundary.ts` producer ownership entry. The client maintainer is repairing declaration closure against the current startup helper ledger; no V6 transfer or native promotion has occurred. Evidence: `t14-training-v6-independent-root-review-2026-10-03-v1/REVIEW.private.json`.
 
 T18 remains **Pending**. Independent review of the private protected manual workflow found that the server checkout escapes the Actions workspace; checkout must use sibling `client/` and `server/` directories within the workspace and execute from `client/`. Its receipt reader also needs descriptor-backed bounded identity checks, and the required qualified Debug build must be made available after clean exact-source checkout through a supported producer or private restoration path. Supplying a historical build run ID alone does not establish availability. The CI maintainer owns these repairs. Evidence: `t18-independent-root-review-2026-10-03-v1/REVIEW.private.json` and `BUILD-AVAILABILITY.private.json`. No workflow was installed or dispatched.
 
@@ -9021,7 +9021,7 @@ Independent cleanup passed 15 PID/start pairs, with no survivors, unknown querie
 
 ### Camera input diagnostic source checkpoint (2026-10-03)
 
-BL-018 / D-218 remains **In progress**. Root integrated the independently reviewed V6 diagnostic into the qualified worktree only, with all thirteen source preimages and final hashes guarded. The public `--credential-interaction-diagnostic` flag is restricted to iOS/Maestro/`SCN-camera-denied-ios`/integration. The diagnostic retains the student fixture/home/auth boundary, explicitly disables the email tap retry, preserves the exact email assertion and all four camera assertion IDs, and binds the original monotonic deadline and cancellation to capture. Capture and public output retain distinct owned namespaces; directory/ID/deadline bindings are reread before cleanup-gated staging.
+BL-018 / D-219 remains **In progress**. Root integrated the independently reviewed V6 diagnostic into the qualified worktree only, with all thirteen source preimages and final hashes guarded. The public `--credential-interaction-diagnostic` flag is restricted to iOS/Maestro/`SCN-camera-denied-ios`/integration. The diagnostic retains the student fixture/home/auth boundary, explicitly disables the email tap retry, preserves the exact email assertion and all four camera assertion IDs, and binds the original monotonic deadline and cancellation to capture. Capture and public output retain distinct owned namespaces; directory/ID/deadline bindings are reread before cleanup-gated staging.
 
 The consolidated five-contract readiness gate passes, including the actual adapter orchestration with resource-free injected dependencies and positive, tampered-binding, tampered-deadline, missing-binding and cancellation outcomes. Canonical controls pass 76/76 focused, 8/8 dispatch and 14/14 closure/cleanup; full TypeScript, strict lint with zero warnings and formatting pass. The current-project overlay graph has 803 roots, 1902 source files, thirteen overrides and zero diagnostics. These are source controls, not native passing cases. Evidence: `camera-input-v6-root-integration-2026-10-03-v1/TRANSFER.private.json`; its root addendum corrects the review metadata's truncated manifest hash while preserving the immutable original review and all thirteen independently matched source hashes.
 
@@ -9169,7 +9169,7 @@ Publication ordering is now **Done (source in the qualified worktree); packet ac
 ## Native logout owner decision (2026-10-03, 18:58 UTC)
 
 The owner instructed: “Only clear on device ! Now go ahead with the next steps,
-you’re owning that now! Go ahead”. D-218 / BL-018 therefore selects the existing
+you’re owning that now! Go ahead”. D-219 / BL-018 therefore selects the existing
 FR-270 / BR-342 device-local native logout contract. AC-539 and TC-333 require
 persisted credential/session and authenticated identity clearing, signed-out
 relaunch, inaccessible protected UI and no authenticated hydrate after relaunch.

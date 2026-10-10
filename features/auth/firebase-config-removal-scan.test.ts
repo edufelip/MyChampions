@@ -854,7 +854,11 @@ test('native app builds no longer require Firebase config files', () => {
     join(root, '.github/ISSUE_TEMPLATE/ci-cd-setup-checklist.md'),
     'utf8',
   );
-  assert.match(issueTemplate, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.equal(
+    issueTemplate.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
+    true,
+    'the delivery-only Firebase service-account setup must be documented',
+  );
   for (const token of [
     'GOOGLE_SERVICE_INFO_PLIST',
     'GOOGLE_SERVICES_JSON',
@@ -914,39 +918,66 @@ test('generated native build output does not preserve retired Firebase config', 
   }
 });
 
-test('Firebase App Distribution delivery stays isolated from retired native Firebase configuration', () => {
-  const distributionWorkflowFiles = [
-    '.github/workflows/firebase-distribution-android.yml',
-    '.github/workflows/firebase-distribution-ios.yml',
+test('CI uses Firebase only as a development-binary distribution transport', () => {
+  const distributionWorkflows = [
+    {
+      path: '.github/workflows/firebase-distribution-android.yml',
+      appIdSecret: 'FIREBASE_APP_ID_ANDROID_DEV',
+      runner: 'runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]',
+      requiredTokens: [
+        'assembleDevRelease',
+        '-PdevReleaseWithDebugSigning=true',
+        'app/build/outputs/apk/dev/release/app-dev-release.apk',
+        'EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID',
+        'EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV',
+        'EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=https://dev.mychampions.eduwaldo.com',
+      ],
+    },
+    {
+      path: '.github/workflows/firebase-distribution-ios.yml',
+      appIdSecret: 'FIREBASE_APP_ID_IOS_DEV',
+      runner: 'runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]',
+      requiredTokens: [
+        'PRODUCT_BUNDLE_IDENTIFIER="com.edufelip.mychampions.dev"',
+        'APP_DISPLAY_NAME="MyChampions Dev"',
+        'CODE_SIGN_IDENTITY="Apple Distribution"',
+        '<key>method</key><string>ad-hoc</string>',
+        'ProvisionedDevices:0',
+        'IOS_ADHOC_PROFILE_BASE64',
+        'IOS_KEYCHAIN_PATH=$RUNNER_TEMP/mychampions-dev-signing.keychain-db',
+        'IOS_PROFILE_PATH=$RUNNER_TEMP/mychampions-dev.mobileprovision',
+        'security import "$CERTIFICATE_PATH" -P "$CERT_PASSWORD"',
+        'EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID',
+        'EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV',
+        'EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=https://dev.mychampions.eduwaldo.com',
+      ],
+    },
   ];
 
-  for (const relativePath of distributionWorkflowFiles) {
-    assert.equal(
-      existsSync(join(root, relativePath)),
-      true,
-      `${relativePath} should be configured`,
-    );
+  for (const { path: relativePath, appIdSecret, runner, requiredTokens } of distributionWorkflows) {
+    assert.equal(existsSync(join(root, relativePath)), true, `${relativePath} must exist`);
     const source = readFileSync(join(root, relativePath), 'utf8');
 
-    assert.match(source, /workflow_dispatch:/);
     assert.match(source, /push:\n\s+branches: \[develop\]/);
-    assert.match(source, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(source, /appdistribution:distribute/);
-    assert.match(source, /EXPO_PUBLIC_ENV=dev/);
-    assert.match(source, /APP_VARIANT=dev/);
-    assert.match(source, /configured non-production MyChampions server URL/);
+    for (const token of [
+      'workflow_dispatch',
+      'branches: [develop]',
+      'EXPO_PUBLIC_ENV=dev',
+      'APP_VARIANT=dev',
+      'configured non-production MyChampions server URL',
+      'FIREBASE_SERVICE_ACCOUNT_JSON',
+      appIdSecret,
+      'base-group',
+      'firebase-tools@15.30.0',
+      'appdistribution:distribute',
+      runner,
+      ...requiredTokens,
+    ]) {
+      assert.equal(source.includes(token), true, `${relativePath} must contain ${token}`);
+    }
     assert.doesNotMatch(source, /actions\/upload-artifact/);
 
-    if (relativePath.endsWith('android.yml')) {
-      assert.match(source, /FIREBASE_APP_ID_ANDROID_DEV/);
-      assert.match(source, /assembleDevRelease/);
-      assert.match(source, /-PdevReleaseWithDebugSigning=true/);
-    } else {
-      assert.match(source, /FIREBASE_APP_ID_IOS_DEV/);
-      assert.match(source, /PRODUCT_BUNDLE_IDENTIFIER="com\.edufelip\.mychampions\.dev"/);
-      assert.match(source, /CODE_SIGN_IDENTITY="Apple Distribution"/);
-      assert.match(source, /<key>method<\/key><string>ad-hoc<\/string>/);
-      assert.match(source, /ProvisionedDevices:0/);
+    if (relativePath.endsWith('ios.yml')) {
       assert.ok(
         source.indexOf('security import "$CERTIFICATE_PATH" -P "$CERT_PASSWORD"') <
           source.indexOf('unset CERT_P12_BASE64 CERT_PASSWORD PROFILE_BASE64'),
@@ -960,12 +991,10 @@ test('Firebase App Distribution delivery stays isolated from retired native Fire
       'GOOGLE_SERVICE_INFO_PLIST',
       'GOOGLE_SERVICES_JSON',
       'com.google.gms.google-services',
+      'FIREBASE_DEV_',
+      'FIREBASE_PROD_',
     ]) {
-      assert.equal(
-        source.includes(token),
-        false,
-        `${relativePath} must not restore native Firebase configuration: ${token}`,
-      );
+      assert.equal(source.includes(token), false, `${relativePath} must not restore ${token}`);
     }
   }
 

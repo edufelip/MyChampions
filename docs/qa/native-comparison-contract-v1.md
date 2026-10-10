@@ -260,4 +260,4 @@ packet.
 
 ### Locale hierarchy file boundary — 2026-10-01
 
-BL-018/D-218 adds a bounded file adapter over the existing private evidence reader and preparation-only LocaleContext parser. It reads a canonical owner-only hierarchy, hashes exact bytes before parsing, and keeps read/parse/provenance failures blocked. Runtime metadata is ignored; raw hierarchy bytes are not returned. This source helper does not qualify OS locale, hydration/reset/relaunch/cleanup or a public locale. Capture adapter binding/wiring and actual native qualification remain **Pending**.
+BL-018/D-219 adds a bounded file adapter over the existing private evidence reader and preparation-only LocaleContext parser. It reads a canonical owner-only hierarchy, hashes exact bytes before parsing, and keeps read/parse/provenance failures blocked. Runtime metadata is ignored; raw hierarchy bytes are not returned. This source helper does not qualify OS locale, hydration/reset/relaunch/cleanup or a public locale. Capture adapter binding/wiring and actual native qualification remain **Pending**.

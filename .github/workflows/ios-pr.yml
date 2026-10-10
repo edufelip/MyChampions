@@ -6,7 +6,7 @@ on:
 jobs:
   resolve-ios-tests:
     name: Resolve iOS test toggle
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     outputs:
       enabled: ${{ steps.resolve.outputs.enabled }}
     steps:
@@ -27,7 +27,7 @@ jobs:
   build:
     needs: resolve-ios-tests
     if: ${{ needs.resolve-ios-tests.outputs.enabled == 'true' }}
-    runs-on: macos-latest
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -58,11 +58,17 @@ jobs:
         run: xcrun simctl list devices available
       - name: Install Maestro
         run: bash scripts/testing/install-maestro.sh
+      # The shared Mac runner owns a dedicated Metro port (not the default 8081).
+      # The port is compiled into the debug build, so build and smoke must agree;
+      # the smoke starts its own cache-cleared Metro and refuses an occupied port.
       - name: Build (simulator debug)
+        env:
+          NATIVE_METRO_PORT: '18081'
         run: yarn test:e2e:build:ios:debug
 
       - name: Run Maestro smoke
         env:
+          NATIVE_METRO_PORT: '18081'
           NATIVE_SKIP_BUILD: 'true'
           SELECTIVE_TEST_DIAGNOSTICS_ROOT: .artifacts/ci-diagnostics
         run: yarn test:e2e:ios:smoke

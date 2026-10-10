@@ -59,7 +59,7 @@ REVENUECAT_TEST_APP_USER_ID="$run_uid" \
   bash scripts/verify-revenuecat-test-store-preflight.sh
 
 # A live run must resolve privileges from RevenueCat, never the deterministic
-# subscription scenarios used by the regular Detox matrix.
+# subscription scenarios used by the regular Maestro suite.
 unset EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS
 unset EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS
 unset EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT

@@ -105,10 +105,14 @@ describe.each(SUPPORTED_LOCALES)('SupportModal rendered behavior: %s (TC-304)', 
     ).toHaveDisplayValue('  My draft needs attention.  ');
     await user.press(screen.getByRole('button', { name: translate('common.error.retry') }));
     expect(await screen.findByTestId('settings.account.support.success')).toBeOnTheScreen();
+    // Retrying the same draft reuses the first attempt's idempotency key (ET-201).
+    const [firstAttempt] = transport.mock.calls[0];
+    expect(firstAttempt.idempotencyKey).toMatch(/^support-/);
     expect(transport).toHaveBeenLastCalledWith({
       subject: 'Need help',
       body: 'My draft needs attention.',
       userRole: 'student',
+      idempotencyKey: firstAttempt.idempotencyKey,
     });
     await user.press(screen.getByRole('button', { name: translate('auth.role.cta_continue') }));
     expect(onClose).toHaveBeenCalledTimes(1);

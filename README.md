@@ -148,8 +148,9 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    bash scripts/testing/run-maestro-suite.sh --platform ios maestro:nutrition
    ```
 
-   `NATIVE_SKIP_BUILD=true` reuses an existing build; `NATIVE_METRO_PORT` picks
-   the Metro port for both the build and the run. A failing phase is retried
+   `NATIVE_SKIP_BUILD=true` reuses an existing build (the iOS PR smoke passes it
+   after its single workflow-owned build); `NATIVE_METRO_PORT` picks the Metro
+   port for both the build and the run. A failing phase is retried
    once and the retry is reported. Diagnostics land under
    `.artifacts/ci-diagnostics/<platform>/`.
 

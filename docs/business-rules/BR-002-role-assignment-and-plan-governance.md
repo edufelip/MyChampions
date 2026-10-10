@@ -158,9 +158,9 @@
 - `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native sign-out immediately clears the app's native HTTP cookie store, then the authenticated identity and the device-local persisted credential/session, so no request sent after the identity is cleared carries the old access cookie. Relaunch must remain signed out and protected UI must remain inaccessible until a new sign-in. Native sign-out does not revoke the server bearer token; a still-valid server token is not a failed native logout.
 - `BR-343`: The SC-207 add-food editor participates in the meal screen's measured layout. It may not be positioned outside the scroll extent, and native automation must use stable fields/actions and semantic confirmation copy rather than hidden coordinates.
 - `BR-344`: The supported PR path for target bases `main`, `release/**`, and
-  `hotfix/**` begins with protected-`main`, GitHub-hosted-only
+  `hotfix/**` begins with protected-`main`, self-hosted, source-free
   `pull_request_target` event-fingerprinted freshness invalidation for a live
-  owner-authored same-upstream pull request. A GitHub-hosted-only preflight with
+  owner-authored same-upstream pull request. A self-hosted, source-free preflight with
   `statuses: read` waits for the pending description matching the canonical
   fingerprint of its exact event and dispatches persistent CI work from
   `.github/workflows/trusted-selective-tests.yml`, sourced from protected
@@ -168,13 +168,13 @@
   The finalizer may accept an iOS `skipped` result only when the authorized
   candidate snapshot records the exact lowercase opt-out value; selected
   skips in every other lane remain failures.
-  Its GitHub-hosted authorization job must run before candidate checkout or
-  self-hosted scheduling and validate the triggering run, live API head SHA,
+  Its self-hosted authorization job must run before candidate checkout or
+  credentialed workload and validate the triggering run, live API head SHA,
   same-upstream/base provenance, owner actor/triggering actor/sender, workflow
   path/ref/SHA, and allowed event/ref/base. Release/hotfix PRs force the complete
   matrix through this protected-`main` workflow; those branches never provide a
   direct trusted workflow source. Candidate and self-hosted jobs receive only
-  `contents: read`. Only the trusted GitHub-hosted freshness invalidator,
+  `contents: read`. Only the trusted self-hosted freshness invalidator,
   authorization/status initializer, and always-run finalizer receive
   `statuses: write`; they share one repository-global `queue: max` writer group.
   The initializer and finalizer each require one unique eligible open, ready,

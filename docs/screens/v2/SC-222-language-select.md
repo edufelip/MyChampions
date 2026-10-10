@@ -58,7 +58,7 @@ no app restart is required.
 - After a successful Save, a delayed initial storage read or rejection must not
   overwrite the saved in-session locale. A failed persistence operation must not
   change the current locale. These rules preserve the Save contract above.
-- BL-018/D-218 adds a non-user-facing diagnostic hierarchy only in development
+- BL-018/D-219 adds a non-user-facing diagnostic hierarchy only in development
   native builds with the expected development app ID and variant. It exposes
   closed locale/status IDs without raw storage or errors. The transparent
   noninteractive seam stays inside the viewport. Production and browser builds

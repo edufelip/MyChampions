@@ -27,11 +27,15 @@ export type SupportErrorReason =
   | 'body_required'
   | 'subject_too_long'
   | 'body_too_long'
+  | 'rate_limited'
   | 'network'
   | 'unknown';
 
 export class SupportSourceError extends Error {
-  constructor(public reason: SupportErrorReason) {
+  constructor(
+    public reason: SupportErrorReason,
+    public retryAfterSeconds?: number,
+  ) {
     super(`Support error: ${reason}`);
     this.name = 'SupportSourceError';
   }

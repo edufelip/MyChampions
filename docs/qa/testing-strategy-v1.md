@@ -1,10 +1,10 @@
 ## 2026-10-06 — Android camera impact registration
 
-Status: **In progress** for testing modernization (D-218 / BL-018). Native E2E moved from Detox to Maestro on 2026-10-09: the five integrated journeys pass on iOS and Android through the native pilot, and the 67 former Detox fixture cases run as the tagged Maestro suite in `.maestro/suite`. Detox, its specs and its CI lanes are retired. Protected hosted receipts and CI promotion remain **Pending**. No product/provider/localization behavior changes.
+Status: **In progress** for testing modernization (D-219 / BL-018). Native E2E moved from Detox to Maestro on 2026-10-09: the five integrated journeys pass on iOS and Android through the native pilot, and the 67 former Detox fixture cases run as the tagged Maestro suite in `.maestro/suite`. Detox, its specs and its CI lanes are retired. Protected hosted receipts and CI promotion remain **Pending**. No product/provider/localization behavior changes.
 
 # Testing strategy V1
 
-Status: implementation in progress (BL-018 / D-218). The [plan](../plans/2026-09-28-testing-structure-and-maestro-plan.md) defines acceptance gates; the [task card](testing-modernization-task-card.md) records progress.
+Status: implementation in progress (BL-018 / D-219). The [plan](../plans/2026-09-28-testing-structure-and-maestro-plan.md) defines acceptance gates; the [task card](testing-modernization-task-card.md) records progress.
 
 ## Current execution
 

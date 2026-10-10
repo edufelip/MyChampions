@@ -1,7 +1,7 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateSupportInput } from './support.logic';
+import { describe, it } from 'node:test';
 import { submitSupportMessage } from './support-source';
+import { validateSupportInput } from './support.logic';
 
 describe('Support Logic', () => {
   it('should return subject_required for empty subject', () => {
@@ -74,7 +74,12 @@ describe('Support Logic', () => {
 
     try {
       const id = await submitSupportMessage(
-        { subject: 'Need help', body: 'The app needs attention.', userRole: 'student' },
+        {
+          subject: 'Need help',
+          body: 'The app needs attention.',
+          userRole: 'student',
+          idempotencyKey: 'support-request-key-e2e-0001',
+        },
         {
           fetch: async () => {
             throw new Error('Server should not be called');
@@ -104,7 +109,12 @@ describe('Support Logic', () => {
     let captured: Request | null = null;
 
     const id = await submitSupportMessage(
-      { subject: ' Need help ', body: ' The app needs attention. ', userRole: 'student' },
+      {
+        subject: ' Need help ',
+        body: ' The app needs attention. ',
+        userRole: 'student',
+        idempotencyKey: 'support-request-key-test-0001',
+      },
       {
         fetch: async (input, init) => {
           captured = new Request(input, init);
@@ -126,6 +136,7 @@ describe('Support Logic', () => {
     assert.equal(request.method, 'POST');
     assert.equal(request.url, 'http://server.test/support/messages');
     assert.equal(request.headers.get('authorization'), 'Bearer token-1');
+    assert.equal(request.headers.get('idempotency-key'), 'support-request-key-test-0001');
     assert.deepEqual(await request.json(), {
       subject: 'Need help',
       body: 'The app needs attention.',

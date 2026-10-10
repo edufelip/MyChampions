@@ -23,7 +23,7 @@ concurrency:
 jobs:
   resolve-ios-tests:
     name: Resolve iOS test toggle
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]
     timeout-minutes: 5
     outputs:
       enabled: ${{ steps.resolve.outputs.enabled }}

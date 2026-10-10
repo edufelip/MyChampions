@@ -2,9 +2,9 @@
  * Server-backed source for support messages.
  */
 
+import { SupportSourceError, type SupportMessageInput } from './support.logic';
 import { resolveE2EAuthSessionSourceOverride } from '../auth/e2e-auth-session';
 import { getValidServerAccessToken } from '../auth/server-auth-source';
-import { SupportSourceError, type SupportMessageInput } from './support.logic';
 
 export interface SupportSourceDeps {
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -66,16 +66,29 @@ export function makeDeps(): SupportSourceDeps {
   };
 }
 
-async function readSupportResponse(response: Response): Promise<{ id?: string } | null> {
+async function readSupportResponse(
+  response: Response,
+): Promise<{ id?: string; error?: { code?: string } } | null> {
   try {
-    return (await response.json()) as { id?: string };
+    return (await response.json()) as {
+      id?: string;
+      error?: { code?: string };
+    };
   } catch {
     return null;
   }
 }
 
+function retryAfterSeconds(response: Response): number | undefined {
+  const rawValue = response.headers.get('retry-after');
+  if (!rawValue || !/^\d+$/.test(rawValue.trim())) return undefined;
+
+  const parsed = Number.parseInt(rawValue, 10);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 export async function submitSupportMessage(
-  input: SupportMessageInput & { userRole?: string | null },
+  input: SupportMessageInput & { userRole?: string | null; idempotencyKey: string },
   deps = makeDeps(),
 ): Promise<string> {
   const e2eSourceOverride = resolveSupportSourceE2EOverride();
@@ -95,6 +108,7 @@ export async function submitSupportMessage(
       headers: {
         authorization: `Bearer ${accessToken}`,
         'content-type': 'application/json',
+        'idempotency-key': input.idempotencyKey,
       },
       body: JSON.stringify({
         subject: input.subject.trim(),
@@ -106,6 +120,10 @@ export async function submitSupportMessage(
     });
 
     const payload = await readSupportResponse(response);
+    if (response.status === 429 && payload?.error?.code === 'support_rate_limited') {
+      throw new SupportSourceError('rate_limited', retryAfterSeconds(response));
+    }
+
     if (!response.ok || typeof payload?.id !== 'string') {
       throw new SupportSourceError(response.status >= 500 ? 'network' : 'unknown');
     }

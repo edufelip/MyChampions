@@ -1,6 +1,6 @@
 # Testing modernization: implementation entry point
 
-Date: 2026-09-29; planning clarification: 2026-09-30. Scope: BL-018 / D-218,
+Date: 2026-09-29; planning clarification: 2026-09-30. Scope: BL-018 / D-219,
 MyChampions client and sibling server.
 Status: planning guide. This change implements no runtime behavior and changes
 no task status. Reuse existing work and check its evidence for freshness.
@@ -858,7 +858,7 @@ or successful retry does not rewrite the original attempt. When prerequisites
 change, start a new evidence cohort instead of mixing results.
 
 This planning clarification changes no product behavior, API, database schema,
-locale bundle, CI enforcement or acceptance threshold. Existing BL-018/D-218
+locale bundle, CI enforcement or acceptance threshold. Existing BL-018/D-219
 backlog and wiring statuses remain authoritative and unchanged. Validation for
 the clarification is touched-document formatting, local link resolution and
 consistency with the specification and task card; runtime checks belong to the

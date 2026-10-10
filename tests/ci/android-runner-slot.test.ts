@@ -46,7 +46,7 @@ test('Android runner slot parsing derives an isolated, exact port contract', () 
   );
 });
 
-test('Android runner slot environment exports Detox and exact cleanup namespaces', () => {
+test('Android runner slot environment exports native E2E and exact cleanup namespaces', () => {
   const values = androidRunnerSlotEnvironment(parseAndroidRunnerSlot(validEnvironment()));
 
   assert.deepEqual(Object.keys(values).sort(), [
