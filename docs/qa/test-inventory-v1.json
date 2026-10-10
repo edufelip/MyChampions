@@ -1451,12 +1451,9 @@
       "id": "TST-ce1f7cfc871d",
       "repo": "client",
       "path": ".maestro/suite/custom-meal-library/02-quick-log.yaml",
-      "contentHash": "914f03b933f375eae8b8589459e3d2f844462598e361d9271eb10be3774bbc77",
+      "contentHash": "638160dc314332246df9b428cab0ac756c21233285d09b5a99bf08eac5875242",
       "command": "yarn test:e2e:ios / yarn test:e2e:android (tags: nutrition)",
-      "ownerPaths": [
-        ".maestro/suite/common/hide-keyboard.yaml",
-        ".maestro/suite/common/student-open-meal-library.yaml"
-      ],
+      "ownerPaths": [".maestro/suite/common/student-open-meal-library.yaml"],
       "requirementReferences": [],
       "requirementStatus": "unmapped-review-required",
       "layers": ["native"],
@@ -1467,7 +1464,8 @@
         "meal.library.quickLog.panel",
         "meal.library.quickLog.cta.confirm",
         "meal.library.quickLog.error",
-        "meal.library.quickLog.input"
+        "meal.library.quickLog.input",
+        "meal.library.quickLog.preview"
       ],
       "hazards": {
         "sleeps": 0,
@@ -1498,8 +1496,12 @@
           "expression": "- extendedWaitUntil: visible: id: meal.library.quickLog.error timeout: 5000"
         },
         {
-          "line": 34,
+          "line": 31,
           "expression": "- assertVisible: id: meal.library.quickLog.input text: \"150\""
+        },
+        {
+          "line": 34,
+          "expression": "- assertVisible: id: meal.library.quickLog.preview"
         },
         {
           "line": 39,
@@ -1791,7 +1793,7 @@
       "id": "TST-5880c2d88b79",
       "repo": "client",
       "path": ".maestro/suite/professional-nutrition-builder/01-create-add-food-remove.yaml",
-      "contentHash": "4f4de2336aa038e53fe3dc1fc14d61ea6297e8fe9c865b55f5f2896c80bc6b7f",
+      "contentHash": "044d71f09689368691b84db33b0a0b5607a731eec15907e206ba335a6de6f20e",
       "command": "yarn test:e2e:ios / yarn test:e2e:android (tags: nutrition)",
       "ownerPaths": [
         ".maestro/suite/common/confirm-alert.yaml",
@@ -1816,7 +1818,9 @@
         "pro.nutrition_plan.saveButton",
         "pro.library.nutrition.row.e2e-nutrition-builder-plan-1",
         "pro.nutrition_plan.addMeal",
+        "pro.nutrition_plan.addMeal.form",
         "pro.nutrition_plan.addMeal.input",
+        "pro.nutrition_plan.addMeal.cancel",
         "pro.nutrition_plan.addMeal.confirm",
         "pro.nutrition_plan.mealRow.Breakfast",
         "pro.nutrition_meal.screen",
@@ -1880,8 +1884,16 @@
           "expression": "- extendedWaitUntil: visible: id: pro.nutrition_plan.addMeal timeout: 10000"
         },
         {
-          "line": 68,
+          "line": 60,
+          "expression": "- extendedWaitUntil: visible: id: pro.nutrition_plan.addMeal.form timeout: 5000"
+        },
+        {
+          "line": 69,
           "expression": "- assertVisible: id: pro.nutrition_plan.addMeal.input text: Breakfast"
+        },
+        {
+          "line": 72,
+          "expression": "- assertVisible: id: pro.nutrition_plan.addMeal.cancel"
         },
         {
           "line": 77,
@@ -2772,7 +2784,7 @@
       "id": "TST-4cec20d24a53",
       "repo": "client",
       "path": ".maestro/suite/professional-training-builder/01-create-add-exercise-remove.yaml",
-      "contentHash": "211c298b5653d300cc5670cd21b37d069dbb6e1ab04470b9fb1d28bc4a57129f",
+      "contentHash": "db87e8db0d6042bcf7cb789548db4a6dd93606e6e323ce6985c4e8322e3e938f",
       "command": "yarn test:e2e:ios / yarn test:e2e:android (tags: training)",
       "ownerPaths": [
         ".maestro/suite/common/confirm-alert.yaml",
@@ -2799,11 +2811,17 @@
         "pro.training_plan.saveButton",
         "pro.library.training.row.e2e-training-builder-plan-1",
         "pro.training_plan.addSession",
+        "pro.training_plan.addSession.form",
+        "pro.training_plan.addSession.name",
+        "pro.training_plan.addSession.notes",
+        "pro.training_plan.addSession.cancel",
+        "pro.training_plan.addSession.confirm",
         "pro.training_plan.sessionRow.Push_Day",
         "pro.training_plan.sessionRow.Push_Day.addItem",
         "exerciseSearch.modal",
         "exerciseSearch.input",
         "exerciseSearch.result.e2e-exercise-push-up",
+        "exerciseSearch.title",
         "exerciseSearch.detail",
         "exerciseSearch.quantity",
         "exerciseSearch.confirm",
@@ -2860,43 +2878,67 @@
           "expression": "- extendedWaitUntil: visible: id: pro.training_plan.screen timeout: 10000"
         },
         {
-          "line": 80,
-          "expression": "- extendedWaitUntil: visible: id: pro.training_plan.sessionRow.Push_Day timeout: 10000"
+          "line": 74,
+          "expression": "- extendedWaitUntil: visible: id: pro.training_plan.addSession.form timeout: 5000"
         },
         {
           "line": 86,
+          "expression": "- assertVisible: id: pro.training_plan.addSession.name text: Push Day"
+        },
+        {
+          "line": 89,
+          "expression": "- assertVisible: id: pro.training_plan.addSession.notes text: Upper body focus"
+        },
+        {
+          "line": 92,
+          "expression": "- assertVisible: id: pro.training_plan.addSession.cancel"
+        },
+        {
+          "line": 97,
+          "expression": "- extendedWaitUntil: visible: id: pro.training_plan.sessionRow.Push_Day timeout: 10000"
+        },
+        {
+          "line": 103,
           "expression": "- extendedWaitUntil: visible: id: exerciseSearch.modal timeout: 5000"
         },
         {
-          "line": 100,
+          "line": 115,
           "expression": "- extendedWaitUntil: visible: id: exerciseSearch.result.e2e-exercise-push-up timeout: 10000"
         },
         {
-          "line": 110,
+          "line": 119,
+          "expression": "- assertVisible: id: exerciseSearch.title"
+        },
+        {
+          "line": 121,
+          "expression": "- assertVisible: id: exerciseSearch.input text: push"
+        },
+        {
+          "line": 127,
           "expression": "- extendedWaitUntil: visible: id: exerciseSearch.detail timeout: 5000"
         },
         {
-          "line": 131,
+          "line": 148,
           "expression": "- extendedWaitUntil: notVisible: id: exerciseSearch.modal timeout: 5000"
         },
         {
-          "line": 135,
+          "line": 152,
           "expression": "- extendedWaitUntil: visible: id: pro.training_plan.itemRow.E2E_Push-Up timeout: 10000"
         },
         {
-          "line": 139,
+          "line": 156,
           "expression": "- assertVisible: id: pro.training_plan.itemRow.E2E_Push-Up.quantity text: 3 x 10"
         },
         {
-          "line": 148,
+          "line": 165,
           "expression": "- extendedWaitUntil: visible: id: pro.library.training.row.e2e-training-builder-plan-1 timeout: 10000"
         },
         {
-          "line": 154,
+          "line": 171,
           "expression": "- extendedWaitUntil: visible: id: pro.training_plan.itemRow.E2E_Push-Up timeout: 10000"
         },
         {
-          "line": 165,
+          "line": 182,
           "expression": "- extendedWaitUntil: notVisible: id: pro.training_plan.itemRow.E2E_Push-Up timeout: 10000"
         }
       ]
@@ -4486,7 +4528,7 @@
       "id": "TST-d00cfc47b13a",
       "repo": "client",
       "path": ".maestro/suite/support-request/01-validate-and-submit.yaml",
-      "contentHash": "faacd34f9a138253a1d8876089fc51f672194914c70b58687756b11af5d2a80b",
+      "contentHash": "f2381c155b4b6b8780edb5ad55c2aa7e7cce9df49950c57cd526fea8924749bf",
       "command": "yarn test:e2e:ios / yarn test:e2e:android (tags: support)",
       "ownerPaths": [
         ".maestro/suite/common/hide-keyboard.yaml",
@@ -4504,6 +4546,7 @@
         "settings.account.support.bodyInput",
         "settings.account.support.submitCta",
         "settings.account.support.subjectError",
+        "settings.account.support.dialog.title",
         "settings.account.support.success"
       ],
       "hazards": {
@@ -4543,7 +4586,15 @@
           "expression": "- extendedWaitUntil: visible: id: settings.account.support.subjectError timeout: 5000"
         },
         {
-          "line": 48,
+          "line": 37,
+          "expression": "- assertVisible: id: settings.account.support.bodyInput text: The support request flow should submit safely."
+        },
+        {
+          "line": 40,
+          "expression": "- assertVisible: id: settings.account.support.dialog.title"
+        },
+        {
+          "line": 50,
           "expression": "- extendedWaitUntil: visible: id: settings.account.support.success timeout: 10000"
         }
       ]
@@ -18854,7 +18905,7 @@
       "id": "TST-3cb6e2f164f8",
       "repo": "client",
       "path": "features/e2e/native-test-lifecycle.test.ts",
-      "contentHash": "650ed34f6e17e5d54285c674b0db95883b3d6f8d30a77ffdd2aaef243fa1c28d",
+      "contentHash": "68991924d253a96df4c43c01a33f5732650bc78904f64afd4c95f6275c5469c0",
       "command": "yarn test:unit",
       "ownerPaths": [
         "config/test-impact.json",
@@ -18900,7 +18951,7 @@
           "line": 123
         },
         {
-          "purpose": "custom meal quick logging preserves grams and dismisses each native keyboard explicitly",
+          "purpose": "custom meal quick logging keeps the grams input and Log action usable with the keyboard open",
           "line": 143
         }
       ],
@@ -19006,15 +19057,19 @@
           "expression": "assert.match(fixtureSource, /id: 'qr-invalid-payload'/)"
         },
         {
-          "line": 149,
-          "expression": "assert.match( source, /- tapOn:\\n id: meal\\.library\\.quickLog\\.input\\n- inputText: \"150\"\\n(#.*\\n)*- runFlow:\\n file: \\.\\.\\/common\\/hide-keyboard\\.yaml\\n env:\\n IOS_KEYBOARD: done\\n- assertVisible:\\n id: meal\\.library\\.qu"
+          "line": 151,
+          "expression": "assert.match( source, /- tapOn:\\n id: meal\\.library\\.quickLog\\.input\\n- inputText: \"150\"\\n(#.*\\n)*- assertVisible:\\n id: meal\\.library\\.quickLog\\.input\\n text: \"150\"\\n- assertVisible:\\n id: meal\\.library\\.quickLog\\.previ"
         },
         {
-          "line": 153,
+          "line": 155,
+          "expression": "assert.doesNotMatch(source, /hide-keyboard/)"
+        },
+        {
+          "line": 156,
           "expression": "assert.match( source, /- extendedWaitUntil:\\n notVisible:\\n id: meal\\.library\\.quickLog\\.panel\\n timeout: 10000/, )"
         },
         {
-          "line": 157,
+          "line": 160,
           "expression": "assert.doesNotMatch(source, /point:/)"
         }
       ]
@@ -19023,11 +19078,12 @@
       "id": "TST-657f762cd69f",
       "repo": "client",
       "path": "features/e2e/native-viewport-actions.test.ts",
-      "contentHash": "56684839b8229ffbffe30ac5d158648a0ad77c3894d8cee364691b4c082d98b8",
+      "contentHash": "5b6c4a6fbe82177491a3fbd01ec800118b9b5d87e541cf859eda274146e12562",
       "command": "yarn test:unit",
       "ownerPaths": [
         "app/professional/nutrition/plans/[planId].tsx",
         "app/professional/nutrition/plans/[planId]/meals/[mealId].tsx",
+        "app/professional/training/plans/[planId].tsx",
         "app/settings/account.tsx",
         "components/ds/patterns/PlanPickerModal.tsx",
         "features/plans/components/PlanMetadataForm.tsx"
@@ -19079,6 +19135,14 @@
         {
           "purpose": "nutrition builders type into each native editor before saving",
           "line": 175
+        },
+        {
+          "purpose": "keyboard-heavy forms are used with the keyboard open, with no workaround",
+          "line": 205
+        },
+        {
+          "purpose": "plan builders opt into keyboard avoidance and register their inline forms",
+          "line": 263
         }
       ],
       "assertions": [
@@ -19201,6 +19265,102 @@
         {
           "line": 189,
           "expression": "assert.doesNotMatch( professionalNutritionMealScreenSource, /style=\\{\\{ top: '100%', left: 0, right: 0, marginTop: 16 \\}\\}/, )"
+        },
+        {
+          "line": 198,
+          "expression": "assert.ok(start >= 0, `missing ${from}`)"
+        },
+        {
+          "line": 201,
+          "expression": "assert.ok(end >= 0, `missing ${to} after ${from}`)"
+        },
+        {
+          "line": 208,
+          "expression": "assert.deepEqual( allSuiteFlows() .filter(({ source }) => /recorded product finding/.test(source)) .map(({ path }) => path), [], )"
+        },
+        {
+          "line": 221,
+          "expression": "assert.match( addMeal, /- tapOn:\\n id: pro\\.nutrition_plan\\.addMeal\\.input\\n- inputText: Breakfast\\n- assertVisible:\\n id: pro\\.nutrition_plan\\.addMeal\\.input\\n text: Breakfast\\n- assertVisible:\\n id: pro\\.nutrition_plan"
+        },
+        {
+          "line": 225,
+          "expression": "assert.doesNotMatch(addMeal, /hide-keyboard|pressKey|scrollUntilVisible/)"
+        },
+        {
+          "line": 233,
+          "expression": "assert.match( addSession, /- tapOn:\\n id: pro\\.training_plan\\.addSession\\.name\\n- inputText: Push Day\\n- tapOn:\\n id: pro\\.training_plan\\.addSession\\.notes\\n- inputText: Upper body focus\\n/, )"
+        },
+        {
+          "line": 237,
+          "expression": "assert.match( addSession, /- takeScreenshot: add-session-keyboard-open\\n- tapOn:\\n id: pro\\.training_plan\\.addSession\\.confirm\\n/, )"
+        },
+        {
+          "line": 241,
+          "expression": "assert.doesNotMatch(addSession, /hide-keyboard|pressKey/)"
+        },
+        {
+          "line": 248,
+          "expression": "assert.match(exerciseSearch, /\\n- tapOn:\\n id: exerciseSearch\\.input\\n- inputText: push\\n/)"
+        },
+        {
+          "line": 249,
+          "expression": "assert.match(exerciseSearch, /- assertVisible:\\n id: exerciseSearch\\.title\\n/)"
+        },
+        {
+          "line": 250,
+          "expression": "assert.match(exerciseSearch, /- assertVisible:\\n id: exerciseSearch\\.input\\n text: push\\n/)"
+        },
+        {
+          "line": 251,
+          "expression": "assert.doesNotMatch(exerciseSearch, /hide-keyboard|platform: Android/)"
+        },
+        {
+          "line": 253,
+          "expression": "assert.match(training, /MESSAGE: \"Remove E2E Push-Up from this session\\\\\\\\\\?\"/)"
+        },
+        {
+          "line": 254,
+          "expression": "assert.doesNotMatch(training, /This action cannot be undone/)"
+        },
+        {
+          "line": 257,
+          "expression": "assert.match( support, /- inputText: E2E support issue\\n(#.*\\n)*- tapOn:\\n id: settings\\.account\\.support\\.bodyInput\\n- inputText: The support request flow should submit safely\\.\\n- assertVisible:\\n id: settings\\.account"
+        },
+        {
+          "line": 269,
+          "expression": "assert.match(source, /<DsScreen[^>]*\\n\\s+keyboardAware\\n/)"
+        },
+        {
+          "line": 270,
+          "expression": "assert.match(source, /useDsKeyboardTarget\\(\\)/)"
+        },
+        {
+          "line": 271,
+          "expression": "assert.match(source, new RegExp(`ref=\\\\{\\\\w+KeyboardTarget\\\\}[\\\\s\\\\S]{0,200}testID=\"${form}\"`))"
+        },
+        {
+          "line": 273,
+          "expression": "assert.match(professionalNutritionMealScreenSource, /\\n\\s+keyboardAware\\n/)"
+        },
+        {
+          "line": 274,
+          "expression": "assert.match(training, /t\\('pro\\.plan\\.session_item\\.delete\\.body', \\{ name: itemName \\}\\)/)"
+        },
+        {
+          "line": 275,
+          "expression": "assert.match(training, /t\\('pro\\.plan\\.session\\.delete\\.body', \\{ name: sessionName \\}\\)/)"
+        },
+        {
+          "line": 276,
+          "expression": "assert.match( professionalNutritionPlanScreenSource, /t\\('pro\\.plan\\.meal\\.delete\\.body', \\{ name: mealName \\}\\)/, )"
+        },
+        {
+          "line": 280,
+          "expression": "assert.doesNotMatch(training, /t\\('pro\\.plan\\.delete\\.body'\\)\\.replace/)"
+        },
+        {
+          "line": 281,
+          "expression": "assert.doesNotMatch( professionalNutritionPlanScreenSource, /t\\('pro\\.plan\\.delete\\.body'\\)\\.replace/, )"
         }
       ]
     },
@@ -40621,7 +40781,7 @@
       "id": "TST-a5bf5681c850",
       "repo": "client",
       "path": "tests/ci/maestro-suite-scripts.test.ts",
-      "contentHash": "adc9cf540be78c416404033d2038587983d6da52a20be5232156839462b1472a",
+      "contentHash": "9d7a06b70e8ba7eee1994072d714042ab4b81dccf333b33cd1bc0034eeb1c754",
       "command": "yarn test:unit",
       "ownerPaths": [],
       "requirementReferences": [],
@@ -40659,6 +40819,22 @@
         {
           "purpose": "Maestro device prep opts out of analytics like the flow runner",
           "line": 111
+        },
+        {
+          "purpose": "Android device prep pins the suite app to en-US after install and checks it",
+          "line": 185
+        },
+        {
+          "purpose": "Android device prep fails when get-app-locales does not report en-US",
+          "line": 208
+        },
+        {
+          "purpose": "Android device prep requires API 33+ before installing",
+          "line": 218
+        },
+        {
+          "purpose": "Android device prep requires an en-US system language before installing",
+          "line": 230
         }
       ],
       "assertions": [
@@ -40729,6 +40905,74 @@
         {
           "line": 120,
           "expression": "assert.ok(index !== -1 && index < firstMaestroRun, optOut)"
+        },
+        {
+          "line": 186,
+          "expression": "assert.ok(suiteAppId, 'launch-fresh.yaml must declare the suite appId')"
+        },
+        {
+          "line": 189,
+          "expression": "assert.equal(result.status, 0, result.stderr)"
+        },
+        {
+          "line": 193,
+          "expression": "assert.ok(install !== -1 && install < pin && pin < check, result.calls.join('\\n'))"
+        },
+        {
+          "line": 194,
+          "expression": "assert.equal( result.calls[pin], `-s emulator-5554 shell cmd locale set-app-locales ${suiteAppId} --user current --locales en-US`, )"
+        },
+        {
+          "line": 198,
+          "expression": "assert.equal( result.calls[check], `-s emulator-5554 shell cmd locale get-app-locales ${suiteAppId} --user current`, )"
+        },
+        {
+          "line": 202,
+          "expression": "assert.ok( result.stdout.includes(`Pinned ${suiteAppId} to en-US on emulator-5554.`), result.stdout, )"
+        },
+        {
+          "line": 212,
+          "expression": "assert.equal(result.status, 1, `appLocales=${appLocales}`)"
+        },
+        {
+          "line": 213,
+          "expression": "assert.match(result.stderr, /Could not pin \\S+ to en-US on emulator-5554/)"
+        },
+        {
+          "line": 214,
+          "expression": "assert.ok(result.stderr.includes(`are [${appLocales}]`), result.stderr)"
+        },
+        {
+          "line": 222,
+          "expression": "assert.equal(result.status, 1, `api=${api}`)"
+        },
+        {
+          "line": 223,
+          "expression": "assert.match(result.stderr, /needs API 33\\+ \\(Android 13\\)/)"
+        },
+        {
+          "line": 224,
+          "expression": "assert.equal(result.callIndex(' install '), -1, `api=${api}`)"
+        },
+        {
+          "line": 225,
+          "expression": "assert.equal(result.callIndex(' cmd locale '), -1, `api=${api}`)"
+        },
+        {
+          "line": 227,
+          "expression": "assert.equal(runAndroidDevicePrep({ api: '33' }).status, 0)"
+        },
+        {
+          "line": 245,
+          "expression": "assert.equal(result.status, ok ? 0 : 1, `${label}\\n${result.stderr}`)"
+        },
+        {
+          "line": 247,
+          "expression": "assert.match(result.stderr, /the suite needs en-US because each flow's clearState/, label)"
+        },
+        {
+          "line": 248,
+          "expression": "assert.equal(result.callIndex(' install '), -1, label)"
         }
       ]
     },
@@ -40950,13 +41194,14 @@
       "id": "TST-99a3ff1c2ab1",
       "repo": "client",
       "path": "tests/ci/native-android-camera-runtime-collector.test.ts",
-      "contentHash": "80a01880cd98ef16301419660d25f8a91721d7b302d7004ad228b16118dd2d04",
+      "contentHash": "beba3f1be4786f47f169171348c9e2277978d98bffacbbc2ae9bcd7558167865",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/capture-android-testability.ts",
         "scripts/testing/native-android-camera-runtime-collector.ts",
         "scripts/testing/native-camera-android-capture-adapter.ts",
         "scripts/testing/native-camera-android-contract.ts",
+        "scripts/testing/native-camera-android-saved-flow.ts",
         "scripts/testing/run-android-camera-attempt.ts",
         "scripts/testing/run-android-camera-public-attempt.ts",
         "tests/dependencies/android-camera-runtime-eligibility-fixture.ts"
@@ -40979,64 +41224,64 @@
       "assertionPurposes": [
         {
           "purpose": "Android camera public callsite composes owned capture, collector, writer, and verifier while staying public-zero",
-          "line": 192
+          "line": 208
         },
         {
           "purpose": "Android camera collector rejects a command ownership identity mismatch before writing native provenance",
-          "line": 244
+          "line": 260
         },
         {
           "purpose": "Android camera collector keeps log and binary stdout roles command-bound",
-          "line": 278
+          "line": 294
         }
       ],
       "assertions": [
         {
-          "line": 225,
+          "line": 241,
           "expression": "assert.equal(outcome.verificationResult, 'source-only')"
         },
         {
-          "line": 226,
+          "line": 242,
           "expression": "assert.equal(outcome.nativeRuntimeFailure, null)"
         },
         {
-          "line": 227,
+          "line": 243,
           "expression": "assert.equal(outcome.nativeRuntime?.nativePassingCases, 4)"
         },
         {
-          "line": 228,
+          "line": 244,
           "expression": "assert.equal(outcome.nativeRuntime?.publicPassingCases, 0)"
         },
         {
-          "line": 229,
+          "line": 245,
           "expression": "assert.equal(outcome.nativeRuntime?.publicPromotionEligible, false)"
         },
         {
-          "line": 230,
+          "line": 246,
           "expression": "assert.equal(outcome.nativePassingCases, 0)"
         },
         {
-          "line": 231,
+          "line": 247,
           "expression": "assert.equal(outcome.publicPassingCases, 0)"
         },
         {
-          "line": 232,
+          "line": 248,
           "expression": "assert.equal(outcome.publicPromotionEligible, false)"
         },
         {
-          "line": 254,
+          "line": 270,
           "expression": "assert.rejects( collectAndVerifyAndroidCameraNativeRuntime({ capture: { artifactRoot: fixture.captureRoot, exitCode: 0, report }, producer: fixture.producer, repositoryRoot: process.cwd(), outputRoot, requestedRunId: REQ"
         },
         {
-          "line": 268,
+          "line": 284,
           "expression": "assert.rejects( stat(`${fixture.captureRoot}/android-camera-native-runtime-receipt.private.json`), { code: 'ENOENT' }, )"
         },
         {
-          "line": 331,
+          "line": 347,
           "expression": "assert.rejects( collectAndVerifyAndroidCameraNativeRuntime({ capture: { artifactRoot: fixture.captureRoot, exitCode: 0, report }, producer: fixture.producer, repositoryRoot: process.cwd(), outputRoot, requestedRunId: REQ"
         },
         {
-          "line": 346,
+          "line": 362,
           "expression": "assert.rejects( stat(`${fixture.captureRoot}/android-camera-native-runtime-receipt.private.json`), { code: 'ENOENT' }, )"
         }
       ]
@@ -41256,7 +41501,7 @@
       "id": "TST-3535c1b1310d",
       "repo": "client",
       "path": "tests/ci/native-android-camera-runtime-eligibility.test.ts",
-      "contentHash": "252a5059686e2f2815b07c95ab1b79434211d894925c90eb98297d1e17971ef1",
+      "contentHash": "19b1917488f05ff1a98405a4247c65a1a0898e38b30060942df3a2228a3120aa",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/android-build-identity.ts",
@@ -41310,59 +41555,59 @@
         },
         {
           "purpose": "Android camera eligibility rejects a missing runtime provenance receipt instead of promoting an unlabeled source fixture",
-          "line": 1405
+          "line": 1416
         },
         {
           "purpose": "Android camera eligibility rejects forged owner, target, frame-action, SQL-parent, and deadline provenance",
-          "line": 1436
+          "line": 1447
         },
         {
           "purpose": "Android camera eligibility rejects a source identity changed after capture",
-          "line": 1522
+          "line": 1533
         },
         {
           "purpose": "Android public SQL eligibility rejects tampered retained provenance and foreign links after backend teardown",
-          "line": 1557
+          "line": 1568
         },
         {
           "purpose": "Android camera eligibility rejects a capture ledger missing the loaded evidence reader",
-          "line": 1625
+          "line": 1636
         },
         {
           "purpose": "Android camera eligibility rejects tampered SQL child bytes before exposing bindings",
-          "line": 1662
+          "line": 1673
         },
         {
           "purpose": "Android camera eligibility rejects a cleanup receipt that is not independently passed",
-          "line": 1692
+          "line": 1703
         },
         {
           "purpose": "Android camera eligibility rejects an invalid source-only label before staging",
-          "line": 1724
+          "line": 1735
         },
         {
           "purpose": "Android APK eligibility streams an actual-sized build under the shared bounded contract",
-          "line": 1754
+          "line": 1765
         },
         {
           "purpose": "Android APK eligibility rejects an artifact over the finite shared build bound",
-          "line": 1774
+          "line": 1785
         },
         {
           "purpose": "Android APK eligibility rejects a truncated artifact through the bound receipt hash",
-          "line": 1791
+          "line": 1802
         },
         {
           "purpose": "Android APK eligibility rejects symlink and hardlink identity substitutions",
-          "line": 1811
+          "line": 1822
         },
         {
           "purpose": "Android APK eligibility aborts deterministically during streaming",
-          "line": 1849
+          "line": 1860
         },
         {
           "purpose": "Android APK eligibility fails closed for cancellation and expired deadlines before reading",
-          "line": 1882
+          "line": 1893
         }
       ],
       "assertions": [
@@ -41451,111 +41696,111 @@
           "expression": "assert.equal(first.publicPassingCases, 4)"
         },
         {
-          "line": 1359,
-          "expression": "assert.rejects( finalizeAndroidCameraNativeRuntime({ repositoryRoot: ROOT, eligibility, captureRoot: value.captureRoot, outputRoot: value.outputRoot, deadlineAt, }), /Android helper .* stale/, )"
+          "line": 1373,
+          "expression": "assert.rejects( finalizeAndroidCameraNativeRuntime({ repositoryRoot: ROOT, eligibility: staleHelperEligibility, captureRoot: value.captureRoot, outputRoot: value.outputRoot, deadlineAt, }), /Android helper .* stale/, )"
         },
         {
-          "line": 1388,
+          "line": 1399,
           "expression": "assert.rejects( finalizeAndroidCameraNativeRuntime({ repositoryRoot: ROOT, eligibility, captureRoot: value.captureRoot, outputRoot: value.outputRoot, deadlineAt, }), /staged (bytes|size) changed/, )"
         },
         {
-          "line": 1408,
+          "line": 1419,
           "expression": "assert.rejects( verifyAndroidCameraRuntimeEligibility({ repositoryRoot: ROOT, captureRoot: value.captureRoot, outputRoot: value.outputRoot, requestedRunId: REQUESTED_ID, requestedAttemptId: `${REQUESTED_ID}:first`, captu"
         },
         {
-          "line": 1426,
+          "line": 1437,
           "expression": "assert.rejects(lstat(path.join(value.outputRoot, 'evidence')), { code: 'ENOENT', })"
         },
         {
-          "line": 1489,
+          "line": 1500,
           "expression": "assert.rejects( verifyAndroidCameraRuntimeEligibility({ repositoryRoot: ROOT, captureRoot: value.captureRoot, outputRoot: value.outputRoot, requestedRunId: REQUESTED_ID, requestedAttemptId: `${REQUESTED_ID}:first`, captu"
         },
         {
-          "line": 1532,
+          "line": 1543,
           "expression": "assert.rejects( verifyAndroidCameraRuntimeEligibility({ repositoryRoot: ROOT, captureRoot: value.captureRoot, outputRoot: value.outputRoot, requestedRunId: REQUESTED_ID, requestedAttemptId: `${REQUESTED_ID}:first`, captu"
-        },
-        {
-          "line": 1606,
-          "expression": "assert.rejects(verify(), relative)"
         },
         {
           "line": 1617,
+          "expression": "assert.rejects(verify(), relative)"
+        },
+        {
+          "line": 1628,
           "expression": "assert.rejects(verify(), /canonical|symbolic|SQL|link/u)"
         },
         {
-          "line": 1637,
+          "line": 1648,
           "expression": "assert.rejects( verifyAndroidCameraRuntimeEligibility({ repositoryRoot: ROOT, captureRoot: value.captureRoot, outputRoot: value.outputRoot, requestedRunId: REQUESTED_ID, requestedAttemptId: `${REQUESTED_ID}:first`, captu"
         },
         {
-          "line": 1667,
+          "line": 1678,
           "expression": "assert.rejects( verifyAndroidCameraRuntimeEligibility({ repositoryRoot: ROOT, captureRoot: value.captureRoot, outputRoot: value.outputRoot, requestedRunId: REQUESTED_ID, requestedAttemptId: `${REQUESTED_ID}:first`, captu"
         },
         {
-          "line": 1699,
+          "line": 1710,
           "expression": "assert.rejects( verifyAndroidCameraRuntimeEligibility({ repositoryRoot: ROOT, captureRoot: value.captureRoot, outputRoot: value.outputRoot, requestedRunId: REQUESTED_ID, requestedAttemptId: `${REQUESTED_ID}:first`, captu"
         },
         {
-          "line": 1743,
+          "line": 1754,
           "expression": "assert.rejects(verifyAndroidCameraRuntimeEligibility(invalidInput), /source-only label/)"
         },
         {
-          "line": 1744,
+          "line": 1755,
           "expression": "assert.rejects(lstat(path.join(value.outputRoot, 'evidence')), { code: 'ENOENT', })"
         },
         {
-          "line": 1764,
+          "line": 1775,
           "expression": "assert.equal(ANDROID_CAMERA_APK_MAX_BYTES, 256 * 1024 * 1024)"
         },
         {
-          "line": 1765,
+          "line": 1776,
           "expression": "assert.equal(result.sizeBytes, REAL_ANDROID_APK_BYTES)"
         },
         {
-          "line": 1766,
+          "line": 1777,
           "expression": "assert.equal(result.sha256, expectedHash)"
         },
         {
-          "line": 1767,
+          "line": 1778,
           "expression": "assert.equal(result.identity.size, REAL_ANDROID_APK_BYTES)"
         },
         {
-          "line": 1768,
+          "line": 1779,
           "expression": "assert.equal(result.identity.nlink, 1)"
         },
         {
-          "line": 1777,
+          "line": 1788,
           "expression": "assert.rejects( readAndroidCameraBuildArtifact( value.root, value.apkPath, '0'.repeat(64), performance.now() + 300_000, ), /invalid or exceeds its bounded build limit/u, )"
         },
         {
-          "line": 1797,
+          "line": 1808,
           "expression": "assert.rejects( readAndroidCameraBuildArtifact( value.root, value.apkPath, expectedHash, performance.now() + 300_000, ), /hash differs from build receipt/u, )"
         },
         {
-          "line": 1818,
+          "line": 1829,
           "expression": "assert.rejects( readAndroidCameraBuildArtifact( symlinkValue.root, symlinkValue.apkPath, sha256('owned-apk-bytes'), performance.now() + 300_000, ), /path is not canonical/u, )"
         },
         {
-          "line": 1835,
+          "line": 1846,
           "expression": "assert.rejects( readAndroidCameraBuildArtifact( hardlinkValue.root, aliasPath, sha256('owned-apk-bytes'), performance.now() + 300_000, ), /must have one link/u, )"
         },
         {
-          "line": 1866,
+          "line": 1877,
           "expression": "assert.rejects( readAndroidCameraBuildArtifact( value.root, value.apkPath, '0'.repeat(64), performance.now() + 300_000, signal, ), /aborted/u, )"
         },
         {
-          "line": 1876,
+          "line": 1887,
           "expression": "assert.equal(checks, 3)"
         },
         {
-          "line": 1887,
+          "line": 1898,
           "expression": "assert.rejects( readAndroidCameraBuildArtifact( value.root, value.apkPath, sha256('owned-apk-bytes'), performance.now() + 300_000, controller.signal, ), /aborted/u, )"
         },
         {
-          "line": 1897,
+          "line": 1908,
           "expression": "assert.rejects( readAndroidCameraBuildArtifact( value.root, value.apkPath, sha256('owned-apk-bytes'), performance.now() - 1, ), /deadline expired/u, )"
         },
         {
-          "line": 1907,
+          "line": 1918,
           "expression": "assert.equal(info.size, 16)"
         }
       ]
@@ -43800,7 +44045,7 @@
       "id": "TST-3b03f00cc24e",
       "repo": "client",
       "path": "tests/ci/native-android-session-public-dependency.test.ts",
-      "contentHash": "27ba40b5076215aeaa761c39d9b5a7d1ff4481fe3d31e5bee6f1fd5528400351",
+      "contentHash": "cc9dc7c4f98e2e4bfa1c78b845d4e6cb893849293cd9b413fe6652048ed032aa",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/android-session-charter.ts",
@@ -43877,67 +44122,71 @@
         },
         {
           "purpose": "Android full source validator accepts a real-shaped six-purpose session with valid PNG bytes",
-          "line": 1384
+          "line": 1395
+        },
+        {
+          "purpose": "Android full source validator checks every request sent between sign-out and relaunch",
+          "line": 1416
         },
         {
           "purpose": "Android full source validator rejects unknown cleanup cache absence and over-limit query-source receipts",
-          "line": 1405
+          "line": 1479
         },
         {
           "purpose": "Android receipt reader rejects actual oversized bytes before trusting a forged small receipt",
-          "line": 1435
+          "line": 1509
         },
         {
           "purpose": "Android receipt reader rejects a hardlink alias and storage role/path substitutions",
-          "line": 1458
+          "line": 1532
         },
         {
           "purpose": "Android descriptor reader rejects a path renamed after open before returning bytes",
-          "line": 1493
+          "line": 1567
         },
         {
           "purpose": "Android charter rejects a tampered original command log hash",
-          "line": 1517
+          "line": 1591
         },
         {
           "purpose": "Android v7 shared readers reject growth, mode changes, and undeclared oversize",
-          "line": 1536
+          "line": 1610
         },
         {
           "purpose": "Android v7 command reader rejects inode replacement after descriptor open",
-          "line": 1589
+          "line": 1663
         },
         {
           "purpose": "Android producer, v7 consumer, stager and verifier share one real-shaped source path",
-          "line": 1613
+          "line": 1687
         },
         {
           "purpose": "Android real-shaped source path isolates two concurrent child runs",
-          "line": 2023
+          "line": 2097
         },
         {
           "purpose": "Android fixture constructors remove owned roots after injected setup failures",
-          "line": 2048
+          "line": 2122
         },
         {
           "purpose": "Android pre-aborted child does not spawn or acquire a temp namespace",
-          "line": 2118
+          "line": 2192
         },
         {
           "purpose": "Android child cleanup failure remains diagnostic and cannot be positive",
-          "line": 2135
+          "line": 2209
         },
         {
           "purpose": "Android child deadline terminates and reaps a hung owned child with diagnostics",
-          "line": 2159
+          "line": 2233
         },
         {
           "purpose": "Android child abort terminates and reaps a hung owned child with diagnostics",
-          "line": 2183
+          "line": 2257
         },
         {
           "purpose": "Android loader binds a deleted raw query source by its receipt hash",
-          "line": 2211
+          "line": 2285
         }
       ],
       "assertions": [
@@ -44070,336 +44319,228 @@
           "expression": "assert.throws( () => requireAndroidCleanupEvidence( { result: 'passed', runId, censusStatus: 'unavailable', captureResult: 'observed', captureCleanupClean: true, survivors: [], unknownProcessQueries: [], missingForeignDe"
         },
         {
-          "line": 1388,
+          "line": 1399,
           "expression": "assert.equal(result.status, 'validated-source-only')"
         },
         {
-          "line": 1389,
+          "line": 1400,
           "expression": "assert.deepEqual(result.assertionIds, [ 'NAT-session-login', 'NAT-session-restore', 'NAT-session-account', 'NAT-session-signout', 'NAT-session-signed-out-relaunch', 'NAT-session-unrelated-state', ])"
         },
         {
-          "line": 1397,
+          "line": 1408,
           "expression": "assert.equal(result.nativePassingCases, 0)"
         },
         {
-          "line": 1398,
+          "line": 1409,
           "expression": "assert.equal(result.publicPromotionEligible, false)"
         },
         {
-          "line": 1408,
-          "expression": "assert.throws( () => requireAndroidCleanupEvidence({ ...value.cleanup, cacheAbsent: null }, runId), /cache absence is unknown/, )"
+          "line": 1444,
+          "expression": "assert.throws( () => validate({ androidSessionSignOutTransport: { ...signOut, rows: [leaked[2]] } }, leaked), /Request 3 sent during sign-out carried credentials/, )"
         },
         {
-          "line": 1419,
-          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /querySource kind is not query|kind is missing or unsupported|query source receipt is malformed/, )"
+          "line": 1449,
+          "expression": "assert.throws( () => validate({ androidSessionSignOutTransport: { ...signOut, beforeRequestId: 3, rows: [] }, }), /does not start at the sign-out confirmation/, )"
         },
         {
-          "line": 1425,
-          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /exceeds its kind cap|byte count changed|hash changed|query source receipt is malformed/, )"
+          "line": 1456,
+          "expression": "assert.throws( () => validate({ androidSessionSignOutTransport: { ...signOut, afterRequestId: 2, rows: [] } }), /does not end at the signed-out relaunch/, )"
         },
         {
-          "line": 1448,
-          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /actual kind cap|exceeds its bounded size/, )"
+          "line": 1462,
+          "expression": "assert.throws( () => validate({ androidSessionSignOutTransport: { ...signOut, rows: [] } }), /Android sign-out rows are not the stopped stream rows/, )"
         },
         {
           "line": 1468,
-          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /single-link regular file|must have one link/, )"
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput({ ...value, capture: withoutSignOut } as never), /Android capture field is missing: androidSessionSignOutTransport/, )"
         },
         {
-          "line": 1477,
-          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /SQL file receipt is malformed/, )"
+          "line": 1482,
+          "expression": "assert.throws( () => requireAndroidCleanupEvidence({ ...value.cleanup, cacheAbsent: null }, runId), /cache absence is unknown/, )"
         },
         {
-          "line": 1483,
-          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /SQL file receipt is not bound/, )"
+          "line": 1493,
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /querySource kind is not query|kind is missing or unsupported|query source receipt is malformed/, )"
         },
         {
-          "line": 1500,
-          "expression": "assert.rejects( readOwnedAndroidStableFileForTest( { artifactRoot: root, filePath: file, kind: 'transport', maxBytes: 1 * 1024 * 1024, }, async () => rename(file, moved), ), /changed|canonical|ENOENT/, )"
+          "line": 1499,
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /exceeds its kind cap|byte count changed|hash changed|query source receipt is malformed/, )"
         },
         {
-          "line": 1526,
-          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /source receipt|charter assertion/, )"
+          "line": 1522,
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /actual kind cap|exceeds its bounded size/, )"
         },
         {
           "line": 1542,
-          "expression": "assert.throws( () => readOwnedCaptureFileForTest( root, 'frame.png', 'growing frame', 'png', () => undefined, () => appendFileSync(frame, Buffer.alloc(128, 0x61)), ), /changed while reading|byte count changed|path identi"
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /single-link regular file|must have one link/, )"
+        },
+        {
+          "line": 1551,
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /SQL file receipt is malformed/, )"
         },
         {
           "line": 1557,
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /SQL file receipt is not bound/, )"
+        },
+        {
+          "line": 1574,
+          "expression": "assert.rejects( readOwnedAndroidStableFileForTest( { artifactRoot: root, filePath: file, kind: 'transport', maxBytes: 1 * 1024 * 1024, }, async () => rename(file, moved), ), /changed|canonical|ENOENT/, )"
+        },
+        {
+          "line": 1600,
+          "expression": "assert.throws( () => validateAndroidSessionPublicDependencyInput(value as never), /source receipt|charter assertion/, )"
+        },
+        {
+          "line": 1616,
+          "expression": "assert.throws( () => readOwnedCaptureFileForTest( root, 'frame.png', 'growing frame', 'png', () => undefined, () => appendFileSync(frame, Buffer.alloc(128, 0x61)), ), /changed while reading|byte count changed|path identi"
+        },
+        {
+          "line": 1631,
           "expression": "assert.throws( () => readOwnedArtifactBytesForTest( root, 'frame.png', 'wrong mode artifact', 1024, () => undefined, () => undefined, ), /mode is not private/, )"
         },
         {
-          "line": 1572,
+          "line": 1646,
           "expression": "assert.rejects( readOwnedAndroidStableFileForTest( { artifactRoot: root, filePath: frame, kind: 'transport', maxBytes: 1024, }, () => undefined, ), /bounded size/, )"
         },
         {
-          "line": 1596,
+          "line": 1670,
           "expression": "assert.throws( () => readOwnedArtifactBytesForTest( root, 'command.private.log', 'command log', 1024, () => undefined, () => renameSync(command, moved), ), /changed while reading|path identity changed|canonical|ENOENT/, "
         },
         {
-          "line": 1700,
+          "line": 1774,
           "expression": "assert.equal(captureFile.bytes.toString('utf8'), captureBytes.toString('utf8'))"
         },
         {
-          "line": 1701,
+          "line": 1775,
           "expression": "assert.equal(cleanupFile.bytes.toString('utf8'), cleanupBytes.toString('utf8'))"
         },
         {
-          "line": 1710,
+          "line": 1784,
           "expression": "assert.equal(requiredPaths.length, new Set(requiredPaths).size)"
         },
         {
-          "line": 1711,
+          "line": 1785,
           "expression": "assert.equal(requiredPaths.includes('capture.private.json'), true)"
         },
         {
-          "line": 1712,
+          "line": 1786,
           "expression": "assert.equal(requiredPaths.includes('external-cleanup.private.json'), true)"
         },
         {
-          "line": 1737,
+          "line": 1811,
           "expression": "assert.equal(dependency.nativePassingCases, 0)"
         },
         {
-          "line": 1738,
+          "line": 1812,
           "expression": "assert.equal(dependency.publicPromotionEligible, false)"
         },
         {
-          "line": 1739,
+          "line": 1813,
           "expression": "assert.equal(staged.publicPassingCases, 0)"
         },
         {
-          "line": 1740,
+          "line": 1814,
           "expression": "assert.equal(staged.publicPromotionEligible, false)"
         },
         {
-          "line": 2030,
+          "line": 2104,
           "expression": "assert.equal( result.code, 0, `concurrent child failed (signal=${result.signal})\\nstdout:\\n${result.stdout}\\nstderr:\\n${result.stderr}`, )"
         },
         {
-          "line": 2035,
+          "line": 2109,
           "expression": "assert.equal(result.tests, 1, `child selected an unexpected test count: ${result.stdout}`)"
         },
         {
-          "line": 2036,
+          "line": 2110,
           "expression": "assert.equal(result.passed, 1, `child did not report one passing test: ${result.stdout}`)"
         },
         {
-          "line": 2037,
+          "line": 2111,
           "expression": "assert.deepEqual(result.testNames, [realShapedChildTestName])"
         },
         {
-          "line": 2038,
+          "line": 2112,
           "expression": "assert.equal(result.reaped, true)"
         },
         {
-          "line": 2039,
+          "line": 2113,
           "expression": "assert.equal(result.terminationReason, null)"
         },
         {
-          "line": 2040,
+          "line": 2114,
           "expression": "assert.equal(result.cleanupStatus, 'cleaned')"
         },
         {
-          "line": 2041,
+          "line": 2115,
           "expression": "assert.equal(result.cleanupError, null)"
         },
         {
-          "line": 2042,
+          "line": 2116,
           "expression": "assert.equal(result.positive, true)"
         },
         {
-          "line": 2043,
+          "line": 2117,
           "expression": "assert.ok(result.childTempRoot)"
         },
         {
-          "line": 2044,
+          "line": 2118,
           "expression": "assert.rejects(stat(result.childTempRoot), /ENOENT/)"
         },
         {
-          "line": 2050,
+          "line": 2124,
           "expression": "assert.rejects( fixture({ onRootCreated: (root) => { fixtureRoot = root; throw new Error('intentional checkpoint fixture setup failure'); }, }), /intentional checkpoint fixture setup failure/, )"
         },
         {
-          "line": 2059,
+          "line": 2133,
           "expression": "assert.ok(fixtureRoot)"
         },
         {
-          "line": 2060,
+          "line": 2134,
           "expression": "assert.rejects(stat(fixtureRoot), /ENOENT/)"
         },
         {
-          "line": 2063,
+          "line": 2137,
           "expression": "assert.rejects( maestroFixture({ onRootCreated: (root) => { maestroRoot = root; throw new Error('intentional Maestro fixture setup failure'); }, }), /intentional Maestro fixture setup failure/, )"
         },
         {
-          "line": 2072,
+          "line": 2146,
           "expression": "assert.ok(maestroRoot)"
         },
         {
-          "line": 2073,
+          "line": 2147,
           "expression": "assert.rejects(stat(maestroRoot), /ENOENT/)"
         },
         {
-          "line": 2077,
+          "line": 2151,
           "expression": "assert.rejects( fullSessionFixture({ maestro: { onRootCreated: (root) => { fullMaestroRoot = root; }, }, checkpoint: { onRootCreated: (root) => { fullCheckpointRoot = root; throw new Error('intentional full-session check"
         },
         {
-          "line": 2093,
+          "line": 2167,
           "expression": "assert.ok(fullMaestroRoot)"
         },
         {
-          "line": 2094,
+          "line": 2168,
           "expression": "assert.ok(fullCheckpointRoot)"
         },
         {
-          "line": 2095,
+          "line": 2169,
           "expression": "assert.rejects(stat(fullMaestroRoot), /ENOENT/)"
         },
         {
-          "line": 2096,
+          "line": 2170,
           "expression": "assert.rejects(stat(fullCheckpointRoot), /ENOENT/)"
         },
         {
-          "line": 2126,
+          "line": 2200,
           "expression": "assert.equal(result.spawned, false)"
         },
         {
-          "line": 2127,
+          "line": 2201,
           "expression": "assert.equal(result.childTempRoot, null)"
         },
         {
-          "line": 2128,
-          "expression": "assert.equal(result.cleanupStatus, 'not-run')"
-        },
-        {
-          "line": 2129,
-          "expression": "assert.equal(result.cleanupError, null)"
-        },
-        {
-          "line": 2130,
-          "expression": "assert.equal(result.terminationReason, 'aborted')"
-        },
-        {
-          "line": 2131,
-          "expression": "assert.equal(result.aborted, true)"
-        },
-        {
-          "line": 2132,
-          "expression": "assert.equal(result.positive, false)"
-        },
-        {
-          "line": 2144,
-          "expression": "assert.equal(result.code, 0)"
-        },
-        {
-          "line": 2145,
-          "expression": "assert.equal(result.signal, null)"
-        },
-        {
-          "line": 2146,
-          "expression": "assert.equal(result.cleanupStatus, 'failed')"
-        },
-        {
-          "line": 2147,
-          "expression": "assert.equal(result.cleanupError, 'injected cleanup failure')"
-        },
-        {
-          "line": 2148,
-          "expression": "assert.equal(result.positive, false)"
-        },
-        {
-          "line": 2149,
-          "expression": "assert.ok(result.childTempRoot)"
-        },
-        {
-          "line": 2150,
-          "expression": "assert.doesNotReject(stat(result.childTempRoot))"
-        },
-        {
-          "line": 2154,
-          "expression": "assert.rejects(stat(result.childTempRoot), /ENOENT/)"
-        },
-        {
-          "line": 2168,
-          "expression": "assert.equal(result.code, null)"
-        },
-        {
-          "line": 2169,
-          "expression": "assert.equal(result.signal, 'SIGKILL')"
-        },
-        {
-          "line": 2170,
-          "expression": "assert.equal(result.terminationReason, 'deadline')"
-        },
-        {
-          "line": 2171,
-          "expression": "assert.equal(result.timedOut, true)"
-        },
-        {
-          "line": 2172,
-          "expression": "assert.equal(result.aborted, false)"
-        },
-        {
-          "line": 2173,
-          "expression": "assert.equal(result.reaped, true)"
-        },
-        {
-          "line": 2174,
-          "expression": "assert.equal(result.cleanupStatus, 'cleaned')"
-        },
-        {
-          "line": 2175,
-          "expression": "assert.equal(result.cleanupError, null)"
-        },
-        {
-          "line": 2176,
-          "expression": "assert.equal(result.positive, false)"
-        },
-        {
-          "line": 2177,
-          "expression": "assert.match(result.stdout, /hung-child-stdout:.*hung-fixture-/)"
-        },
-        {
-          "line": 2178,
-          "expression": "assert.match(result.stderr, /hung-child-stderr:.*hung-fixture-/)"
-        },
-        {
-          "line": 2179,
-          "expression": "assert.ok(result.childTempRoot)"
-        },
-        {
-          "line": 2180,
-          "expression": "assert.rejects(stat(result.childTempRoot), /ENOENT/)"
-        },
-        {
-          "line": 2196,
-          "expression": "assert.equal(result.code, null)"
-        },
-        {
-          "line": 2197,
-          "expression": "assert.equal(result.signal, 'SIGKILL')"
-        },
-        {
-          "line": 2198,
-          "expression": "assert.equal(result.terminationReason, 'aborted')"
-        },
-        {
-          "line": 2199,
-          "expression": "assert.equal(result.timedOut, false)"
-        },
-        {
-          "line": 2200,
-          "expression": "assert.equal(result.aborted, true)"
-        },
-        {
-          "line": 2201,
-          "expression": "assert.equal(result.reaped, true)"
-        },
-        {
           "line": 2202,
-          "expression": "assert.equal(result.cleanupStatus, 'cleaned')"
+          "expression": "assert.equal(result.cleanupStatus, 'not-run')"
         },
         {
           "line": 2203,
@@ -44407,22 +44548,150 @@
         },
         {
           "line": 2204,
-          "expression": "assert.equal(result.positive, false)"
+          "expression": "assert.equal(result.terminationReason, 'aborted')"
         },
         {
           "line": 2205,
-          "expression": "assert.match(result.stdout, /hung-child-stdout:.*hung-fixture-/)"
+          "expression": "assert.equal(result.aborted, true)"
         },
         {
           "line": 2206,
-          "expression": "assert.match(result.stderr, /hung-child-stderr:.*hung-fixture-/)"
+          "expression": "assert.equal(result.positive, false)"
         },
         {
-          "line": 2207,
+          "line": 2218,
+          "expression": "assert.equal(result.code, 0)"
+        },
+        {
+          "line": 2219,
+          "expression": "assert.equal(result.signal, null)"
+        },
+        {
+          "line": 2220,
+          "expression": "assert.equal(result.cleanupStatus, 'failed')"
+        },
+        {
+          "line": 2221,
+          "expression": "assert.equal(result.cleanupError, 'injected cleanup failure')"
+        },
+        {
+          "line": 2222,
+          "expression": "assert.equal(result.positive, false)"
+        },
+        {
+          "line": 2223,
           "expression": "assert.ok(result.childTempRoot)"
         },
         {
-          "line": 2208,
+          "line": 2224,
+          "expression": "assert.doesNotReject(stat(result.childTempRoot))"
+        },
+        {
+          "line": 2228,
+          "expression": "assert.rejects(stat(result.childTempRoot), /ENOENT/)"
+        },
+        {
+          "line": 2242,
+          "expression": "assert.equal(result.code, null)"
+        },
+        {
+          "line": 2243,
+          "expression": "assert.equal(result.signal, 'SIGKILL')"
+        },
+        {
+          "line": 2244,
+          "expression": "assert.equal(result.terminationReason, 'deadline')"
+        },
+        {
+          "line": 2245,
+          "expression": "assert.equal(result.timedOut, true)"
+        },
+        {
+          "line": 2246,
+          "expression": "assert.equal(result.aborted, false)"
+        },
+        {
+          "line": 2247,
+          "expression": "assert.equal(result.reaped, true)"
+        },
+        {
+          "line": 2248,
+          "expression": "assert.equal(result.cleanupStatus, 'cleaned')"
+        },
+        {
+          "line": 2249,
+          "expression": "assert.equal(result.cleanupError, null)"
+        },
+        {
+          "line": 2250,
+          "expression": "assert.equal(result.positive, false)"
+        },
+        {
+          "line": 2251,
+          "expression": "assert.match(result.stdout, /hung-child-stdout:.*hung-fixture-/)"
+        },
+        {
+          "line": 2252,
+          "expression": "assert.match(result.stderr, /hung-child-stderr:.*hung-fixture-/)"
+        },
+        {
+          "line": 2253,
+          "expression": "assert.ok(result.childTempRoot)"
+        },
+        {
+          "line": 2254,
+          "expression": "assert.rejects(stat(result.childTempRoot), /ENOENT/)"
+        },
+        {
+          "line": 2270,
+          "expression": "assert.equal(result.code, null)"
+        },
+        {
+          "line": 2271,
+          "expression": "assert.equal(result.signal, 'SIGKILL')"
+        },
+        {
+          "line": 2272,
+          "expression": "assert.equal(result.terminationReason, 'aborted')"
+        },
+        {
+          "line": 2273,
+          "expression": "assert.equal(result.timedOut, false)"
+        },
+        {
+          "line": 2274,
+          "expression": "assert.equal(result.aborted, true)"
+        },
+        {
+          "line": 2275,
+          "expression": "assert.equal(result.reaped, true)"
+        },
+        {
+          "line": 2276,
+          "expression": "assert.equal(result.cleanupStatus, 'cleaned')"
+        },
+        {
+          "line": 2277,
+          "expression": "assert.equal(result.cleanupError, null)"
+        },
+        {
+          "line": 2278,
+          "expression": "assert.equal(result.positive, false)"
+        },
+        {
+          "line": 2279,
+          "expression": "assert.match(result.stdout, /hung-child-stdout:.*hung-fixture-/)"
+        },
+        {
+          "line": 2280,
+          "expression": "assert.match(result.stderr, /hung-child-stderr:.*hung-fixture-/)"
+        },
+        {
+          "line": 2281,
+          "expression": "assert.ok(result.childTempRoot)"
+        },
+        {
+          "line": 2282,
           "expression": "assert.rejects(stat(result.childTempRoot), /ENOENT/)"
         }
       ]
@@ -52860,7 +53129,7 @@
       "id": "TST-8e0b47b4b73a",
       "repo": "client",
       "path": "tests/ci/native-pilot-invocation.test.ts",
-      "contentHash": "55f755c13eb60b2edcd577f504879e577bd7312bf8c4783fa5224758fc3255d0",
+      "contentHash": "4251b71c30f829579e65b098fb73e2b26e419d1ebfe2d3763527e1b86f8b38a8",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/native-pilot-invocation.ts",
@@ -52973,23 +53242,23 @@
         },
         {
           "purpose": "invalid CLI input receives a generated blocked receipt in the fixed safe parent",
-          "line": 903
+          "line": 908
         },
         {
           "purpose": "actual MJS and shell wrappers retain arbitrary identity/output argv for the TS parser",
-          "line": 1140
+          "line": 1145
         },
         {
           "purpose": "runner installs lifecycle guards before the first awaited output preparation",
-          "line": 1166
+          "line": 1171
         },
         {
           "purpose": "preflight deadline aborts the same controller used by the runner",
-          "line": 1185
+          "line": 1190
         },
         {
           "purpose": "anchored directory worker is killed at the caller deadline after reporting its owned root",
-          "line": 1200
+          "line": 1205
         }
       ],
       "assertions": [
@@ -53351,274 +53620,278 @@
         },
         {
           "line": 848,
+          "expression": "assert.match(runner.slice(branchStart, branchEnd), /runtimeExecutionFailure/)"
+        },
+        {
+          "line": 849,
           "expression": "assert.doesNotMatch(runner.slice(branchStart, branchEnd), /signal:\\s*controller\\.signal/)"
         },
         {
-          "line": 894,
+          "line": 899,
           "expression": "assert.equal(result.unknownRuntime, true)"
         },
         {
-          "line": 895,
+          "line": 900,
           "expression": "assert.equal(result.runtimeFailurePublished, false)"
         },
         {
-          "line": 896,
+          "line": 901,
           "expression": "assert.rejects(lstat(path.join(outside, 'runtime-failure.private.json')))"
         },
         {
-          "line": 925,
+          "line": 930,
           "expression": "assert.equal(result.status, 0, result.stderr)"
         },
         {
-          "line": 949,
+          "line": 954,
           "expression": "assert.equal(receipt.result, 'harness-blocked')"
         },
         {
-          "line": 950,
+          "line": 955,
           "expression": "assert.equal(receipt.exitCode, 2)"
         },
         {
-          "line": 951,
+          "line": 956,
           "expression": "assert.match(receipt.runId, nativePilotRunIdPattern)"
         },
         {
-          "line": 952,
+          "line": 957,
           "expression": "assert.equal(receipt.attemptId, `${receipt.runId}:first`)"
         },
         {
-          "line": 953,
+          "line": 958,
           "expression": "assert.equal(receipt.blocker.code, 'invalid-cli-arguments')"
         },
         {
-          "line": 954,
+          "line": 959,
           "expression": "assert.equal(receipt.cleanup.status, 'not-acquired')"
         },
         {
-          "line": 955,
+          "line": 960,
           "expression": "assert.deepEqual(receipt.repositories, [])"
         },
         {
-          "line": 956,
+          "line": 961,
           "expression": "assert.deepEqual(receipt.repositoryEvidence, { status: 'unknown', missing: ['client', 'server'], reason: 'repository identity was unavailable before the preflight receipt', })"
         },
         {
-          "line": 979,
+          "line": 984,
           "expression": "assert.equal( blockedVariantReceipt.result, label === 'cancelled' ? 'cancelled' : 'harness-blocked', )"
         },
         {
-          "line": 983,
+          "line": 988,
           "expression": "assert.equal(blockedVariantReceipt.exitCode, exitCode)"
         },
         {
-          "line": 984,
+          "line": 989,
           "expression": "assert.deepEqual(blockedVariantReceipt.repositories, [])"
         },
         {
-          "line": 985,
+          "line": 990,
           "expression": "assert.equal(blockedVariantReceipt.repositoryEvidence.status, 'unknown')"
         },
         {
-          "line": 987,
+          "line": 992,
           "expression": "assert.deepEqual(receipt.command.argv, [ 'scripts/testing/run-native-pilot.ts', '<invalid-arguments>', ])"
         },
         {
-          "line": 991,
+          "line": 996,
           "expression": "assert.equal((await lstat(blocked.receiptPath)).mode & 0o777, 0o600)"
         },
         {
-          "line": 992,
+          "line": 997,
           "expression": "assert.equal((await lstat(blocked.outputRoot)).mode & 0o777, 0o700)"
         },
         {
-          "line": 993,
+          "line": 998,
           "expression": "assert.rejects( writeNativePilotBlockedReceipt({ defaultOutputParent: path.join(root, 'attempts-unbound'), repositories: [ { name: 'client', sha: 'a'.repeat(40), dirty: false, workingTreeHash: null, }, ], repositoryEvide"
         },
         {
-          "line": 1008,
+          "line": 1013,
           "expression": "assert.rejects(lstat(path.join(root, 'attempts-unbound')), { code: 'ENOENT', })"
         },
         {
-          "line": 1022,
+          "line": 1027,
           "expression": "assert.equal(observedReceipt.repositories.length, 1)"
         },
         {
-          "line": 1023,
+          "line": 1028,
           "expression": "assert.deepEqual(observedReceipt.repositoryEvidence, { status: 'observed', missing: [], reason: null, })"
         },
         {
-          "line": 1039,
+          "line": 1044,
           "expression": "assert.deepEqual(partialReceipt.repositoryEvidence, { status: 'partial', missing: ['server'], reason: 'repository identity was only partially available before the preflight receipt', })"
         },
         {
-          "line": 1047,
+          "line": 1052,
           "expression": "assert.equal(Object.isFrozen(immutableObservation.evidence.missing), true)"
         },
         {
-          "line": 1048,
+          "line": 1053,
           "expression": "assert.throws( () => (immutableObservation.evidence.missing as string[]).push('unexpected'), TypeError, )"
         },
         {
-          "line": 1052,
+          "line": 1057,
           "expression": "assert.throws( () => createRepositoryObservation([clientIdentity], [], { client: path.join(repositoryRoot, 'different-root'), }), /unbound client root/, )"
         },
         {
-          "line": 1059,
+          "line": 1064,
           "expression": "assert.throws( () => createRepositoryObservation([clientIdentity], [], { client: repositoryRoot, server: repositoryRoot, }), /unreported expected root/, )"
         },
         {
-          "line": 1067,
+          "line": 1072,
           "expression": "assert.throws( () => createRepositoryObservation([clientIdentity], ['bogus'], { client: repositoryRoot }), /invalid missing names/, )"
         },
         {
-          "line": 1079,
+          "line": 1084,
           "expression": "assert.equal(recoveredReceipt.cleanup.recoveryRecordPath, 'preflight-recovery.private.json')"
         },
         {
-          "line": 1080,
+          "line": 1085,
           "expression": "assert.ok(recoveredReceipt.artifacts.includes('preflight-recovery.private.json'))"
         },
         {
-          "line": 1081,
+          "line": 1086,
           "expression": "assert.equal((await lstat(recovered.recoveryRecordPath!)).mode & 0o777, 0o600)"
         },
         {
-          "line": 1099,
+          "line": 1104,
           "expression": "assert.equal(outputFailureReceipt.runId, requestedRunId)"
         },
         {
-          "line": 1100,
+          "line": 1105,
           "expression": "assert.equal(outputFailureReceipt.attemptId, requestedAttemptId)"
         },
         {
-          "line": 1101,
+          "line": 1106,
           "expression": "assert.equal(outputFailureReceipt.result, 'harness-blocked')"
         },
         {
-          "line": 1102,
+          "line": 1107,
           "expression": "assert.equal(outputFailureReceipt.blocker.code, 'preflight-output-root-failed')"
         },
         {
-          "line": 1103,
+          "line": 1108,
           "expression": "assert.equal(outputFailureReceipt.cleanup.status, 'failed-recovery-ledger-retained')"
         },
         {
-          "line": 1129,
+          "line": 1134,
           "expression": "assert.notEqual(collisionReceipt.runId, requestedRunId)"
         },
         {
-          "line": 1130,
+          "line": 1135,
           "expression": "assert.equal(collisionReceipt.attemptId, `${collisionReceipt.runId}:first`)"
         },
         {
-          "line": 1131,
+          "line": 1136,
           "expression": "assert.equal(collisionIdentity.requestedRunId, requestedRunId)"
         },
         {
-          "line": 1132,
+          "line": 1137,
           "expression": "assert.equal(collisionIdentity.requestedAttemptId, requestedAttemptId)"
         },
         {
-          "line": 1133,
+          "line": 1138,
           "expression": "assert.equal(collisionIdentity.allocatedRunId, collisionReceipt.runId)"
         },
         {
-          "line": 1134,
+          "line": 1139,
           "expression": "assert.equal(collisionIdentity.allocatedAttemptId, collisionReceipt.attemptId)"
         },
         {
-          "line": 1153,
+          "line": 1158,
           "expression": "assert.match(mjs, /process\\.argv\\.slice\\(2\\)/)"
         },
         {
-          "line": 1154,
+          "line": 1159,
           "expression": "assert.match(shell, /run-native-pilot\\.ts \\\"\\$@\\\"/)"
         },
         {
-          "line": 1155,
+          "line": 1160,
           "expression": "assert.doesNotMatch(mjs, /run-id|attempt-id|output-parent/)"
         },
         {
-          "line": 1156,
+          "line": 1161,
           "expression": "assert.doesNotMatch(shell, /run-id|attempt-id|output-parent/)"
         },
         {
-          "line": 1157,
+          "line": 1162,
           "expression": "assert.match(candidateRunner, /parseNativePilotInvocationArguments/)"
         },
         {
-          "line": 1158,
+          "line": 1163,
           "expression": "assert.match(candidateRunner, /attempt-identity\\.private\\.json/)"
         },
         {
-          "line": 1159,
+          "line": 1164,
           "expression": "assert.match(candidateRunner, /runtime\\.requestedRunId(?:\\s*[,)]|\\s*===)/)"
         },
         {
-          "line": 1160,
+          "line": 1165,
           "expression": "assert.match(candidateRunner, /runtime\\.requestedAttemptId(?:\\s*[,)]|\\s*===)/)"
         },
         {
-          "line": 1161,
+          "line": 1166,
           "expression": "assert.match(candidateRunner, /formatNativePilotInvocationArguments\\(invocation\\)/)"
         },
         {
-          "line": 1162,
+          "line": 1167,
           "expression": "assert.match(candidateRunner, /writeNativePilotTerminalReceipt/)"
         },
         {
-          "line": 1163,
+          "line": 1168,
           "expression": "assert.doesNotMatch(candidateRunner, /writeFile\\(path\\.join\\(output, ['\"]receipt\\.json/)"
         },
         {
-          "line": 1173,
+          "line": 1178,
           "expression": "assert.ok(lifecycleOffset >= 0)"
         },
         {
-          "line": 1174,
+          "line": 1179,
           "expression": "assert.ok(firstFilesystemAwait > lifecycleOffset)"
         },
         {
-          "line": 1175,
+          "line": 1180,
           "expression": "assert.match(runner, /writeNativePilotBlockedReceipt/)"
         },
         {
-          "line": 1176,
+          "line": 1181,
           "expression": "assert.match(runner, /preflight\\.dispose\\(\\)/)"
         },
         {
-          "line": 1181,
+          "line": 1186,
           "expression": "assert.doesNotMatch(invocation, /mkdir\\([^)]*recursive\\s*:\\s*true/)"
         },
         {
-          "line": 1182,
+          "line": 1187,
           "expression": "assert.match(invocation, /Revalidate the complete chain after creation/)"
         },
         {
-          "line": 1192,
+          "line": 1197,
           "expression": "assert.equal(lifecycle.deadlineExpired, true)"
         },
         {
-          "line": 1193,
+          "line": 1198,
           "expression": "assert.equal(lifecycle.controller.signal.aborted, true)"
         },
         {
-          "line": 1194,
+          "line": 1199,
           "expression": "assert.ok(lifecycle.controller.signal.reason instanceof NativeExecutionDeadlineError)"
         },
         {
-          "line": 1207,
+          "line": 1212,
           "expression": "assert.rejects( createNativePilotOutputRoot({ invocation: parseNativePilotInvocationArguments([ ...selection, `--run-id=${requestedRunId}`, `--attempt-id=${requestedAttemptId}`, `--output-parent=${outputParent}`, ]), def"
         },
         {
-          "line": 1224,
+          "line": 1229,
           "expression": "assert.ok(performance.now() - started < 2_000)"
         },
         {
-          "line": 1225,
+          "line": 1230,
           "expression": "assert.equal(reportedRoot, path.join(outputParent, requestedRunId))"
         },
         {
-          "line": 1226,
+          "line": 1231,
           "expression": "assert.equal((await lstat(reportedRoot)).isDirectory(), true)"
         }
       ]
@@ -55371,7 +55644,7 @@
       "id": "TST-35f6a494df7a",
       "repo": "client",
       "path": "tests/ci/native-session-profile-checkpoints.test.ts",
-      "contentHash": "0392b290bf71576f2ec16481add496b31d3e69703151c77aebb64ccc81b45f6c",
+      "contentHash": "a31e8faa00f867732ea46a1a71c52d0197c6781117604a3554453bc259b1de39",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/native-connection-snapshot.ts",
@@ -55396,140 +55669,252 @@
       "assertionPurposes": [
         {
           "purpose": "an unchanged coach timestamp is permitted",
-          "line": 140
+          "line": 141
         },
         {
           "purpose": "a hydrate inside a declared signed-in relaunch window is permitted",
-          "line": 344
+          "line": 345
         },
         {
           "purpose": "closed signed-out window uses started request IDs despite out-of-order completion",
-          "line": 368
+          "line": 369
         },
         {
           "purpose": "signed-out window rejects missing completions, repeated IDs and actual credential/auth leaks",
-          "line": 398
+          "line": 399
+        },
+        {
+          "purpose": "sign-out window accepts a clean native sign-out and a credentialed server sign-out request",
+          "line": 506
+        },
+        {
+          "purpose": "sign-out window rejects a request that still carries the old session",
+          "line": 531
+        },
+        {
+          "purpose": "sign-out window rejects a repeated or non-POST server sign-out, a new session and an incomplete stream",
+          "line": 593
+        },
+        {
+          "purpose": "sign-out and signed-out windows together check every request after the session ends",
+          "line": 638
         },
         {
           "purpose": "final transport binds saved bytes to the stopped stream and rejects late mutation",
-          "line": 427
+          "line": 674
         },
         {
           "purpose": "session ledger refuses cancellation before or during publication and rolls back partial writes",
-          "line": 443
+          "line": 690
         }
       ],
       "assertions": [
         {
-          "line": 127,
+          "line": 128,
           "expression": "assert.equal(result.status, 'verified')"
         },
         {
-          "line": 128,
+          "line": 129,
           "expression": "assert.equal(result.nativePassingCases, 0)"
         },
         {
-          "line": 129,
+          "line": 130,
           "expression": "assert.deepEqual(result.checkpointIds, [ 'beforeLogin', 'afterLogin', 'afterRestoration', 'afterSignedOutRelaunch', ])"
         },
         {
-          "line": 135,
+          "line": 136,
           "expression": "assert.equal(result.signInRequestId, 1)"
         },
         {
-          "line": 136,
+          "line": 137,
           "expression": "assert.equal(result.restorationHydrateRequestId, 2)"
         },
         {
-          "line": 144,
+          "line": 145,
           "expression": "assert.equal(verifyNativeSessionProfileCheckpoints(value).status, 'verified')"
         },
         {
-          "line": 348,
+          "line": 349,
           "expression": "assert.equal(verifyNativeSessionProfileCheckpoints(value).status, 'verified')"
         },
         {
-          "line": 356,
+          "line": 357,
           "expression": "assert.equal(verifyNativeSessionProfileCheckpoints(later).status, 'verified')"
         },
         {
-          "line": 358,
+          "line": 359,
           "expression": "assert.throws(() => verifyNativeSessionProfileCheckpoints(later))"
         },
         {
-          "line": 364,
+          "line": 365,
           "expression": "assert.throws(() => verifyNativeSessionProfileCheckpoints(value))"
         },
         {
-          "line": 380,
+          "line": 381,
           "expression": "assert.deepEqual( requireSignedOutSessionTransport({ observations: rows, window: { afterRequestId: 1, throughRequestId: 2 }, expectedTargetOrigin: api.targetOrigin, }), [rows[0]], )"
         },
         {
-          "line": 388,
+          "line": 389,
           "expression": "assert.deepEqual( requireSignedOutSessionTransport({ observations: [], window: { afterRequestId: 0, throughRequestId: 0 }, expectedTargetOrigin: api.targetOrigin, }), [], )"
         },
         {
-          "line": 421,
+          "line": 422,
           "expression": "assert.throws(() => verify([{ ...base, ...patch }]))"
         },
         {
-          "line": 422,
+          "line": 423,
           "expression": "assert.throws(() => verify([], 1))"
         },
         {
-          "line": 423,
+          "line": 424,
           "expression": "assert.throws(() => verify([base, base], 2))"
         },
         {
-          "line": 424,
+          "line": 425,
           "expression": "assert.throws(() => verify([{ ...base, requestId: 2 }], 1))"
         },
         {
-          "line": 431,
+          "line": 508,
+          "expression": "assert.deepEqual( verifySignOut(native).map((row) => row.requestId), [4, 6, 5], )"
+        },
+        {
+          "line": 513,
+          "expression": "assert.deepEqual( requireSignedOutSessionTransport({ observations: native, window: { afterRequestId: 6, throughRequestId: 7 }, expectedTargetOrigin: api.targetOrigin, }).map((row) => row.requestId), [7], )"
+        },
+        {
+          "line": 523,
+          "expression": "assert.equal(server[3].requestCredentialPresent, true)"
+        },
+        {
+          "line": 524,
+          "expression": "assert.deepEqual( verifySignOut(server).map((row) => row.requestId), [4, 6, 5], )"
+        },
+        {
+          "line": 528,
+          "expression": "assert.deepEqual(verifySignOut(native, { afterRequestId: 6, throughRequestId: 6 }), [])"
+        },
+        {
+          "line": 533,
+          "expression": "assert.throws( () => verifySignOut( withRow( signOutStream({ serverSignOut: true }), 5, streamRow(5, 'POST', '/analytics/events', 202, accessCookieOnly), ), ), /Request 5 sent during sign-out carried credentials/, )"
+        },
+        {
+          "line": 545,
+          "expression": "assert.throws( () => verifySignOut( withRow( signOutStream(), 4, streamRow(4, 'POST', '/analytics/events', 202, accessCookieOnly), ), ), /Request 4 sent during sign-out carried credentials/, )"
+        },
+        {
+          "line": 557,
+          "expression": "assert.throws( () => verifySignOut( withRow( signOutStream(), 6, streamRow(6, 'POST', '/analytics/events', 202, { ...noCredential, authorization: 'bearer', }), ), ), /Request 6 sent during sign-out carried credentials/, "
+        },
+        {
+          "line": 577,
+          "expression": "assert.throws( () => verifySignOut( withRow(signOutStream(), 5, { requestCredentialPresent: false, requestCredentialClassification: classification, }), ), /Request 5 sent during sign-out carried credentials/, )"
+        },
+        {
+          "line": 587,
+          "expression": "assert.throws( () => verifySignOut(withRow(signOutStream(), 5, { requestCredentialPresent: undefined })), /Request 5 sent during sign-out carried credentials/, )"
+        },
+        {
+          "line": 595,
+          "expression": "assert.throws( () => verifySignOut(withRow(server, 5, { pathHash: hash('/auth/session/sign-out') })), /more than one server sign-out request/, )"
+        },
+        {
+          "line": 599,
+          "expression": "assert.throws(() => verifySignOut(withRow(server, 4, { method: 'GET' })), /not a POST/)"
+        },
+        {
+          "line": 600,
+          "expression": "assert.throws( () => verifySignOut(withRow(signOutStream(), 5, { pathHash: hash('/me/hydrate') })), /Sign-out hydrated a session/, )"
+        },
+        {
+          "line": 604,
+          "expression": "assert.throws( () => verifySignOut(withRow(signOutStream(), 5, { pathHash: hash('/auth/email/sign-in') })), /Sign-out submitted credentials/, )"
+        },
+        {
+          "line": 615,
+          "expression": "assert.throws(() => verifySignOut(withRow(signOutStream(), 5, patch)))"
+        },
+        {
+          "line": 616,
+          "expression": "assert.throws( () => verifySignOut(signOutStream().filter((row) => row.requestId !== 5)), /lacks a started request/, )"
+        },
+        {
+          "line": 620,
+          "expression": "assert.throws( () => verifySignOut([ ...signOutStream(), streamRow(5, 'POST', '/analytics/events', 202, noCredential), ]), /repeats request IDs/, )"
+        },
+        {
+          "line": 628,
+          "expression": "assert.throws(() => verifySignOut(signOutStream(), { afterRequestId: 6, throughRequestId: 3 }))"
+        },
+        {
+          "line": 629,
+          "expression": "assert.throws(() => requireSignOutSessionTransport({ observations: signOutStream(), window: signOutWindow, expectedTargetOrigin: 'https://api.example.com', }), )"
+        },
+        {
+          "line": 641,
+          "expression": "assert.equal(stream[1].requestCredentialPresent, true)"
+        },
+        {
+          "line": 642,
+          "expression": "assert.doesNotThrow(() => verifySignOut(stream))"
+        },
+        {
+          "line": 649,
+          "expression": "assert.doesNotThrow(() => verifySignOut(lateLeak))"
+        },
+        {
+          "line": 650,
+          "expression": "assert.throws( () => requireSignedOutSessionTransport({ observations: lateLeak, window: { afterRequestId: 6, throughRequestId: 7 }, expectedTargetOrigin: api.targetOrigin, }), /Signed-out request carried credentials/, )"
+        },
+        {
+          "line": 660,
+          "expression": "assert.throws( () => requireSignedOutSessionTransport({ observations: withRow(stream, 7, { requestCredentialPresent: false, requestCredentialClassification: accessCookieOnly, }), window: { afterRequestId: 6, throughReque"
+        },
+        {
+          "line": 678,
           "expression": "assert.doesNotThrow(() => requireFinalSessionTransport(bytes, receipt, rows))"
         },
         {
-          "line": 432,
+          "line": 679,
           "expression": "assert.throws(() => requireFinalSessionTransport(bytes, receipt, [...rows, { ...rows[0], requestId: 3 }]), )"
         },
         {
-          "line": 435,
+          "line": 682,
           "expression": "assert.throws(() => requireFinalSessionTransport(Buffer.concat([bytes, Buffer.from(' ')]), receipt, rows), )"
         },
         {
-          "line": 440,
+          "line": 687,
           "expression": "assert.throws(() => requireFinalSessionTransport(changed, receipt, rows))"
         },
         {
-          "line": 456,
+          "line": 703,
           "expression": "assert.throws( () => publishNativeSessionLedger(report, ledger, controller.signal), /cancel during/, )"
         },
         {
-          "line": 460,
+          "line": 707,
           "expression": "assert.equal(report.observations, 'previous-diagnostic')"
         },
         {
-          "line": 461,
+          "line": 708,
           "expression": "assert.equal(report.independent, 'retained')"
         },
         {
-          "line": 462,
+          "line": 709,
           "expression": "assert.equal(Object.hasOwn(report, 'sessionViewEvidence'), false)"
         },
         {
-          "line": 463,
+          "line": 710,
           "expression": "assert.equal(report.sessionEvidencePublication, 'aborted-before-complete')"
         },
         {
-          "line": 464,
+          "line": 711,
           "expression": "assert.throws(() => publishNativeSessionLedger(report, { observations: ['new'] }, controller.signal), )"
         },
         {
-          "line": 467,
+          "line": 714,
           "expression": "assert.equal(report.observations, 'previous-diagnostic')"
         },
         {
-          "line": 470,
+          "line": 717,
           "expression": "assert.equal(report.sessionEvidencePublication, 'complete')"
         }
       ]
@@ -55538,7 +55923,7 @@
       "id": "TST-4566c98d278d",
       "repo": "client",
       "path": "tests/ci/native-session-public-dependency.test.ts",
-      "contentHash": "9cbfb3482c1eef70628ea89bd60a9961eb99a8fbe0aab07844896670d8414249",
+      "contentHash": "f21e7965c55080548d096f07d5335dbde4f6841f25466d584e771da86a09db6f",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/ios-credential-entry-diagnostic.ts",
@@ -55568,43 +55953,51 @@
       "assertionPurposes": [
         {
           "purpose": "source-only validator accepts a complete portable synthetic ledger with four checkpoint receipts",
-          "line": 862
+          "line": 866
         },
         {
           "purpose": "source-only validator rejects a tampered non-coach initial auth actor",
-          "line": 880
+          "line": 884
         },
         {
           "purpose": "source-only validator rejects terminal transport mutation, incomplete publication and dirty cleanup",
-          "line": 899
+          "line": 903
+        },
+        {
+          "purpose": "source-only validator checks every request sent between sign-out and relaunch",
+          "line": 930
+        },
+        {
+          "purpose": "an aborted iOS session capture drops every recorded transport window",
+          "line": 1001
         },
         {
           "purpose": "source/helper identity is recomputed from the complete producer ledger and rejects forged capture identity",
-          "line": 926
+          "line": 1021
         },
         {
           "purpose": "portable loader accepts synthetic capture while remaining source-only",
-          "line": 964
+          "line": 1059
         },
         {
           "purpose": "portable loader abort and invalid finite deadline remain blocked",
-          "line": 986
+          "line": 1081
         },
         {
           "purpose": "repository fixture removes its root when setup fails after creation",
-          "line": 1018
+          "line": 1113
         },
         {
           "purpose": "repository fixture retains setup and cleanup failures while removing its root",
-          "line": 1035
+          "line": 1130
         },
         {
           "purpose": "evidence fixture removes repository and workspace roots when evidence setup fails",
-          "line": 1056
+          "line": 1151
         },
         {
           "purpose": "evidence fixture retains setup and cleanup failures while removing all owned roots",
-          "line": 1073
+          "line": 1168
         }
       ],
       "assertions": [
@@ -55613,175 +56006,199 @@
           "expression": "assert.rejects( lstat(root), (error: unknown) => error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT', )"
         },
         {
-          "line": 641,
+          "line": 643,
           "expression": "assert.equal( signIn.requestCredentialPresent, false, 'Synthetic body-credential sign-in must have no auth header', )"
         },
         {
-          "line": 865,
+          "line": 869,
           "expression": "assert.equal(fixture.input.transportObservations[0].requestCredentialPresent, false)"
         },
         {
-          "line": 867,
-          "expression": "assert.equal(result.status, 'validated-source-only')"
-        },
-        {
-          "line": 868,
-          "expression": "assert.equal(result.nativePassingCases, 0)"
-        },
-        {
-          "line": 869,
-          "expression": "assert.equal(result.publicPassingCases, 0)"
-        },
-        {
-          "line": 870,
-          "expression": "assert.equal(result.publicPromotionEligible, false)"
-        },
-        {
           "line": 871,
-          "expression": "assert.deepEqual(result.assertionIds, [...nativeSessionAssertionIds])"
+          "expression": "assert.equal(result.status, 'validated-source-only')"
         },
         {
           "line": 872,
-          "expression": "assert.equal(result.files.profilePaths.length, 4)"
-        },
-        {
-          "line": 873,
-          "expression": "assert.equal(result.files.domainPaths.length, 4)"
-        },
-        {
-          "line": 874,
-          "expression": "assert.equal(result.verification.signedOutRequestCount, 0)"
-        },
-        {
-          "line": 893,
-          "expression": "assert.throws(() => validateNativeSessionPublicDependency(tampered), /actor|coach/)"
-        },
-        {
-          "line": 906,
-          "expression": "assert.throws( () => validateNativeSessionPublicDependency(tampered), /Expected values|byte length|hash|changed/, )"
-        },
-        {
-          "line": 914,
-          "expression": "assert.throws(() => validateNativeSessionPublicDependency(incomplete), /publication|complete/)"
-        },
-        {
-          "line": 917,
-          "expression": "assert.throws( () => validateNativeSessionPublicDependency(dirtyCleanup), /Expected values|survivors/, )"
-        },
-        {
-          "line": 933,
-          "expression": "assert.equal(fixtureHelpers.length, nativeSessionHelperInputPaths.length)"
-        },
-        {
-          "line": 934,
-          "expression": "assert.ok( fixtureHelpers.some( (helper) => helper.path === 'scripts/testing/ios-credential-entry-diagnostic.ts', ), )"
-        },
-        {
-          "line": 949,
-          "expression": "assert.rejects( verifyNativeSessionPublicDependencySourceIdentity(fixture.repositoryRoot, forgedHelper), /stale|identity|hash/i, )"
-        },
-        {
-          "line": 955,
-          "expression": "assert.rejects( verifyNativeSessionPublicDependencySourceIdentity(fixture.repositoryRoot, forgedSource), /Source identity changed|stale/i, )"
-        },
-        {
-          "line": 973,
-          "expression": "assert.equal(result.status, 'validated-source-only')"
-        },
-        {
-          "line": 974,
           "expression": "assert.equal(result.nativePassingCases, 0)"
         },
         {
-          "line": 975,
+          "line": 873,
           "expression": "assert.equal(result.publicPassingCases, 0)"
         },
         {
-          "line": 976,
+          "line": 874,
           "expression": "assert.equal(result.publicPromotionEligible, false)"
         },
         {
-          "line": 977,
+          "line": 875,
+          "expression": "assert.deepEqual(result.assertionIds, [...nativeSessionAssertionIds])"
+        },
+        {
+          "line": 876,
           "expression": "assert.equal(result.files.profilePaths.length, 4)"
         },
         {
-          "line": 978,
+          "line": 877,
           "expression": "assert.equal(result.files.domainPaths.length, 4)"
         },
         {
-          "line": 979,
-          "expression": "assert.equal(result.verification.signInRequestId, 1)"
+          "line": 878,
+          "expression": "assert.equal(result.verification.signedOutRequestCount, 0)"
         },
         {
-          "line": 980,
-          "expression": "assert.equal(result.verification.restorationHydrateRequestId, 2)"
+          "line": 897,
+          "expression": "assert.throws(() => validateNativeSessionPublicDependency(tampered), /actor|coach/)"
         },
         {
-          "line": 998,
-          "expression": "assert.equal(aborted.status, 'blocked')"
+          "line": 910,
+          "expression": "assert.throws( () => validateNativeSessionPublicDependency(tampered), /Expected values|byte length|hash|changed/, )"
         },
         {
-          "line": 999,
-          "expression": "assert.equal(aborted.publicPromotionEligible, false)"
+          "line": 918,
+          "expression": "assert.throws(() => validateNativeSessionPublicDependency(incomplete), /publication|complete/)"
         },
         {
-          "line": 1000,
-          "expression": "assert.equal(aborted.nativePassingCases, 0)"
+          "line": 921,
+          "expression": "assert.throws( () => validateNativeSessionPublicDependency(dirtyCleanup), /Expected values|survivors/, )"
         },
         {
-          "line": 1001,
-          "expression": "assert.ok(aborted.missing.some((item) => /aborted/i.test(item)))"
+          "line": 963,
+          "expression": "assert.throws( () => validateNativeSessionPublicDependency(leaked), /Request 3 sent during sign-out carried credentials/, )"
         },
         {
-          "line": 1010,
-          "expression": "assert.equal(invalidDeadline.status, 'blocked')"
+          "line": 976,
+          "expression": "assert.throws( () => validateNativeSessionPublicDependency( withWindow({ afterRequestId: 1, throughRequestId: 3 }), ), /sign-out window starts before restoration ended/, )"
         },
         {
-          "line": 1011,
-          "expression": "assert.equal(invalidDeadline.publicPromotionEligible, false)"
+          "line": 983,
+          "expression": "assert.throws( () => validateNativeSessionPublicDependency( withWindow({ afterRequestId: 2, throughRequestId: 2 }), ), /sign-out window does not end at the signed-out relaunch/, )"
         },
         {
-          "line": 1012,
-          "expression": "assert.ok(invalidDeadline.missing.some((item) => /deadline/i.test(item)))"
+          "line": 992,
+          "expression": "assert.throws( () => validateNativeSessionPublicDependency(unlinked), /sign-out transport range is not linked to stopped stream/, )"
         },
         {
-          "line": 1030,
-          "expression": "assert.equal(caught, setupError)"
+          "line": 1008,
+          "expression": "assert.ok(start >= 0 && end > start, 'aborted session evidence scrub is missing')"
         },
         {
-          "line": 1031,
-          "expression": "assert.equal(ownedRoots.length, 1)"
+          "line": 1018,
+          "expression": "assert.match(scrubbed, new RegExp(`'${key}',`), `aborted capture keeps ${key}`)"
+        },
+        {
+          "line": 1028,
+          "expression": "assert.equal(fixtureHelpers.length, nativeSessionHelperInputPaths.length)"
+        },
+        {
+          "line": 1029,
+          "expression": "assert.ok( fixtureHelpers.some( (helper) => helper.path === 'scripts/testing/ios-credential-entry-diagnostic.ts', ), )"
+        },
+        {
+          "line": 1044,
+          "expression": "assert.rejects( verifyNativeSessionPublicDependencySourceIdentity(fixture.repositoryRoot, forgedHelper), /stale|identity|hash/i, )"
         },
         {
           "line": 1050,
-          "expression": "assert.ok(aggregateContains(caught, setupError.message))"
-        },
-        {
-          "line": 1051,
-          "expression": "assert.ok(aggregateContains(caught, cleanupError.message))"
-        },
-        {
-          "line": 1052,
-          "expression": "assert.equal(ownedRoots.length, 1)"
+          "expression": "assert.rejects( verifyNativeSessionPublicDependencySourceIdentity(fixture.repositoryRoot, forgedSource), /Source identity changed|stale/i, )"
         },
         {
           "line": 1068,
-          "expression": "assert.equal(caught, setupError)"
+          "expression": "assert.equal(result.status, 'validated-source-only')"
         },
         {
           "line": 1069,
-          "expression": "assert.ok(ownedRoots.length >= 2)"
+          "expression": "assert.equal(result.nativePassingCases, 0)"
         },
         {
-          "line": 1088,
+          "line": 1070,
+          "expression": "assert.equal(result.publicPassingCases, 0)"
+        },
+        {
+          "line": 1071,
+          "expression": "assert.equal(result.publicPromotionEligible, false)"
+        },
+        {
+          "line": 1072,
+          "expression": "assert.equal(result.files.profilePaths.length, 4)"
+        },
+        {
+          "line": 1073,
+          "expression": "assert.equal(result.files.domainPaths.length, 4)"
+        },
+        {
+          "line": 1074,
+          "expression": "assert.equal(result.verification.signInRequestId, 1)"
+        },
+        {
+          "line": 1075,
+          "expression": "assert.equal(result.verification.restorationHydrateRequestId, 2)"
+        },
+        {
+          "line": 1093,
+          "expression": "assert.equal(aborted.status, 'blocked')"
+        },
+        {
+          "line": 1094,
+          "expression": "assert.equal(aborted.publicPromotionEligible, false)"
+        },
+        {
+          "line": 1095,
+          "expression": "assert.equal(aborted.nativePassingCases, 0)"
+        },
+        {
+          "line": 1096,
+          "expression": "assert.ok(aborted.missing.some((item) => /aborted/i.test(item)))"
+        },
+        {
+          "line": 1105,
+          "expression": "assert.equal(invalidDeadline.status, 'blocked')"
+        },
+        {
+          "line": 1106,
+          "expression": "assert.equal(invalidDeadline.publicPromotionEligible, false)"
+        },
+        {
+          "line": 1107,
+          "expression": "assert.ok(invalidDeadline.missing.some((item) => /deadline/i.test(item)))"
+        },
+        {
+          "line": 1125,
+          "expression": "assert.equal(caught, setupError)"
+        },
+        {
+          "line": 1126,
+          "expression": "assert.equal(ownedRoots.length, 1)"
+        },
+        {
+          "line": 1145,
           "expression": "assert.ok(aggregateContains(caught, setupError.message))"
         },
         {
-          "line": 1089,
+          "line": 1146,
           "expression": "assert.ok(aggregateContains(caught, cleanupError.message))"
         },
         {
-          "line": 1090,
+          "line": 1147,
+          "expression": "assert.equal(ownedRoots.length, 1)"
+        },
+        {
+          "line": 1163,
+          "expression": "assert.equal(caught, setupError)"
+        },
+        {
+          "line": 1164,
+          "expression": "assert.ok(ownedRoots.length >= 2)"
+        },
+        {
+          "line": 1183,
+          "expression": "assert.ok(aggregateContains(caught, setupError.message))"
+        },
+        {
+          "line": 1184,
+          "expression": "assert.ok(aggregateContains(caught, cleanupError.message))"
+        },
+        {
+          "line": 1185,
           "expression": "assert.ok(ownedRoots.length >= 2)"
         }
       ]
@@ -55790,7 +56207,7 @@
       "id": "TST-6464bdabe453",
       "repo": "client",
       "path": "tests/ci/native-session-public-finalization-real-path.test.ts",
-      "contentHash": "82dc2c49b86d85b366b9b1812ed1cad3f56098eb02d5ae827ee6749ff0a883af",
+      "contentHash": "b72e18b807aa1148918949306af3a136f9c66278cdcac30a355ab46b73d581c8",
       "command": "yarn test:unit",
       "ownerPaths": [
         "app/auth/sign-in.tsx",
@@ -55823,47 +56240,47 @@
       "assertionPurposes": [
         {
           "purpose": "real disposable producer path loads, finalizes, stages and verifies six source-bound assertions",
-          "line": 793
+          "line": 795
         },
         {
           "purpose": "real stage orchestration removes an eligible prefix when the owner aborts during I/O",
-          "line": 830
+          "line": 832
         },
         {
           "purpose": "real stage rejects an equal-byte inode replacement after protected validation",
-          "line": 856
+          "line": 858
         },
         {
           "purpose": "real stage rejects growth of a protected cleanup sidecar",
-          "line": 876
+          "line": 878
         },
         {
           "purpose": "real final verification rejects a late equal-byte cleanup-sidecar replacement",
-          "line": 896
+          "line": 898
         },
         {
           "purpose": "real stage orchestration rejects an expired deadline before publishing a manifest",
-          "line": 928
+          "line": 930
         },
         {
           "purpose": "source-only fixture includes identity, inventory and helper bytes without heavy roots",
-          "line": 957
+          "line": 959
         },
         {
           "purpose": "source-only fixture rejects .git file pointers and symlinks before reading them",
-          "line": 989
+          "line": 991
         },
         {
           "purpose": "source-only fixture removes its parent when creation fails after source copy",
-          "line": 1022
+          "line": 1024
         },
         {
           "purpose": "source-only fixture removes its parent when the creation hook throws",
-          "line": 1037
+          "line": 1039
         },
         {
           "purpose": "source-only fixture retains both creation and cleanup failures",
-          "line": 1052
+          "line": 1054
         }
       ],
       "assertions": [
@@ -55876,92 +56293,88 @@
           "expression": "assert.equal(source.dirty, true)"
         },
         {
-          "line": 719,
+          "line": 721,
           "expression": "assert.equal(loaded.status, 'validated-source-only', JSON.stringify(loaded))"
         },
         {
-          "line": 720,
+          "line": 722,
           "expression": "assert.equal(loaded.nativePassingCases, 0)"
         },
         {
-          "line": 721,
+          "line": 723,
           "expression": "assert.equal(loaded.publicPassingCases, 0)"
         },
         {
-          "line": 722,
+          "line": 724,
           "expression": "assert.equal(loaded.publicPromotionEligible, false)"
         },
         {
-          "line": 723,
+          "line": 725,
           "expression": "assert.deepEqual(loaded.assertionIds, nativeSessionAssertionIds)"
         },
         {
-          "line": 797,
+          "line": 799,
           "expression": "assert.equal(controls.status, 'candidate-ready')"
         },
         {
-          "line": 798,
+          "line": 800,
           "expression": "assert.equal(controls.nativePassingCases, 0)"
         },
         {
-          "line": 799,
+          "line": 801,
           "expression": "assert.equal(controls.publicPassingCases, 0)"
         },
         {
-          "line": 800,
+          "line": 802,
           "expression": "assert.equal(controls.publicPromotionEligible, false)"
         },
         {
-          "line": 801,
+          "line": 803,
           "expression": "assert.ok(controls.originalFiles.length > 0)"
         },
         {
-          "line": 802,
+          "line": 804,
           "expression": "assert.ok(controls.helperFiles.some((row) => row.path.endsWith('AndroidManifest.xml')))"
         },
         {
-          "line": 808,
+          "line": 810,
           "expression": "assert.equal(staged.assertions.length, nativeSessionAssertionIds.length)"
         },
         {
-          "line": 809,
+          "line": 811,
           "expression": "assert.equal( staged.artifacts.some((value) => value.endsWith('copy-manifest.private.json')), true, )"
         },
         {
-          "line": 839,
+          "line": 841,
           "expression": "assert.rejects(stagePromise)"
         },
         {
-          "line": 840,
+          "line": 842,
           "expression": "assert.rejects( readFile( path.join( fixture.outputRoot, 'evidence', captureRunId, 'session-public', 'copy-manifest.private.json', ), ), )"
         },
         {
-          "line": 864,
+          "line": 866,
           "expression": "assert.rejects( stageNativeSessionPublicEvidence(fixture.input, { signal: new AbortController().signal, deadlineAtMs: performance.now() + 120_000, }), /identity changed|descriptor\\/path/, )"
         },
         {
-          "line": 884,
+          "line": 886,
           "expression": "assert.rejects( stageNativeSessionPublicEvidence(fixture.input, { signal: new AbortController().signal, deadlineAtMs: performance.now() + 120_000, }), /hash changed|byte count changed|changed during read|size changed/, )"
         },
         {
-          "line": 908,
+          "line": 910,
           "expression": "assert.rejects( verifyNativeSessionPublicEvidence( { outputRoot: fixture.outputRoot, copyManifest: staged.copyManifest, requestedRunId, captureRunId, fixtureRunId, captureRoot: fixture.captureRoot, repositoryRoot: fixtur"
         },
         {
-          "line": 931,
+          "line": 933,
           "expression": "assert.rejects( stageNativeSessionPublicEvidence(fixture.input, { signal: new AbortController().signal, deadlineAtMs: performance.now() - 1, }), )"
         },
         {
-          "line": 941,
+          "line": 943,
           "expression": "assert.rejects( readFile( path.join( fixture.outputRoot, 'evidence', captureRunId, 'session-public', 'copy-manifest.private.json', ), ), )"
         },
         {
-          "line": 961,
-          "expression": "assert.equal(copied.has('docs/qa/native-pilot/inventory.json'), true)"
-        },
-        {
           "line": 963,
-          "expression": "assert.equal(copied.has(relativePath), true)"
+          "expression": "assert.equal(copied.has('docs/qa/native-pilot/inventory.json'), true)"
         },
         {
           "line": 965,
@@ -55973,86 +56386,90 @@
         },
         {
           "line": 969,
+          "expression": "assert.equal(copied.has(relativePath), true)"
+        },
+        {
+          "line": 971,
           "expression": "assert.equal( fixture.sourceFixture.copiedRelativePaths.some( (relativePath) => relativePath === excludedPrefix || relativePath.startsWith(`${excludedPrefix}/`), ), false, )"
         },
         {
-          "line": 976,
+          "line": 978,
           "expression": "assert.equal(copied.has('.git'), false)"
         },
         {
-          "line": 977,
+          "line": 979,
           "expression": "assert.equal(copied.has('.qa'), false)"
         },
         {
-          "line": 978,
+          "line": 980,
           "expression": "assert.equal(copied.has('node_modules'), false)"
         },
         {
-          "line": 979,
+          "line": 981,
           "expression": "assert.equal((await stat(path.join(fixture.repositoryRoot, 'app'))).isDirectory(), true)"
         },
         {
-          "line": 980,
+          "line": 982,
           "expression": "assert.equal( (await stat(path.join(fixture.repositoryRoot, 'app/auth/sign-in.tsx'))).isFile(), true, )"
         },
         {
-          "line": 1002,
+          "line": 1004,
           "expression": "assert.rejects( copySourceFile(sourceRoot, destinationRoot, '.git', new Set()), /source-only fixture path is excluded/, )"
         },
         {
-          "line": 1012,
+          "line": 1014,
           "expression": "assert.rejects( copySourceFile(sourceRoot, destinationRoot, '.git', new Set()), /source-only fixture path is excluded/, )"
         },
         {
-          "line": 1016,
+          "line": 1018,
           "expression": "assert.rejects(stat(path.join(destinationRoot, '.git')))"
         },
         {
-          "line": 1024,
+          "line": 1026,
           "expression": "assert.rejects( createFixture({ failAfterSourceCopy: true, onParentCreated: (created) => { parent = created; }, }), /intentional source fixture creation failure/, )"
         },
         {
-          "line": 1033,
+          "line": 1035,
           "expression": "assert.ok(parent)"
         },
         {
-          "line": 1034,
+          "line": 1036,
           "expression": "assert.rejects(stat(parent))"
         },
         {
-          "line": 1039,
+          "line": 1041,
           "expression": "assert.rejects( createFixture({ onParentCreated: (created) => { parent = created; throw new Error('intentional parent hook failure'); }, }), /intentional parent hook failure/, )"
         },
         {
-          "line": 1048,
+          "line": 1050,
           "expression": "assert.ok(parent)"
         },
         {
-          "line": 1049,
+          "line": 1051,
           "expression": "assert.rejects(stat(parent))"
         },
         {
-          "line": 1056,
+          "line": 1058,
           "expression": "assert.rejects( createFixture({ onParentCreated: (created) => { parent = created; throw new Error('intentional parent hook failure'); }, removeParent: () => { throw cleanupError; }, }), (error: unknown) => { assert.ok(er"
         },
         {
-          "line": 1067,
+          "line": 1069,
           "expression": "assert.ok(error instanceof AggregateError)"
         },
         {
-          "line": 1068,
+          "line": 1070,
           "expression": "assert.equal(error.message, 'source-only fixture creation and cleanup both failed')"
         },
         {
-          "line": 1069,
+          "line": 1071,
           "expression": "assert.equal(error.errors.length, 2)"
         },
         {
-          "line": 1070,
+          "line": 1072,
           "expression": "assert.match(String(error.errors[0]), /intentional parent hook failure/)"
         },
         {
-          "line": 1071,
+          "line": 1073,
           "expression": "assert.equal(error.errors[1], cleanupError)"
         }
       ]
@@ -62322,7 +62739,7 @@
       "id": "TST-c611f249c26c",
       "repo": "client",
       "path": "tests/ci/run-android-session-attempt.test.ts",
-      "contentHash": "d32b7bcf80a0d8b51c1c9fb0785da06267eeb82dae8fc2114b16e59b38567b9e",
+      "contentHash": "0b882506ce3d7c90cbf83c50bdbd044a0ea0022e144a9595ae5de67afb56365c",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/capture-android-testability.ts",
@@ -62348,276 +62765,276 @@
       "assertionPurposes": [
         {
           "purpose": "Android session runner performs one capture, strict cleanup, source-only load and optional staging",
-          "line": 281
+          "line": 282
         },
         {
           "purpose": "Android session runner blocks before loading when independent cleanup fails",
-          "line": 353
+          "line": 354
         },
         {
           "purpose": "Android session runner blocks when final selection hashes change after capture",
-          "line": 383
+          "line": 384
         },
         {
           "purpose": "Android session runner retains cleanup when selection changes after capture",
-          "line": 418
+          "line": 419
         },
         {
           "purpose": "Android session runner rejects stale build identity before consumer loading",
-          "line": 453
+          "line": 454
         },
         {
           "purpose": "Android session runner preserves stage verification failure as blocked",
-          "line": 480
+          "line": 481
         },
         {
           "purpose": "Android session runner blocks late selection drift after source staging",
-          "line": 502
+          "line": 503
         },
         {
           "purpose": "Android session runner blocks a late abort before adapter publication",
-          "line": 555
+          "line": 556
         },
         {
           "purpose": "Android session runner rejects changed selection and pre-acquisition cancellation",
-          "line": 584
+          "line": 585
         },
         {
           "purpose": "Android session capture tuple validator rejects forged completion facts",
-          "line": 626
+          "line": 627
         }
       ],
       "assertions": [
         {
-          "line": 337,
+          "line": 338,
           "expression": "assert.equal(captures, 1)"
         },
         {
-          "line": 338,
-          "expression": "assert.equal(cleanups, 1)"
-        },
-        {
           "line": 339,
-          "expression": "assert.equal(loads, 1)"
+          "expression": "assert.equal(cleanups, 1)"
         },
         {
           "line": 340,
-          "expression": "assert.equal(stages, 1)"
+          "expression": "assert.equal(loads, 1)"
         },
         {
           "line": 341,
-          "expression": "assert.equal(verifies, 1)"
-        },
-        {
-          "line": 342,
-          "expression": "assert.equal(result.captureCompleted, true)"
-        },
-        {
-          "line": 343,
-          "expression": "assert.equal(result.externalCleanupResult, 'passed')"
-        },
-        {
-          "line": 344,
-          "expression": "assert.equal(result.verificationResult, 'source-only')"
-        },
-        {
-          "line": 345,
-          "expression": "assert.equal(result.nativePassingCases, 0)"
-        },
-        {
-          "line": 346,
-          "expression": "assert.equal(result.publicPromotionEligible, false)"
-        },
-        {
-          "line": 347,
-          "expression": "assert.equal(androidSessionAttemptMustRemainBlocked(result), true)"
-        },
-        {
-          "line": 348,
-          "expression": "assert.equal(androidSessionCaptureResultConsistent(result), true)"
-        },
-        {
-          "line": 372,
-          "expression": "assert.equal(loads, 0)"
-        },
-        {
-          "line": 373,
-          "expression": "assert.equal(result.externalCleanupResult, 'failed')"
-        },
-        {
-          "line": 374,
-          "expression": "assert.equal(result.verificationResult, 'not-executed')"
-        },
-        {
-          "line": 375,
-          "expression": "assert.equal(result.postCaptureFailure?.phase, 'cleanup')"
-        },
-        {
-          "line": 376,
-          "expression": "assert.equal(result.postCaptureFailure?.artifactPath, 'external-cleanup.private.json')"
-        },
-        {
-          "line": 377,
-          "expression": "assert.equal(result.postCaptureFailure?.cleanupResult, 'failed')"
-        },
-        {
-          "line": 378,
-          "expression": "assert.equal(result.postCaptureFailure?.cleanupCensusStatus, 'recovery-retained')"
-        },
-        {
-          "line": 379,
-          "expression": "assert.equal(result.publicPromotionEligible, false)"
-        },
-        {
-          "line": 409,
-          "expression": "assert.equal(selections, 3)"
-        },
-        {
-          "line": 410,
-          "expression": "assert.equal(stages, 0)"
-        },
-        {
-          "line": 411,
-          "expression": "assert.equal(result.verificationResult, 'blocked')"
-        },
-        {
-          "line": 412,
-          "expression": "assert.equal(result.verificationFailure?.phase, 'verification')"
-        },
-        {
-          "line": 413,
-          "expression": "assert.match(result.verificationFailure?.message ?? '', /selection changed|Expected values/)"
-        },
-        {
-          "line": 414,
-          "expression": "assert.equal(result.publicPromotionEligible, false)"
-        },
-        {
-          "line": 444,
-          "expression": "assert.equal(selections, 2)"
-        },
-        {
-          "line": 445,
-          "expression": "assert.equal(cleanups, 1)"
-        },
-        {
-          "line": 446,
-          "expression": "assert.equal(result.externalCleanupResult, 'passed')"
-        },
-        {
-          "line": 447,
-          "expression": "assert.equal(result.verificationResult, 'blocked')"
-        },
-        {
-          "line": 448,
-          "expression": "assert.equal(result.verificationFailure?.phase, 'verification')"
-        },
-        {
-          "line": 449,
-          "expression": "assert.match(result.verificationFailure?.message ?? '', /selection changed|Expected values/)"
-        },
-        {
-          "line": 473,
-          "expression": "assert.equal(loads, 0)"
-        },
-        {
-          "line": 474,
-          "expression": "assert.equal(result.verificationResult, 'blocked')"
-        },
-        {
-          "line": 475,
-          "expression": "assert.equal(result.verificationFailure?.phase, 'verification')"
-        },
-        {
-          "line": 476,
-          "expression": "assert.match(result.verificationFailure?.message ?? '', /hash|invalid/i)"
-        },
-        {
-          "line": 495,
-          "expression": "assert.equal(result.dependencyStatus, 'validated-source-only')"
-        },
-        {
-          "line": 496,
-          "expression": "assert.equal(result.verificationResult, 'blocked')"
-        },
-        {
-          "line": 497,
-          "expression": "assert.equal(result.postCaptureFailure?.phase, 'verification')"
-        },
-        {
-          "line": 498,
-          "expression": "assert.equal(result.publicPromotionEligible, false)"
-        },
-        {
-          "line": 545,
-          "expression": "assert.equal(selections, 4)"
-        },
-        {
-          "line": 546,
           "expression": "assert.equal(stages, 1)"
         },
         {
-          "line": 547,
-          "expression": "assert.equal(result.staged !== null, true)"
+          "line": 342,
+          "expression": "assert.equal(verifies, 1)"
         },
         {
-          "line": 548,
+          "line": 343,
+          "expression": "assert.equal(result.captureCompleted, true)"
+        },
+        {
+          "line": 344,
+          "expression": "assert.equal(result.externalCleanupResult, 'passed')"
+        },
+        {
+          "line": 345,
+          "expression": "assert.equal(result.verificationResult, 'source-only')"
+        },
+        {
+          "line": 346,
+          "expression": "assert.equal(result.nativePassingCases, 0)"
+        },
+        {
+          "line": 347,
+          "expression": "assert.equal(result.publicPromotionEligible, false)"
+        },
+        {
+          "line": 348,
+          "expression": "assert.equal(androidSessionAttemptMustRemainBlocked(result), true)"
+        },
+        {
+          "line": 349,
+          "expression": "assert.equal(androidSessionCaptureResultConsistent(result), true)"
+        },
+        {
+          "line": 373,
+          "expression": "assert.equal(loads, 0)"
+        },
+        {
+          "line": 374,
+          "expression": "assert.equal(result.externalCleanupResult, 'failed')"
+        },
+        {
+          "line": 375,
+          "expression": "assert.equal(result.verificationResult, 'not-executed')"
+        },
+        {
+          "line": 376,
+          "expression": "assert.equal(result.postCaptureFailure?.phase, 'cleanup')"
+        },
+        {
+          "line": 377,
+          "expression": "assert.equal(result.postCaptureFailure?.artifactPath, 'external-cleanup.private.json')"
+        },
+        {
+          "line": 378,
+          "expression": "assert.equal(result.postCaptureFailure?.cleanupResult, 'failed')"
+        },
+        {
+          "line": 379,
+          "expression": "assert.equal(result.postCaptureFailure?.cleanupCensusStatus, 'recovery-retained')"
+        },
+        {
+          "line": 380,
+          "expression": "assert.equal(result.publicPromotionEligible, false)"
+        },
+        {
+          "line": 410,
+          "expression": "assert.equal(selections, 3)"
+        },
+        {
+          "line": 411,
+          "expression": "assert.equal(stages, 0)"
+        },
+        {
+          "line": 412,
           "expression": "assert.equal(result.verificationResult, 'blocked')"
         },
         {
-          "line": 549,
+          "line": 413,
           "expression": "assert.equal(result.verificationFailure?.phase, 'verification')"
         },
         {
-          "line": 550,
-          "expression": "assert.match(result.verificationFailure?.message ?? '', /source staging|Expected values/)"
+          "line": 414,
+          "expression": "assert.match(result.verificationFailure?.message ?? '', /selection changed|Expected values/)"
         },
         {
-          "line": 551,
+          "line": 415,
           "expression": "assert.equal(result.publicPromotionEligible, false)"
         },
         {
-          "line": 574,
+          "line": 445,
+          "expression": "assert.equal(selections, 2)"
+        },
+        {
+          "line": 446,
+          "expression": "assert.equal(cleanups, 1)"
+        },
+        {
+          "line": 447,
+          "expression": "assert.equal(result.externalCleanupResult, 'passed')"
+        },
+        {
+          "line": 448,
           "expression": "assert.equal(result.verificationResult, 'blocked')"
         },
         {
-          "line": 575,
+          "line": 449,
+          "expression": "assert.equal(result.verificationFailure?.phase, 'verification')"
+        },
+        {
+          "line": 450,
+          "expression": "assert.match(result.verificationFailure?.message ?? '', /selection changed|Expected values/)"
+        },
+        {
+          "line": 474,
+          "expression": "assert.equal(loads, 0)"
+        },
+        {
+          "line": 475,
+          "expression": "assert.equal(result.verificationResult, 'blocked')"
+        },
+        {
+          "line": 476,
+          "expression": "assert.equal(result.verificationFailure?.phase, 'verification')"
+        },
+        {
+          "line": 477,
+          "expression": "assert.match(result.verificationFailure?.message ?? '', /hash|invalid/i)"
+        },
+        {
+          "line": 496,
+          "expression": "assert.equal(result.dependencyStatus, 'validated-source-only')"
+        },
+        {
+          "line": 497,
+          "expression": "assert.equal(result.verificationResult, 'blocked')"
+        },
+        {
+          "line": 498,
           "expression": "assert.equal(result.postCaptureFailure?.phase, 'verification')"
         },
         {
-          "line": 576,
+          "line": 499,
           "expression": "assert.equal(result.publicPromotionEligible, false)"
         },
         {
+          "line": 546,
+          "expression": "assert.equal(selections, 4)"
+        },
+        {
+          "line": 547,
+          "expression": "assert.equal(stages, 1)"
+        },
+        {
+          "line": 548,
+          "expression": "assert.equal(result.staged !== null, true)"
+        },
+        {
+          "line": 549,
+          "expression": "assert.equal(result.verificationResult, 'blocked')"
+        },
+        {
+          "line": 550,
+          "expression": "assert.equal(result.verificationFailure?.phase, 'verification')"
+        },
+        {
+          "line": 551,
+          "expression": "assert.match(result.verificationFailure?.message ?? '', /source staging|Expected values/)"
+        },
+        {
+          "line": 552,
+          "expression": "assert.equal(result.publicPromotionEligible, false)"
+        },
+        {
+          "line": 575,
+          "expression": "assert.equal(result.verificationResult, 'blocked')"
+        },
+        {
+          "line": 576,
+          "expression": "assert.equal(result.postCaptureFailure?.phase, 'verification')"
+        },
+        {
           "line": 577,
+          "expression": "assert.equal(result.publicPromotionEligible, false)"
+        },
+        {
+          "line": 578,
           "expression": "assert.rejects( readFile(path.join(captureRoot, 'android-session-runtime-adapter.private.json')), /ENOENT/, )"
         },
         {
-          "line": 589,
+          "line": 590,
           "expression": "assert.rejects( runAndroidSessionAttempt( { repositoryRoot, requestedRunId: id('2'), selection: altered, signal: new AbortController().signal, }, dependencies(captureFixture(captureRoot), current, { select: () => Promise"
         },
         {
-          "line": 607,
+          "line": 608,
           "expression": "assert.equal(captures, 0)"
         },
         {
-          "line": 610,
+          "line": 611,
           "expression": "assert.rejects( runAndroidSessionAttempt( { repositoryRoot, requestedRunId: id('3'), selection: current, signal: controller.signal }, dependencies(captureFixture(captureRoot), current, { capture: () => { captures++; retu"
         },
         {
-          "line": 622,
+          "line": 623,
           "expression": "assert.equal(captures, 0)"
         },
         {
-          "line": 634,
+          "line": 635,
           "expression": "assert.equal(androidSessionCaptureResultConsistent(valid), true)"
         },
         {
-          "line": 635,
+          "line": 636,
           "expression": "assert.equal(androidSessionCaptureResultConsistent({ ...valid, captureCompleted: false }), false)"
         },
         {
-          "line": 636,
+          "line": 637,
           "expression": "assert.equal( androidSessionCaptureResultConsistent({ ...valid, captureInvocation: { ...valid.captureInvocation, exitCode: 2 }, }), false, )"
         }
       ]
@@ -71332,17 +71749,210 @@
       ]
     },
     {
+      "id": "TST-c046834d2e4a",
+      "repo": "client",
+      "path": "tests/component/ds-keyboard.test.tsx",
+      "contentHash": "fea0248991039c364b7a0cca8ebd36adeb626215a3d38bf033b25a94cd34cfec",
+      "command": "yarn test:component",
+      "ownerPaths": [
+        "components/ds/primitives/DsScreen.tsx",
+        "components/ds/primitives/useDsKeyboard.ts",
+        "constants/design-system.ts",
+        "tests/component/keyboard-test-utils.ts"
+      ],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["rendered-component"],
+      "dataMode": "in-process",
+      "platforms": ["host"],
+      "selectors": ["overlay", "screen", "screen.keyboardSpacer", "spacer"],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "retain",
+      "dispositionReason": "Retain until overlapping coverage and execution evidence justify a change.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "a keyboard frame needs a height and falls back to the window bottom for its top",
+          "line": 21
+        },
+        {
+          "purpose": "overlap is the part of a view below the keyboard top",
+          "line": 28
+        },
+        {
+          "purpose": "reveal scrolls only as far as needed and keeps a tall target top visible",
+          "line": 38
+        },
+        {
+          "purpose": "a sheet is capped between the top safe area and the keyboard only while it is open",
+          "line": 46
+        },
+        {
+          "purpose": "pads a bottom panel by the measured overlap and clears it when the keyboard hides",
+          "line": 72
+        },
+        {
+          "purpose": "stays at zero while disabled",
+          "line": 82
+        },
+        {
+          "purpose": "is opt-in: a default screen keeps its scroll props and never adds keyboard space",
+          "line": 91
+        },
+        {
+          "purpose": "adds the covered height as bottom space while the keyboard is open",
+          "line": 103
+        },
+        {
+          "purpose": "keeps a screen-chosen tap behavior",
+          "line": 119
+        },
+        {
+          "purpose": "scrolls a screen input that the keyboard covers into view, even with a sheet open",
+          "line": 199
+        },
+        {
+          "purpose": "leaves the screen behind an open sheet where it was while the sheet input is focused",
+          "line": 210
+        }
+      ],
+      "assertions": [
+        {
+          "line": 22,
+          "expression": "expect(toDsKeyboardFrame(null)).toBeNull()"
+        },
+        {
+          "line": 23,
+          "expression": "expect(toDsKeyboardFrame({ screenY: 844, height: 0 })).toBeNull()"
+        },
+        {
+          "line": 24,
+          "expression": "expect(toDsKeyboardFrame({ screenY: 500, height: 344 })).toEqual({ top: 500, height: 344 })"
+        },
+        {
+          "line": 25,
+          "expression": "expect(toDsKeyboardFrame({ screenY: 0, height: 300 }, 844)).toEqual({ top: 544, height: 300 })"
+        },
+        {
+          "line": 30,
+          "expression": "expect(computeKeyboardOverlap(844, null)).toBe(0)"
+        },
+        {
+          "line": 31,
+          "expression": "expect(computeKeyboardOverlap(844, keyboard)).toBe(344)"
+        },
+        {
+          "line": 32,
+          "expression": "expect(computeKeyboardOverlap(760, keyboard)).toBe(260)"
+        },
+        {
+          "line": 33,
+          "expression": "expect(computeKeyboardOverlap(480, keyboard)).toBe(0)"
+        },
+        {
+          "line": 35,
+          "expression": "expect(computeKeyboardOverlap(0, keyboard)).toBe(344)"
+        },
+        {
+          "line": 40,
+          "expression": "expect(computeRevealScrollDelta({ top: 200, bottom: 300, ...visible })).toBe(0)"
+        },
+        {
+          "line": 41,
+          "expression": "expect(computeRevealScrollDelta({ top: 520, bottom: 640, ...visible })).toBe(140)"
+        },
+        {
+          "line": 42,
+          "expression": "expect(computeRevealScrollDelta({ top: 40, bottom: 90, ...visible })).toBe(-60)"
+        },
+        {
+          "line": 43,
+          "expression": "expect(computeRevealScrollDelta({ top: 300, bottom: 900, ...visible })).toBe(200)"
+        },
+        {
+          "line": 48,
+          "expression": "expect(computeKeyboardSheetBounds({ ...sheet, overlap: 0 })).toBeNull()"
+        },
+        {
+          "line": 51,
+          "expression": "expect(computeKeyboardSheetBounds({ ...sheet, overlap: 344 })).toEqual({ minHeight: available, maxHeight: available, })"
+        },
+        {
+          "line": 55,
+          "expression": "expect(computeKeyboardSheetBounds({ ...sheet, overlap: 100, preferredMinHeight: 200 })).toEqual( { minHeight: 200, maxHeight: 844 - 100 - 47 - DsSpace.sm }, )"
+        },
+        {
+          "line": 75,
+          "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 0 })"
+        },
+        {
+          "line": 77,
+          "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 300 })"
+        },
+        {
+          "line": 79,
+          "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 0 })"
+        },
+        {
+          "line": 86,
+          "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 0 })"
+        },
+        {
+          "line": 98,
+          "expression": "expect(screen.getByTestId('screen')).not.toHaveProp('keyboardShouldPersistTaps')"
+        },
+        {
+          "line": 100,
+          "expression": "expect(screen.queryByTestId('screen.keyboardSpacer')).toBeNull()"
+        },
+        {
+          "line": 111,
+          "expression": "expect(screen.getByTestId('screen')).toHaveProp('keyboardShouldPersistTaps', 'handled')"
+        },
+        {
+          "line": 112,
+          "expression": "expect(screen.queryByTestId('screen.keyboardSpacer')).toBeNull()"
+        },
+        {
+          "line": 114,
+          "expression": "expect(screen.getByTestId('screen.keyboardSpacer')).toHaveStyle({ height: 344 })"
+        },
+        {
+          "line": 116,
+          "expression": "expect(screen.queryByTestId('screen.keyboardSpacer')).toBeNull()"
+        },
+        {
+          "line": 125,
+          "expression": "expect(screen.getByTestId('screen')).toHaveProp('keyboardShouldPersistTaps', 'always')"
+        },
+        {
+          "line": 207,
+          "expression": "expect(scrollTo).toHaveBeenCalledWith({ y: 900 + 40 - (844 - 344 - 16), animated: true })"
+        },
+        {
+          "line": 218,
+          "expression": "expect(scrollTo).not.toHaveBeenCalled()"
+        }
+      ]
+    },
+    {
       "id": "TST-273949dc6c3a",
       "repo": "client",
       "path": "tests/component/exercise-search.test.tsx",
-      "contentHash": "5e68a28734489ee0b4d7300771b13cf05a0a4875a9183d9aa5910ab00df00c05",
+      "contentHash": "238d4c3a6b9ec714e9f7b24c943c2a2276d9a2650867984cc98e01de6361bee0",
       "command": "yarn test:component",
       "ownerPaths": [
         "components/ds/patterns/ExerciseSearchModal.tsx",
         "constants/design-system.ts",
         "features/plans/exercise-service-source.ts",
         "features/plans/use-exercise-search.ts",
-        "localization/core.ts"
+        "localization/core.ts",
+        "tests/component/keyboard-test-utils.ts"
       ],
       "requirementReferences": ["TC-332"],
       "requirementStatus": "source-reference-needs-review",
@@ -71357,7 +71967,10 @@
         "exerciseSearch.errorState",
         "exerciseSearch.retry",
         "exerciseSearch.detail",
-        "exerciseSearch.confirm"
+        "exerciseSearch.confirm",
+        "exerciseSearch.keyboardFrame",
+        "exerciseSearch.modal",
+        "exerciseSearch.title"
       ],
       "hazards": {
         "sleeps": 0,
@@ -71365,99 +71978,131 @@
         "synchronizationBypasses": 0
       },
       "disposition": "retain",
-      "dispositionReason": "Retain rendered behavioral coverage. Transport/native adapters mocked; see P2 receipt and explicit TC-304.1 gap.",
+      "dispositionReason": "Retain until overlapping coverage and execution evidence justify a change.",
       "replacementIds": [],
-      "evidenceStatus": "locally-verified; controlled regression detected; hosted pending",
+      "evidenceStatus": "unverified",
       "assertionPurposes": [
         {
           "purpose": "debounced search shows loading then empty; mounted query survives a supported rerender",
-          "line": 77
+          "line": 79
         },
         {
           "purpose": "transport rejection displays an error and retry searches the same query",
-          "line": 107
+          "line": 109
         },
         {
           "purpose": "selection opens details; confirmation sends exact identity and trimmed fields; close resets search",
-          "line": 125
+          "line": 127
+        },
+        {
+          "purpose": "keeps the title and the focused search box between the top safe area and the keyboard",
+          "line": 157
         }
       ],
       "assertions": [
         {
-          "line": 86,
+          "line": 88,
           "expression": "expect(screen.getByTestId('exerciseSearch.initialState')).toBeOnTheScreen()"
         },
         {
-          "line": 91,
+          "line": 93,
           "expression": "expect(transport).not.toHaveBeenCalled()"
         },
         {
-          "line": 95,
+          "line": 97,
           "expression": "expect(screen.getByTestId('exerciseSearch.loadingState')).toBeOnTheScreen()"
         },
         {
-          "line": 99,
+          "line": 101,
           "expression": "expect(screen.getByTestId('exerciseSearch.emptyState')).toHaveTextContent( t(locale, 'pro.plan.item.search.empty'), )"
         },
         {
-          "line": 103,
+          "line": 105,
           "expression": "expect(screen.getByTestId('exerciseSearch.input')).toHaveDisplayValue('squat')"
         },
         {
-          "line": 104,
+          "line": 106,
           "expression": "expect(screen.getByTestId('exerciseSearch.emptyState')).toBeOnTheScreen()"
         },
         {
-          "line": 105,
+          "line": 107,
           "expression": "expect(transport).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 114,
+          "line": 116,
           "expression": "expect(screen.getByTestId('exerciseSearch.errorState')).toBeOnTheScreen()"
         },
         {
-          "line": 115,
+          "line": 117,
           "expression": "expect(screen.getByTestId('exerciseSearch.input')).toHaveDisplayValue('squat')"
         },
         {
-          "line": 116,
+          "line": 118,
           "expression": "expect(error).toHaveBeenCalledWith( '[useExerciseSearch] Search failed:', expect.objectContaining({ query: 'squat', message: 'Synthetic search failure' }), )"
         },
         {
-          "line": 122,
+          "line": 124,
           "expression": "expect(screen.getByRole('button', { name: exercise.title })).toBeOnTheScreen()"
         },
         {
-          "line": 123,
+          "line": 125,
           "expression": "expect(transport.mock.calls).toEqual([['squat'], ['squat']])"
         },
         {
-          "line": 131,
+          "line": 133,
           "expression": "expect(screen.getByTestId('exerciseSearch.detail')).toHaveTextContent(exercise.title)"
         },
         {
-          "line": 141,
+          "line": 143,
           "expression": "expect(confirm).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 142,
+          "line": 144,
           "expression": "expect(confirm).toHaveBeenCalledWith(exercise, '3 x 10', 'Controlled tempo')"
         },
         {
-          "line": 144,
+          "line": 146,
           "expression": "expect(close).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 147,
+          "line": 149,
           "expression": "expect(screen.getByTestId('exerciseSearch.input')).toHaveDisplayValue('')"
         },
         {
-          "line": 148,
+          "line": 150,
           "expression": "expect(screen.getByTestId('exerciseSearch.initialState')).toBeOnTheScreen()"
         },
         {
-          "line": 149,
+          "line": 151,
           "expression": "expect(screen.queryByTestId('exerciseSearch.detail')).not.toBeOnTheScreen()"
+        },
+        {
+          "line": 176,
+          "expression": "expect(screen.getByTestId('exerciseSearch.modal')).toHaveStyle({ minHeight: '75%' })"
+        },
+        {
+          "line": 179,
+          "expression": "expect(frame).toHaveStyle({ paddingBottom: 344 })"
+        },
+        {
+          "line": 183,
+          "expression": "expect(screen.getByTestId('exerciseSearch.modal')).toHaveStyle({ minHeight: available, maxHeight: available, })"
+        },
+        {
+          "line": 187,
+          "expression": "expect(screen.getByTestId('exerciseSearch.title')).toBeOnTheScreen()"
+        },
+        {
+          "line": 188,
+          "expression": "expect(screen.getByTestId('exerciseSearch.input')).toBeOnTheScreen()"
+        },
+        {
+          "line": 191,
+          "expression": "expect(frame).not.toHaveStyle({ paddingBottom: 344 })"
+        },
+        {
+          "line": 192,
+          "expression": "expect(screen.getByTestId('exerciseSearch.modal')).toHaveStyle({ minHeight: '75%' })"
         }
       ]
     },
@@ -72001,6 +72646,121 @@
       ]
     },
     {
+      "id": "TST-08518d24fa5f",
+      "repo": "client",
+      "path": "tests/component/plan-removal-confirmations.test.tsx",
+      "contentHash": "fe4081ade54c4c3645598662b8b61cff7e7791a995517778d425211dacf6b839",
+      "command": "yarn test:component",
+      "ownerPaths": [
+        "app/professional/nutrition/plans/[planId]",
+        "app/professional/training/plans/[planId].tsx",
+        "localization/core.ts",
+        "tests/component/setup.ts"
+      ],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["rendered-component"],
+      "dataMode": "in-process",
+      "platforms": ["host"],
+      "selectors": [
+        "pro.training_plan.itemRow.E2E_Push-Up.remove",
+        "pro.nutrition_plan.mealRow.Breakfast.remove",
+        "pro.training_plan.screen",
+        "pro.training_plan.addSession",
+        "pro.training_plan.addSession.form",
+        "pro.training_plan.addSession.confirm",
+        "pro.nutrition_plan.screen",
+        "pro.nutrition_plan.addMeal",
+        "pro.nutrition_plan.addMeal.form",
+        "pro.nutrition_plan.addMeal.confirm"
+      ],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "retain",
+      "dispositionReason": "Retain until overlapping coverage and execution evidence justify a change.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "removing one exercise names the exercise and its session",
+          "line": 147
+        },
+        {
+          "purpose": "removing a session names the session, not the whole plan",
+          "line": 159
+        },
+        {
+          "purpose": "removing a meal names the meal, not the whole plan",
+          "line": 169
+        },
+        {
+          "purpose": "the training builder lets taps reach the add-session form while the keyboard is open",
+          "line": 181
+        },
+        {
+          "purpose": "the nutrition builder lets taps reach the add-meal form while the keyboard is open",
+          "line": 195
+        }
+      ],
+      "assertions": [
+        {
+          "line": 139,
+          "expression": "expect(alert).toHaveBeenCalledTimes(1)"
+        },
+        {
+          "line": 141,
+          "expression": "expect(title).toBe(t(locale, 'common.cta.delete'))"
+        },
+        {
+          "line": 142,
+          "expression": "expect(body).not.toBe(t(locale, 'pro.plan.delete.body'))"
+        },
+        {
+          "line": 143,
+          "expression": "expect(body).not.toContain('{name}')"
+        },
+        {
+          "line": 154,
+          "expression": "expect(alertBody(alert)).toBe( t(locale, 'pro.plan.session_item.delete.body', { name: 'E2E Push-Up' }), )"
+        },
+        {
+          "line": 166,
+          "expression": "expect(alertBody(alert)).toBe(t(locale, 'pro.plan.session.delete.body', { name: 'Push Day' }))"
+        },
+        {
+          "line": 176,
+          "expression": "expect(alertBody(alert)).toBe(t(locale, 'pro.plan.meal.delete.body', { name: 'Breakfast' }))"
+        },
+        {
+          "line": 184,
+          "expression": "expect(screen.getByTestId('pro.training_plan.screen')).toHaveProp( 'keyboardShouldPersistTaps', 'handled', )"
+        },
+        {
+          "line": 191,
+          "expression": "expect(screen.getByTestId('pro.training_plan.addSession.form')).toBeOnTheScreen()"
+        },
+        {
+          "line": 192,
+          "expression": "expect(screen.getByTestId('pro.training_plan.addSession.confirm')).toBeOnTheScreen()"
+        },
+        {
+          "line": 198,
+          "expression": "expect(screen.getByTestId('pro.nutrition_plan.screen')).toHaveProp( 'keyboardShouldPersistTaps', 'handled', )"
+        },
+        {
+          "line": 205,
+          "expression": "expect(screen.getByTestId('pro.nutrition_plan.addMeal.form')).toBeOnTheScreen()"
+        },
+        {
+          "line": 206,
+          "expression": "expect(screen.getByTestId('pro.nutrition_plan.addMeal.confirm')).toBeOnTheScreen()"
+        }
+      ]
+    },
+    {
       "id": "TST-712c5a09c72e",
       "repo": "client",
       "path": "tests/component/professional-students-roster-refresh.test.tsx",
@@ -72264,14 +73024,15 @@
       "id": "TST-1c2b4da87ec9",
       "repo": "client",
       "path": "tests/component/support-modal.test.tsx",
-      "contentHash": "9ebe9f7847ff027d9e92f5977c8aaffae63571ca7238561621909e4f341d09cc",
+      "contentHash": "2d44fbed3e52bd32f97fe9c1e3b1c729090a249ea6dd29f3161d5500b543153b",
       "command": "yarn test:component",
       "ownerPaths": [
         "components/ds/patterns/SupportModal.tsx",
         "constants/design-system.ts",
         "features/support/support-source.ts",
         "features/support/support.logic.ts",
-        "localization/core.ts"
+        "localization/core.ts",
+        "tests/component/keyboard-test-utils.ts"
       ],
       "requirementReferences": ["TC-304"],
       "requirementStatus": "source-reference-needs-review",
@@ -72285,7 +73046,9 @@
         "settings.account.support.cancelCta",
         "settings.account.support.modal",
         "settings.account.support.offlineBanner",
-        "settings.account.support.submitCta"
+        "settings.account.support.submitCta",
+        "settings.account.support.keyboardFrame",
+        "settings.account.support.bodyInput"
       ],
       "hazards": {
         "sleeps": 0,
@@ -72299,121 +73062,153 @@
       "assertionPurposes": [
         {
           "purpose": "invalid fields block transport and show actionable validation",
-          "line": 41
+          "line": 43
         },
         {
           "purpose": "pending submission blocks close, Cancel and native request-close callback",
-          "line": 59
+          "line": 61
         },
         {
           "purpose": "a rejected request retains input and a retry reaches success with trimmed payload",
-          "line": 88
+          "line": 90
         },
         {
           "purpose": "offline submission is blocked and connectivity restoration retains the draft",
-          "line": 129
+          "line": 131
+        },
+        {
+          "purpose": "lifts the sheet above the keyboard on both platforms and keeps its header on screen",
+          "line": 156
         }
       ],
       "assertions": [
         {
-          "line": 47,
+          "line": 49,
           "expression": "expect(screen.getByTestId('settings.account.support.subjectError')).toBeOnTheScreen()"
         },
         {
-          "line": 48,
+          "line": 50,
           "expression": "expect(transport).not.toHaveBeenCalled()"
         },
         {
-          "line": 56,
+          "line": 58,
           "expression": "expect(screen.getByTestId('settings.account.support.bodyError')).toBeOnTheScreen()"
         },
         {
-          "line": 57,
+          "line": 59,
           "expression": "expect(transport).not.toHaveBeenCalled()"
         },
         {
-          "line": 74,
+          "line": 76,
           "expression": "expect(screen.getByTestId('settings.account.support.closeButton')).toBeDisabled()"
         },
         {
-          "line": 75,
+          "line": 77,
           "expression": "expect(screen.getByTestId('settings.account.support.cancelCta')).toBeDisabled()"
         },
         {
-          "line": 79,
+          "line": 81,
           "expression": "expect(onClose).not.toHaveBeenCalled()"
         },
         {
-          "line": 80,
+          "line": 82,
           "expression": "expect( screen.getByLabelText(translate('settings.account.support.field.subject.label')), ).toHaveProp('editable', false)"
         },
         {
-          "line": 86,
+          "line": 88,
           "expression": "expect(await screen.findByTestId('settings.account.support.success')).toBeOnTheScreen()"
         },
         {
-          "line": 99,
+          "line": 101,
           "expression": "expect(await screen.findByTestId('settings.account.support.errorBanner')).toBeOnTheScreen()"
         },
         {
-          "line": 100,
+          "line": 102,
           "expression": "expect( screen.getByLabelText(translate('settings.account.support.field.subject.label')), ).toHaveDisplayValue(' Need help ')"
         },
         {
-          "line": 103,
+          "line": 105,
           "expression": "expect( screen.getByLabelText(translate('settings.account.support.field.body.label')), ).toHaveDisplayValue(' My draft needs attention. ')"
         },
         {
-          "line": 107,
+          "line": 109,
           "expression": "expect(await screen.findByTestId('settings.account.support.success')).toBeOnTheScreen()"
         },
         {
-          "line": 110,
+          "line": 112,
           "expression": "expect(firstAttempt.idempotencyKey).toMatch(/^support-/)"
         },
         {
-          "line": 111,
+          "line": 113,
           "expression": "expect(transport).toHaveBeenLastCalledWith({ subject: 'Need help', body: 'My draft needs attention.', userRole: 'student', idempotencyKey: firstAttempt.idempotencyKey, })"
         },
         {
-          "line": 118,
+          "line": 120,
           "expression": "expect(onClose).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 121,
+          "line": 123,
           "expression": "expect( screen.getByLabelText(translate('settings.account.support.field.subject.label')), ).toHaveDisplayValue('')"
         },
         {
-          "line": 124,
+          "line": 126,
           "expression": "expect( screen.getByLabelText(translate('settings.account.support.field.body.label')), ).toHaveDisplayValue('')"
         },
         {
-          "line": 127,
+          "line": 129,
           "expression": "expect(screen.queryByTestId('settings.account.support.success')).not.toBeOnTheScreen()"
         },
         {
-          "line": 136,
+          "line": 138,
           "expression": "expect(screen.getByTestId('settings.account.support.offlineBanner')).toHaveTextContent( translate('offline.write_lock'), )"
         },
         {
-          "line": 139,
+          "line": 141,
           "expression": "expect(screen.getByTestId('settings.account.support.submitCta')).toBeDisabled()"
         },
         {
-          "line": 141,
+          "line": 143,
           "expression": "expect(transport).not.toHaveBeenCalled()"
         },
         {
-          "line": 144,
+          "line": 146,
           "expression": "expect( screen.getByLabelText(translate('settings.account.support.field.subject.label')), ).toHaveDisplayValue(' Need help ')"
         },
         {
-          "line": 148,
+          "line": 150,
           "expression": "expect(await screen.findByTestId('settings.account.support.success')).toBeOnTheScreen()"
         },
         {
-          "line": 149,
+          "line": 151,
           "expression": "expect(transport).toHaveBeenCalledTimes(1)"
+        },
+        {
+          "line": 172,
+          "expression": "expect(frame).toHaveStyle({ paddingBottom: 0 })"
+        },
+        {
+          "line": 173,
+          "expression": "expect(screen.getByTestId('settings.account.support.modal')).toHaveStyle({ maxHeight: '90%' })"
+        },
+        {
+          "line": 176,
+          "expression": "expect(frame).toHaveStyle({ paddingBottom: 344 })"
+        },
+        {
+          "line": 179,
+          "expression": "expect(screen.getByTestId('settings.account.support.modal')).toHaveStyle({ minHeight: available, maxHeight: available, })"
+        },
+        {
+          "line": 183,
+          "expression": "expect(screen.getByTestId('settings.account.support.bodyInput')).toBeOnTheScreen()"
+        },
+        {
+          "line": 186,
+          "expression": "expect(frame).toHaveStyle({ paddingBottom: 0 })"
+        },
+        {
+          "line": 187,
+          "expression": "expect(screen.getByTestId('settings.account.support.modal')).toHaveStyle({ maxHeight: '90%' })"
         }
       ]
     },
@@ -73809,6 +74604,109 @@
         {
           "line": 506,
           "expression": "expect(setCookies(response).join('\\n')).toContain('mychampions_access_token=')"
+        }
+      ]
+    },
+    {
+      "id": "TST-c5b51c00d52b",
+      "repo": "server",
+      "path": "tests/catalog-schema-copies.test.ts",
+      "contentHash": "969d171ebd0e7284890cf70c2ec1621cd45e480cd21e512e69def962ceefdec0",
+      "command": "bun run test:unit",
+      "ownerPaths": ["scripts/testing/catalog-schemas"],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["source-shape-coupling", "logic-review-needed"],
+      "dataMode": "in-process",
+      "platforms": ["host"],
+      "selectors": [],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "investigate",
+      "dispositionReason": "Assertion purposes below require review; retain policy assertions, replace UI/source-shape assertions only after passing behavioral evidence.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "seed the catalog tables the server gateways read without sibling checkouts",
+          "line": 77
+        },
+        {
+          "purpose": "match their recorded provenance digests",
+          "line": 96
+        },
+        {
+          "purpose": "accept sibling checkouts that export the same schema",
+          "line": 104
+        },
+        {
+          "purpose": "block seeding when a sibling checkout exports a different schema",
+          "line": 115
+        },
+        {
+          "purpose": "block seeding when a present sibling checkout lacks the schema module",
+          "line": 128
+        },
+        {
+          "purpose": "block seeding when a pinned copy was edited without its provenance",
+          "line": 134
+        },
+        {
+          "purpose": "sync only from committed sibling schema modules",
+          "line": 148
+        }
+      ],
+      "assertions": [
+        {
+          "line": 81,
+          "expression": "expect(result.sources).toEqual({ food: \"pinned-copy\", exercise: \"pinned-copy\", })"
+        },
+        {
+          "line": 86,
+          "expression": "expect(result.food).toContain(`CREATE TABLE IF NOT EXISTS ${table} (`)"
+        },
+        {
+          "line": 91,
+          "expression": "expect(result.exercise).toContain( `CREATE TABLE IF NOT EXISTS ${table} (`, )"
+        },
+        {
+          "line": 101,
+          "expression": "expect(catalogSchemaDigest(await pinned(copy.name))).toBe(copy.sha256)"
+        },
+        {
+          "line": 109,
+          "expression": "expect(result.sources).toEqual({ food: \"pinned-copy-matches-checkout\", exercise: \"pinned-copy-matches-checkout\", })"
+        },
+        {
+          "line": 123,
+          "expression": "expect(loadCatalogSchemas({ workspace })).rejects.toThrow( \"Pinned exercise catalog schema differs from ../mychampionsapi-exercises\", )"
+        },
+        {
+          "line": 131,
+          "expression": "expect(loadCatalogSchemas({ workspace })).rejects.toThrow()"
+        },
+        {
+          "line": 141,
+          "expression": "expect( loadCatalogSchemas({ workspace: await scratch(\"none\"), vendorRoot }), ).rejects.toThrow( \"Pinned food catalog schema does not match its provenance digest\", )"
+        },
+        {
+          "line": 164,
+          "expression": "expect(provenance.copies.map((copy) => copy.sourceCommit)).toEqual([ expect.stringMatching(/^[a-f0-9]{40}$/), expect.stringMatching(/^[a-f0-9]{40}$/), ])"
+        },
+        {
+          "line": 168,
+          "expression": "expect((await loadCatalogSchemas({ workspace, vendorRoot })).food).toBe( \"CREATE TABLE food_sync (id text);\\n\", )"
+        },
+        {
+          "line": 178,
+          "expression": "expect( syncCatalogSchemas({ workspace, vendorRoot }), ).rejects.toThrow(\"Commit mychampionsapi-exercises/\")"
+        },
+        {
+          "line": 181,
+          "expression": "expect(await readFile(path.join(vendorRoot, \"provenance.json\"))).toEqual( before, )"
         }
       ]
     },
@@ -75313,6 +76211,140 @@
         {
           "line": 102,
           "expression": "expect(() => parseSessionRequest(request)).toThrow(\"Invalid\")"
+        }
+      ]
+    },
+    {
+      "id": "TST-7669d520910c",
+      "repo": "server",
+      "path": "tests/owned-test-environment.test.ts",
+      "contentHash": "4d6345b1f4e8edbbe117f3801dc9fe44b28bedfb063c0ecf316662f9901246b6",
+      "command": "bun run test:unit",
+      "ownerPaths": [
+        "scripts/testing/owned-runtime.ts",
+        "scripts/testing/session-protocol.ts",
+        "src/app.ts",
+        "src/auth/password-reset.ts",
+        "src/config.ts",
+        "src/profile/repository.ts"
+      ],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["source-shape-coupling", "logic-review-needed"],
+      "dataMode": "in-process",
+      "platforms": ["host"],
+      "selectors": [],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "investigate",
+      "dispositionReason": "Assertion purposes below require review; retain policy assertions, replace UI/source-shape assertions only after passing behavioral evidence.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "passes only owned database URLs and blank provider credentials",
+          "line": 99
+        },
+        {
+          "purpose": "keeps the production auth rate limit for the integration runner",
+          "line": 114
+        },
+        {
+          "purpose": "raises the auth rate limit for owned browser/native sessions only",
+          "line": 123
+        },
+        {
+          "purpose": "rejects an invalid owned auth rate limit before acquisition",
+          "line": 144
+        },
+        {
+          "purpose": "keeps the owned session limit out of production code and config",
+          "line": 152
+        }
+      ],
+      "assertions": [
+        {
+          "line": 101,
+          "expression": "expect(env.DATABASE_URL).toBe( `postgres://mc_test:owned-password@127.0.0.1:54321/mc_test_${runId}`, )"
+        },
+        {
+          "line": 104,
+          "expression": "expect(env.FOOD_CATALOG_DATABASE_URL).toEndWith(`/mc_test_${runId}_food`)"
+        },
+        {
+          "line": 105,
+          "expression": "expect(env.EXERCISE_CATALOG_DATABASE_URL).toEndWith( `/mc_test_${runId}_exercise`, )"
+        },
+        {
+          "line": 108,
+          "expression": "expect(env.REVENUECAT_SECRET_API_KEY).toBe(\"\")"
+        },
+        {
+          "line": 109,
+          "expression": "expect(env.GCS_BUCKET).toBe(\"\")"
+        },
+        {
+          "line": 110,
+          "expression": "expect(env.PATH).toBe(\"/usr/bin\")"
+        },
+        {
+          "line": 111,
+          "expression": "expect(env.WEB_ALLOWED_ORIGINS).toBe(\"http://127.0.0.1:42001\")"
+        },
+        {
+          "line": 116,
+          "expression": "expect(Object.hasOwn(env, \"AUTH_RATE_LIMIT_MAX\")).toBe(false)"
+        },
+        {
+          "line": 117,
+          "expression": "expect(readConfig(env).authRateLimitMax).toBe(20)"
+        },
+        {
+          "line": 119,
+          "expression": "expect(statuses.slice(0, 20).every((status) => status === 201)).toBe(true)"
+        },
+        {
+          "line": 120,
+          "expression": "expect(statuses[20]).toBe(429)"
+        },
+        {
+          "line": 127,
+          "expression": "expect(options).toEqual({ webOrigins: [\"http://127.0.0.1:42001\"], authRateLimitMax: OWNED_SESSION_AUTH_RATE_LIMIT_MAX, clientCheckout: \"required\", })"
+        },
+        {
+          "line": 133,
+          "expression": "expect(env.AUTH_RATE_LIMIT_MAX).toBe( String(OWNED_SESSION_AUTH_RATE_LIMIT_MAX), )"
+        },
+        {
+          "line": 136,
+          "expression": "expect(readConfig(env).authRateLimitMax).toBe( OWNED_SESSION_AUTH_RATE_LIMIT_MAX, )"
+        },
+        {
+          "line": 141,
+          "expression": "expect(statuses.every((status) => status === 201)).toBe(true)"
+        },
+        {
+          "line": 146,
+          "expression": "expect(() => validateOwnedAuthRateLimitMax(value)).toThrow( \"Owned auth rate limit\", )"
+        },
+        {
+          "line": 149,
+          "expression": "expect(validateOwnedAuthRateLimitMax(100_000)).toBe(100_000)"
+        },
+        {
+          "line": 159,
+          "expression": "expect(source).not.toContain(\"scripts/testing\")"
+        },
+        {
+          "line": 160,
+          "expression": "expect(source).not.toContain(\"OWNED_SESSION_AUTH_RATE_LIMIT_MAX\")"
+        },
+        {
+          "line": 162,
+          "expression": "expect(await readFile(path.join(root, \".env.example\"), \"utf8\")).toContain( \"AUTH_RATE_LIMIT_MAX=20\\n\", )"
         }
       ]
     },
@@ -77236,7 +78268,7 @@
       "id": "TST-434b84957864",
       "repo": "server",
       "path": "tests/postgres-exercise-search-gateway.test.ts",
-      "contentHash": "1e6743adbb8ff64d6cd5a6c30ee1cc28cc7592fb7321c03f1b2b31df78f28913",
+      "contentHash": "2edc6810f4e7fb84fbe3f0113db022e842b6642938a1e12abecae803c19b42fb",
       "command": "bun run test:integration",
       "ownerPaths": [
         "src/integrations/exercise-search-gateway.ts",
@@ -77259,61 +78291,69 @@
       "evidenceStatus": "unverified",
       "assertionPurposes": [
         {
+          "purpose": "normalizes localized catalog rows and loads the same exercise by id",
+          "line": 15
+        },
+        {
+          "purpose": "returns null for a missing exercise",
+          "line": 45
+        },
+        {
           "purpose": "fails closed without catalog configuration",
-          "line": 63
+          "line": 58
         }
       ],
       "assertions": [
         {
-          "line": 28,
+          "line": 25,
           "expression": "expect(search.page).toBe(1)"
         },
         {
-          "line": 29,
+          "line": 26,
           "expression": "expect(search.pageSize).toBe(3)"
         },
         {
-          "line": 30,
+          "line": 27,
           "expression": "expect(search.total).toBe(3)"
         },
         {
-          "line": 31,
+          "line": 28,
           "expression": "expect(search.exercises).toHaveLength(3)"
         },
         {
-          "line": 34,
+          "line": 31,
           "expression": "expect(first?.id.length).toBeGreaterThan(0)"
         },
         {
-          "line": 35,
+          "line": 32,
           "expression": "expect(first?.title.length).toBeGreaterThan(0)"
         },
         {
-          "line": 36,
+          "line": 33,
           "expression": "expect(first?.muscleGroup.length).toBeGreaterThan(0)"
         },
         {
-          "line": 37,
+          "line": 34,
           "expression": "expect(first?.equipment.length).toBeGreaterThan(0)"
         },
         {
-          "line": 44,
+          "line": 41,
           "expression": "expect(detail?.id).toBe(first?.id)"
         },
         {
-          "line": 45,
+          "line": 42,
           "expression": "expect(detail?.title.length).toBeGreaterThan(0)"
         },
         {
-          "line": 51,
+          "line": 48,
           "expression": "expect( gateway.getById({ authUid: 'coverage-user', id: '00000000-0000-0000-0000-000000000000', lang: 'en-US', }) ).resolves.toBeNull()"
         },
         {
-          "line": 66,
+          "line": 61,
           "expression": "expect( unconfigured.search({ authUid: 'coverage-user', query: 'push', pageSize: 3, lang: 'en-US', }) ).rejects.toMatchObject({ name: 'ExerciseSearchGatewayError', code: 'configuration', } satisfies Partial<ExerciseSearc"
         },
         {
-          "line": 77,
+          "line": 72,
           "expression": "expect( unconfigured.getById({ authUid: 'coverage-user', id: 'exercise-id', lang: 'en-US', }) ).rejects.toMatchObject({ name: 'ExerciseSearchGatewayError', code: 'configuration', } satisfies Partial<ExerciseSearchGateway"
         }
       ]
@@ -77322,7 +78362,7 @@
       "id": "TST-a62d05264792",
       "repo": "server",
       "path": "tests/postgres-food-search-gateway.test.ts",
-      "contentHash": "5874922db07c105f5fa5f39e6f474807906a71ade00e724e09cf89bd09921af9",
+      "contentHash": "5a09568b95cf2e108525fefd3d391ac0ba9da6f18476e6a5b755dc50d2db0d20",
       "command": "bun run test:integration",
       "ownerPaths": ["src/integrations/food-search-gateway.ts", "tests/helpers/test-database.ts"],
       "requirementReferences": [],
@@ -77342,41 +78382,45 @@
       "evidenceStatus": "unverified",
       "assertionPurposes": [
         {
+          "purpose": "normalizes request locale and numeric catalog fields while respecting the result limit",
+          "line": 15
+        },
+        {
           "purpose": "fails closed when the food catalog database is not configured",
-          "line": 40
+          "line": 37
         }
       ],
       "assertions": [
         {
-          "line": 29,
+          "line": 26,
           "expression": "expect(results).toHaveLength(3)"
         },
         {
-          "line": 31,
+          "line": 28,
           "expression": "expect(result.id.length).toBeGreaterThan(0)"
         },
         {
-          "line": 32,
+          "line": 29,
           "expression": "expect(result.name.length).toBeGreaterThan(0)"
         },
         {
-          "line": 33,
+          "line": 30,
           "expression": "expect(Number.isFinite(result.carbohydrate)).toBeTrue()"
         },
         {
-          "line": 34,
+          "line": 31,
           "expression": "expect(Number.isFinite(result.protein)).toBeTrue()"
         },
         {
-          "line": 35,
+          "line": 32,
           "expression": "expect(Number.isFinite(result.fat)).toBeTrue()"
         },
         {
-          "line": 36,
+          "line": 33,
           "expression": "expect(result.serving).toBe(100)"
         },
         {
-          "line": 43,
+          "line": 40,
           "expression": "expect( gateway.search({ authUid: 'coverage-user', query: 'rice', maxResults: 3, region: 'us', language: 'en', }) ).rejects.toMatchObject({ name: 'FoodSearchGatewayError', code: 'configuration', } satisfies Partial<FoodS"
         }
       ]
@@ -79340,7 +80384,7 @@
       "id": "TST-1ae561898cd3",
       "repo": "server",
       "path": "tests/repository-fingerprint-preflight.test.ts",
-      "contentHash": "4f710b812afaf100d1e2b51fdcdc03146765f9c634bed6b10ce6d3d71ccfe5d1",
+      "contentHash": "e273dacc39d01e37e733e5dee6591ae79402760a6c3e7da8e30705b48d69e544",
       "command": "bun run test:unit",
       "ownerPaths": ["scripts/testing/repository-fingerprint.ts"],
       "requirementReferences": [],
@@ -79361,65 +80405,117 @@
       "assertionPurposes": [
         {
           "purpose": "rejects an untracked symlink to a regular file",
-          "line": 81
+          "line": 85
         },
         {
           "purpose": "reproduces the old EISDIR failure for a directory symlink and rejects it explicitly",
-          "line": 94
+          "line": 98
         },
         {
           "purpose": "keeps the existing regular-file working-tree hash byte-for-byte compatible",
-          "line": 108
+          "line": 112
         },
         {
           "purpose": "requires repository identity before the runtime namespace mkdir",
-          "line": 121
+          "line": 125
+        },
+        {
+          "purpose": "requires the client checkout unless a server-only run makes it optional",
+          "line": 145
+        },
+        {
+          "purpose": "fingerprints a present client even when the checkout is optional",
+          "line": 177
+        },
+        {
+          "purpose": "never records a present but unreadable client checkout as absent",
+          "line": 191
         }
       ],
       "assertions": [
         {
-          "line": 88,
+          "line": 92,
           "expression": "expect(linkStat.isSymbolicLink()).toBe(true)"
         },
         {
-          "line": 89,
+          "line": 93,
           "expression": "expect(fingerprintOwnedRepository(directory)).rejects.toThrow( \"Cannot fingerprint non-regular untracked path: file-link\", )"
         },
         {
-          "line": 100,
+          "line": 104,
           "expression": "expect(readFile(link)).rejects.toMatchObject({ code: \"EISDIR\" })"
         },
         {
-          "line": 102,
+          "line": 106,
           "expression": "expect(linkStat.isSymbolicLink()).toBe(true)"
         },
         {
-          "line": 103,
+          "line": 107,
           "expression": "expect(fingerprintOwnedRepository(directory)).rejects.toThrow( \"Cannot fingerprint non-regular untracked path: directory-link\", )"
         },
         {
-          "line": 116,
+          "line": 120,
           "expression": "expect(actual.workingTreeHash).toBe(await expectedExistingHash(directory))"
         },
         {
-          "line": 117,
+          "line": 121,
           "expression": "expect(actual.sha).toMatch(/^[0-9a-f]{40}$/)"
         },
         {
-          "line": 118,
+          "line": 122,
           "expression": "expect(actual.dirty).toBe(true)"
         },
         {
-          "line": 128,
+          "line": 134,
           "expression": "expect(fingerprintIndex).toBeGreaterThanOrEqual(0)"
         },
         {
-          "line": 129,
+          "line": 135,
           "expression": "expect(mkdirIndex).toBeGreaterThan(fingerprintIndex)"
         },
         {
-          "line": 130,
+          "line": 136,
           "expression": "expect(source.slice(0, mkdirIndex)).not.toContain( \"const manifest: TestManifest\", )"
+        },
+        {
+          "line": 141,
+          "expression": "expect(catalogIndex).toBeGreaterThan(fingerprintIndex)"
+        },
+        {
+          "line": 142,
+          "expression": "expect(mkdirIndex).toBeGreaterThan(catalogIndex)"
+        },
+        {
+          "line": 149,
+          "expression": "expect( fingerprintOwnedRepositories({ server, client: missingClient, clientCheckout: \"required\", }), ).rejects.toThrow(\"Cannot record repository identity.\")"
+        },
+        {
+          "line": 162,
+          "expression": "expect(serverOnly.clientCheckout).toBe(\"absent\")"
+        },
+        {
+          "line": 163,
+          "expression": "expect(serverOnly.repositories.server).toEqual( await fingerprintOwnedRepository(server), )"
+        },
+        {
+          "line": 167,
+          "expression": "expect(serverOnly.repositories.client).toEqual({ sha: \"0\".repeat(40), dirty: false, workingTreeHash: \"0\".repeat(64), })"
+        },
+        {
+          "line": 172,
+          "expression": "expect(serverOnly.repositories.client).not.toBe( ABSENT_REPOSITORY_FINGERPRINT, )"
+        },
+        {
+          "line": 185,
+          "expression": "expect(result.clientCheckout).toBe(\"present\")"
+        },
+        {
+          "line": 186,
+          "expression": "expect(result.repositories.client).toEqual( await fingerprintOwnedRepository(client), )"
+        },
+        {
+          "line": 200,
+          "expression": "expect( fingerprintOwnedRepositories({ server, client, clientCheckout: \"optional\", }), ).rejects.toThrow(\"Cannot record repository identity.\")"
         }
       ]
     },

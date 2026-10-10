@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "90c5a3f12a7d1fcfa8ade1296a32fb7e7b21a2fd",
+    "commit": "985abe27299b818e163282a7a670f76236819a7e",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -57,7 +57,7 @@
       "paths": [
         "docs/screens/v2/SC-213-account-privacy-settings.md"
       ],
-      "revision": "a751144a1c448aba121db714177420c6a3675bfd8c6608e4926354a864b17c1e"
+      "revision": "e4fd495d70d2989e49d09b61be4e62352df562388e17e269748182c098fffb15"
     },
     {
       "id": "SRC-training-doc",
@@ -66,7 +66,7 @@
       "paths": [
         "docs/screens/v2/SC-208-training-plan-builder.md"
       ],
-      "revision": "cb50119ffe3bc79e9ee84aca9cf44059e4216ffbb0c94c5fa021a9c8a5b5b27f"
+      "revision": "8bf3fbe918c7d8fd6b8006a9310502407c322415d73ecba1908101ab64f56041"
     },
     {
       "id": "SRC-connection-doc",
@@ -129,7 +129,7 @@
       "paths": [
         "docs/test-cases/TC-002-role-and-assignment-controls.md"
       ],
-      "revision": "b8bc3781d88360cae21fd0f21e90cee3131067ff5859ef0e53ec4355a71bdf20"
+      "revision": "336b7e0e4c8e3cdb234ed55d5442682564ed9d517565a88901a42563bc5e7043"
     },
     {
       "id": "SRC-plan",
@@ -147,7 +147,7 @@
       "paths": [
         "docs/qa/native-pilot/declaration-contract.md"
       ],
-      "revision": "eb16aa4a9b42afabfeb10a93aa064dc5cf7a31312e6bc716744cdfb905955f2d"
+      "revision": "e1afebbe3eb84bb7c5e003a45f3bb38f504a0d08efc265b61edfc1ca1ff61b2e"
     },
     {
       "id": "SRC-auth-source",
@@ -183,7 +183,7 @@
       "paths": [
         "app/professional/training/plans/[planId].tsx"
       ],
-      "revision": "97d57463e93c0e344d97b20ed94f3f81058bc3664cacfb40a5564bf9651f0a93"
+      "revision": "100e9fc0730f7a4391d797d6a47c424b1092be54d9e561f8bef784a8250b4273"
     },
     {
       "id": "SRC-library-source",
@@ -201,7 +201,7 @@
       "paths": [
         "components/ds/patterns/ExerciseSearchModal.tsx"
       ],
-      "revision": "91f3cb16716649f149513c543f22b44367c22f38f0a91bfa48396d671cefbd05"
+      "revision": "550af8beb1953fc39e93fdfd58b8b8c3d189a45b0371bb1c49c50a7069805d3a"
     },
     {
       "id": "SRC-connection-source",
@@ -255,7 +255,7 @@
       "paths": [
         "scripts/testing/native-session-profile-checkpoints.ts"
       ],
-      "revision": "5d79a17f8ee4b1185f6206e1c07f03850cee69d2d7b0b503f9dbbc47d56e853b"
+      "revision": "4cf602cf6d402b928c6e05622b31936200288ffd682f460e36caede4ba4547d5"
     },
     {
       "id": "SRC-connection-hierarchy-source",
@@ -1038,7 +1038,7 @@
       "paths": [
         "scripts/testing/capture-native-testability.ts"
       ],
-      "revision": "4e0fc64e51ed912db35e191454ef42aa26dc5645c0d0f14b4bbbca99a9bfd9dc"
+      "revision": "83fbc768d8852fb07212aff315639244c1fe784671e9b988cb03db98eb174af3"
     },
     {
       "id": "SRC-android-capture-source",
@@ -1047,7 +1047,7 @@
       "paths": [
         "scripts/testing/capture-android-testability.ts"
       ],
-      "revision": "a28e4ce0d79ccaa1b64642c713c3bf5aa40ffad517daeac5ee59b0796983fb4f"
+      "revision": "0b1302301c8d024eb94c742c3be71f4d75b3060a95878a07f721f6aa9df14592"
     },
     {
       "id": "SRC-android-session-checkpoint-copy-source",
@@ -1389,7 +1389,7 @@
       "paths": [
         "localization/en-US.ts"
       ],
-      "revision": "469212d8248c9059488e384ea73530b614ea1062c0b664ccdfc63bd886f44a05"
+      "revision": "373f24eb14d0962e32e846efcec7959e5f749106d4a8c4fcf1bba8c5da65d2c2"
     },
     {
       "id": "SRC-save-retry-observer",
@@ -1461,7 +1461,7 @@
       "paths": [
         "scripts/testing/native-android-session-public-contract.ts"
       ],
-      "revision": "545e5961799bd895628e7fd48054de76c5b90b4b41930b07b8fc99c3e88e6634"
+      "revision": "86cdf4a3600a67f63d967c9456198d206892d6aa0c8d1dc587d324cc65ac1bf4"
     },
     {
       "id": "SRC-android-session-public-dependency-source",
@@ -1470,7 +1470,7 @@
       "paths": [
         "scripts/testing/native-android-session-public-dependency.ts"
       ],
-      "revision": "5e20ec25b42c90f7a973f14e4e2c0da16699bf17d55c8f205e9652e54c9f0a29"
+      "revision": "08bdcd0c17b6058cc561b56fb5649295a55f69b8b8ab7c9416c5a87d259765a0"
     },
     {
       "id": "SRC-android-session-public-receipt-source",
@@ -1551,7 +1551,7 @@
       "paths": [
         "scripts/testing/native-session-public-dependency.ts"
       ],
-      "revision": "983de6da6bf65d62f92c7b1f35c9e49dc665bfbfa6c1a409e745aa33a2d38cd4"
+      "revision": "2da29492d5095d53d3a789fbbfde2cc0cff3f95ed80647e99e2815211e9cb99f"
     },
     {
       "id": "SRC-session-public-staging-source",
