@@ -987,7 +987,7 @@ void test('real native entry point blocks before acquisition and writes redacted
         { args, code: 'native-host-lock-required', env: {} },
         {
           args: args.map((value) => (value === 'maestro' ? 'detox' : value)),
-          code: 'invalid-build-reuse',
+          code: 'invalid-cli-arguments',
           env: {},
         },
         {
@@ -1010,7 +1010,7 @@ void test('real native entry point blocks before acquisition and writes redacted
     },
     {
       args: defaults.map((value) => (value === 'maestro' ? 'detox' : value)),
-      code: 'execution-adapter-pending',
+      code: 'invalid-cli-arguments',
       env: {},
     },
     {
@@ -1033,7 +1033,7 @@ void test('real native entry point blocks before acquisition and writes redacted
     {
       args: [
         '--platform=android',
-        '--engine=detox',
+        '--engine=maestro',
         '--scenario=SCN-session-android',
         '--mode=fixture',
       ],
@@ -1098,7 +1098,7 @@ void test('real native entry point blocks before acquisition and writes redacted
     },
     {
       args: androidTraining.map((value) => (value === 'maestro' ? 'detox' : value)),
-      code: 'execution-adapter-pending',
+      code: 'invalid-cli-arguments',
       env: {},
     },
   ];
