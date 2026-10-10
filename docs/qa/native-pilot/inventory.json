@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "e46441334c53318c60f92dad0aabe2662f155def",
+    "commit": "495ac6007aa3b0225cd3441e37f8ea0a37e34125",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
