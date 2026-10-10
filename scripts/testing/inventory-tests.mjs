@@ -6,13 +6,20 @@ import ts from 'typescript';
 import { format, resolveConfig } from 'prettier';
 
 const root = process.cwd();
+// MYCHAMPIONS_SERVER_ROOT overrides the sibling server checkout (for worktrees).
 const repos = [
   { name: 'client', root },
-  { name: 'server', root: path.resolve(root, '../server') },
+  { name: 'server', root: process.env.MYCHAMPIONS_SERVER_ROOT || path.resolve(root, '../server') },
 ];
 const inventoryPath = path.join(root, 'docs/qa/test-inventory-v1.json');
 const check = process.argv.includes('--check');
 const testPattern = /\.(?:test|spec)\.[cm]?[jt]sx?$/;
+// Native E2E is one Maestro flow per .maestro/suite/<spec>/*.yaml file; common/ and nested
+// steps/ hold subflows, and config.yaml is the Maestro workspace config, not a flow.
+const flowPattern = /^\.maestro\/suite\/(?!common\/)[^/]+\/(?!config\.yaml$)[^/]+\.yaml$/;
+const maestroSuites = Object.values(
+  JSON.parse(readFileSync(path.join(root, 'config/test-impact.json'), 'utf8')).suites,
+).filter((suite) => suite.runner === 'maestro');
 const policyPattern = /firebase|secret|release-contract|localization|locale.*contract|tests\/ci\//i;
 const rows = [];
 for (const repo of repos) {
@@ -28,21 +35,52 @@ for (const repo of repos) {
   ]
     .filter(
       (file) =>
-        testPattern.test(file) && !/^(?:\.qa|artifacts|test-results|node_modules)\//.test(file),
+        (testPattern.test(file) || (repo.name === 'client' && flowPattern.test(file))) &&
+        !/^(?:\.qa|artifacts|test-results|node_modules)\//.test(file),
     )
     .sort();
   for (const file of files) {
     const text = readFileSync(path.join(repo.root, file), 'utf8');
-    const source = ts.createSourceFile(
-      file,
-      text,
-      ts.ScriptTarget.Latest,
-      true,
-      file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-    );
+    const flow = repo.name === 'client' && flowPattern.test(file);
     const cases = [];
     const assertions = [];
     const owners = new Set();
+    let timedWaits = 0;
+    if (flow) {
+      // A flow's case is its `name:`; its owners are the subflows it runs; its assertions
+      // are the assert*/extendedWaitUntil commands. An optional extendedWaitUntil never
+      // fails, so it is counted as a timed wait (Maestro has no sleep command).
+      const lines = text.split('\n');
+      lines.forEach((content, index) => {
+        const name = /^name:\s*(.+?)\s*$/.exec(content);
+        if (name) cases.push({ purpose: name[1].replace(/^(['"])(.*)\1$/, '$2'), line: index + 1 });
+        const subflow = /(?:^\s*- runFlow:|[\s{,]file:)\s*['"]?([^'"\s,{}]+\.yaml)/.exec(content);
+        const owner = subflow && path.resolve(repo.root, path.dirname(file), subflow[1]);
+        if (owner && existsSync(owner)) owners.add(path.relative(repo.root, owner));
+        const command = /^(\s*)- (assert\w+|extendedWaitUntil):/.exec(content);
+        if (!command) return;
+        const end = lines.findIndex(
+          (next, offset) => offset > index && next.trim() && next.search(/\S/) <= command[1].length,
+        );
+        const block = lines
+          .slice(index, end === -1 ? undefined : end)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (!/\boptional: true\b/.test(block))
+          assertions.push({ line: index + 1, expression: block.slice(0, 220) });
+        else if (command[2] === 'extendedWaitUntil') timedWaits += 1;
+      });
+    }
+    const source = flow
+      ? null
+      : ts.createSourceFile(
+          file,
+          text,
+          ts.ScriptTarget.Latest,
+          true,
+          file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+        );
     function visit(node) {
       if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
         const specifier = node.moduleSpecifier.text;
@@ -79,15 +117,15 @@ for (const repo of repos) {
       }
       ts.forEachChild(node, visit);
     }
-    visit(source);
+    if (source) visit(source);
     for (const match of text.matchAll(
       /['"`]((?:app|components|features|localization|scripts|config|\.github)\/[^'"`]+\.(?:tsx?|mjs|json|yml))['"`]/g,
     ))
       owners.add(match[1]);
     const sourceReading = /readFileSync|readFile\(|readSource|source\.slice/.test(text);
     const provider = /revenuecat.*(?:live|store)/i.test(file);
-    const native = file.startsWith('e2e/') && file.includes('.e2e.test.');
-    const browser = file.startsWith('e2e/') && !native;
+    const native = flow;
+    const browser = file.startsWith('e2e/');
     const db = repo.name === 'server' && file.startsWith('tests/postgres-');
     const component = repo.name === 'client' && file.startsWith('tests/component/');
     const categories = provider
@@ -108,12 +146,37 @@ for (const repo of repos) {
                     'logic-review-needed',
                   ]
                 : ['logic'];
+    // CI flows run on the platforms their config/test-impact.json suites declare; the live
+    // RevenueCat Test Store runner drives iOS only.
+    const declaredPlatforms = [
+      ...new Set(
+        maestroSuites
+          .filter((suite) => suite.ci && suite.specs.includes(path.dirname(file)))
+          .flatMap((suite) => suite.platforms),
+      ),
+    ];
+    const platforms = native
+      ? provider
+        ? ['ios']
+        : declaredPlatforms.length
+          ? declaredPlatforms
+          : ['ios', 'android']
+      : browser
+        ? ['web']
+        : ['host'];
+    const tags = native
+      ? (/^tags:\s*\[([^\]]*)\]/m
+          .exec(text)?.[1]
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean) ?? [])
+      : [];
     const command = db
       ? 'bun run test:integration'
       : repo.name === 'server'
         ? 'bun run test:unit'
         : native
-          ? 'yarn test:e2e:ios:debug / yarn test:e2e:android'
+          ? `${provider ? 'yarn test:e2e:ios:revenuecat-live' : platforms.map((platform) => `yarn test:e2e:${platform}`).join(' / ')}${tags.length ? ` (tags: ${tags.join(', ')})` : ''}`
           : browser
             ? 'yarn test:e2e:web (see config/batch mapping)'
             : component
@@ -140,18 +203,28 @@ for (const repo of repos) {
             ? 'memory-http'
             : 'fixture'
           : native
-            ? 'fixture-or-provider-review-required'
+            ? provider
+              ? 'fixture-or-provider-review-required'
+              : 'fixture'
             : 'in-process',
-      platforms: native ? ['ios', 'android'] : browser ? ['web'] : ['host'],
+      platforms,
       selectors: [
         ...new Set(
-          [...text.matchAll(/(?:by\.id|getByTestId)\(['"]([^'"]+)['"]\)/g)].map((m) => m[1]),
+          [
+            ...text.matchAll(
+              flow
+                ? /(?:^|[\s{,-])id:\s*['"]?(?!\$)([^'"\s,}]+)/gm
+                : /getByTestId\(['"]([^'"]+)['"]\)/g,
+            ),
+          ].map((m) => m[1]),
         ),
       ],
       hazards: {
-        sleeps: (text.match(/\bsleep\(|waitForTimeout\(|setTimeout\(/g) ?? []).length,
-        coordinates: (text.match(/device\.tap\(|\.(?:tap|click)\(\{\s*[xy]:/g) ?? []).length,
-        synchronizationBypasses: (text.match(/disableSynchronization\(/g) ?? []).length,
+        sleeps: (text.match(/\bsleep\(|waitForTimeout\(|setTimeout\(/g) ?? []).length + timedWaits,
+        coordinates: (
+          text.match(flow ? /\bpoint:\s*['"]?\d/g : /\.(?:tap|click)\(\{\s*[xy]:/g) ?? []
+        ).length,
+        synchronizationBypasses: flow ? (text.match(/\bwaitToSettleTimeoutMs:/g) ?? []).length : 0,
       },
       disposition: sourceReading ? (policyPattern.test(file) ? 'retain' : 'investigate') : 'retain',
       dispositionReason: sourceReading
@@ -192,7 +265,7 @@ const pilotScenarios = ['ios', 'android'].flatMap((platform) =>
 const output = {
   schemaVersion: 1,
   method:
-    'TypeScript AST test labels/assertion expressions plus source references. Unmapped or mixed assertions require review; this is not runtime coverage.',
+    'TypeScript AST test labels/assertion expressions and Maestro flow names/assert commands, plus source references. Unmapped or mixed assertions require review; this is not runtime coverage.',
   tests: rows,
   pilotScenarios,
 };
