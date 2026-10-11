@@ -1451,7 +1451,7 @@
       "id": "TST-ce1f7cfc871d",
       "repo": "client",
       "path": ".maestro/suite/custom-meal-library/02-quick-log.yaml",
-      "contentHash": "638160dc314332246df9b428cab0ac756c21233285d09b5a99bf08eac5875242",
+      "contentHash": "dc0937b9c62ea0f399928a8583557363edee160d3b5c9a11f9fe45e7335c5cc1",
       "command": "yarn test:e2e:ios / yarn test:e2e:android (tags: nutrition)",
       "ownerPaths": [".maestro/suite/common/student-open-meal-library.yaml"],
       "requirementReferences": [],
@@ -1488,23 +1488,23 @@
           "expression": "- extendedWaitUntil: visible: id: meal.library.row.e2e-custom-meal.log timeout: 10000"
         },
         {
-          "line": 15,
+          "line": 24,
           "expression": "- extendedWaitUntil: visible: id: meal.library.quickLog.panel timeout: 5000"
         },
         {
-          "line": 21,
+          "line": 30,
           "expression": "- extendedWaitUntil: visible: id: meal.library.quickLog.error timeout: 5000"
         },
         {
-          "line": 31,
+          "line": 40,
           "expression": "- assertVisible: id: meal.library.quickLog.input text: \"150\""
         },
         {
-          "line": 34,
+          "line": 43,
           "expression": "- assertVisible: id: meal.library.quickLog.preview"
         },
         {
-          "line": 39,
+          "line": 48,
           "expression": "- extendedWaitUntil: notVisible: id: meal.library.quickLog.panel timeout: 10000"
         }
       ]
@@ -1793,7 +1793,7 @@
       "id": "TST-5880c2d88b79",
       "repo": "client",
       "path": ".maestro/suite/professional-nutrition-builder/01-create-add-food-remove.yaml",
-      "contentHash": "044d71f09689368691b84db33b0a0b5607a731eec15907e206ba335a6de6f20e",
+      "contentHash": "44ea78e363580cdf6be1f1fb1415280cf17c26670d9fdf6f78c1ce42993c7943",
       "command": "yarn test:e2e:ios / yarn test:e2e:android (tags: nutrition)",
       "ownerPaths": [
         ".maestro/suite/common/confirm-alert.yaml",
@@ -1872,63 +1872,63 @@
           "expression": "- assertVisible: id: pro.plan.metadata.name text: E2E Builder Nutrition Plan"
         },
         {
-          "line": 39,
+          "line": 41,
           "expression": "- assertVisible: id: pro.plan.metadata.hydrationGoalMl text: \"2200\""
         },
         {
-          "line": 45,
+          "line": 47,
           "expression": "- extendedWaitUntil: visible: id: pro.library.nutrition.row.e2e-nutrition-builder-plan-1 timeout: 10000"
         },
         {
-          "line": 51,
+          "line": 53,
           "expression": "- extendedWaitUntil: visible: id: pro.nutrition_plan.addMeal timeout: 10000"
         },
         {
-          "line": 60,
+          "line": 62,
           "expression": "- extendedWaitUntil: visible: id: pro.nutrition_plan.addMeal.form timeout: 5000"
         },
         {
-          "line": 69,
+          "line": 71,
           "expression": "- assertVisible: id: pro.nutrition_plan.addMeal.input text: Breakfast"
         },
         {
-          "line": 72,
+          "line": 74,
           "expression": "- assertVisible: id: pro.nutrition_plan.addMeal.cancel"
         },
         {
-          "line": 77,
+          "line": 79,
           "expression": "- extendedWaitUntil: visible: id: pro.nutrition_plan.mealRow.Breakfast timeout: 10000"
         },
         {
-          "line": 83,
+          "line": 85,
           "expression": "- extendedWaitUntil: visible: id: pro.nutrition_meal.screen timeout: 10000"
         },
         {
-          "line": 87,
+          "line": 89,
           "expression": "- assertVisible: id: pro.nutrition_meal.total.calories text: 0 kcal"
         },
         {
-          "line": 99,
+          "line": 101,
           "expression": "- assertVisible: id: pro.nutrition_item.searchInput text: rice"
         },
         {
-          "line": 120,
+          "line": 122,
           "expression": "- assertVisible: id: pro.nutrition_item.quantity text: \"100\""
         },
         {
-          "line": 129,
+          "line": 131,
           "expression": "- extendedWaitUntil: notVisible: id: pro.nutrition_item.form timeout: 10000"
         },
         {
-          "line": 137,
+          "line": 139,
           "expression": "- assertVisible: id: pro.nutrition_meal.total.calories text: 111 kcal"
         },
         {
-          "line": 147,
+          "line": 149,
           "expression": "- extendedWaitUntil: visible: id: pro.nutrition_meal.total.calories text: 0 kcal timeout: 15000"
         },
         {
-          "line": 152,
+          "line": 154,
           "expression": "- extendedWaitUntil: notVisible: id: pro.nutrition_meal.foodRow.E2E_Brown_Rice timeout: 10000"
         }
       ]
@@ -56794,7 +56794,7 @@
       "id": "TST-2880b419a194",
       "repo": "client",
       "path": "tests/ci/native-training-edit.test.ts",
-      "contentHash": "c0f0b844c610ed1b974b2c0282c14ad4132a7f381108e8d83cec32fa23e54f30",
+      "contentHash": "7a41a8cf2625b14098ddfeaafa1805002b617ad77dd0e9945c116dd7184367ad",
       "command": "yarn test:unit",
       "ownerPaths": [
         "localization/en-US.ts",
@@ -56818,17 +56818,29 @@
       "assertionPurposes": [
         {
           "purpose": "iOS removal action binding requires unique enabled buttons below the observed body",
-          "line": 6
+          "line": 9
         }
       ],
       "assertions": [
         {
-          "line": 18,
-          "expression": "assert.equal(requireIosItemRemovalPrompt(tree), enUS['pro.plan.delete.body'])"
+          "line": 21,
+          "expression": "assert.equal(nativeItemRemovalBody('QA Exercise'), 'Remove QA Exercise from this session?')"
         },
         {
-          "line": 39,
-          "expression": "assert.throws(() => requireIosItemRemovalPrompt(changed))"
+          "line": 22,
+          "expression": "assert.equal( requireIosItemRemovalPrompt(tree, 'QA Exercise'), 'Remove QA Exercise from this session?', )"
+        },
+        {
+          "line": 27,
+          "expression": "assert.throws(() => requireIosItemRemovalPrompt(tree, 'Other Exercise'))"
+        },
+        {
+          "line": 28,
+          "expression": "assert.throws(() => requireIosItemRemovalPrompt( { children: tree.children.map((row, index) => index === 1 ? node(enUS['pro.plan.delete.body'], '[20,50][200,110]') : row, ), }, 'QA Exercise', ), )"
+        },
+        {
+          "line": 59,
+          "expression": "assert.throws(() => requireIosItemRemovalPrompt(changed, 'QA Exercise'))"
         }
       ]
     },
@@ -57086,7 +57098,7 @@
       "id": "TST-2605ff1cca37",
       "repo": "client",
       "path": "tests/ci/native-training-maestro-driver.test.ts",
-      "contentHash": "fe7de04d8a86471ef9e5cfd93f355a46da65bc5e124f183e09e7ad6dd925c111",
+      "contentHash": "290aa11149433e1cc9dba4e219388bace8a8510029f6bd1d24a0d7e0d4ccf022",
       "command": "yarn test:unit",
       "ownerPaths": [
         "localization/en-US.ts",
@@ -57143,15 +57155,15 @@
         },
         {
           "purpose": "platform entry points reject mismatched requests before actions, SQL or files",
-          "line": 325
+          "line": 330
         },
         {
           "purpose": "Android new-session swipe requires exact observed guidance outside the title input",
-          "line": 351
+          "line": 356
         },
         {
-          "purpose": "Android session-confirm swipe rejects an ambiguous, foreign, disabled or overlapping input anchor",
-          "line": 382
+          "purpose": "Android session editor must show the whole form, its name field and both actions on screen",
+          "line": 387
         }
       ],
       "assertions": [
@@ -57229,35 +57241,39 @@
         },
         {
           "line": 300,
-          "expression": "assert.equal(requireAndroidItemRemovalPrompt(tree), enUS['pro.plan.delete.body'])"
+          "expression": "assert.equal( requireAndroidItemRemovalPrompt(tree, 'en QA Exercise 1'), 'Remove en QA Exercise 1 from this session?', )"
         },
         {
-          "line": 322,
-          "expression": "assert.throws(() => requireAndroidItemRemovalPrompt(invalid))"
+          "line": 304,
+          "expression": "assert.throws(() => requireAndroidItemRemovalPrompt(tree, 'Other Exercise'))"
         },
         {
-          "line": 329,
+          "line": 327,
+          "expression": "assert.throws(() => requireAndroidItemRemovalPrompt(invalid, 'en QA Exercise 1'))"
+        },
+        {
+          "line": 334,
           "expression": "assert.throws(() => createAndroidTrainingMaestroDriver(options))"
         },
         {
-          "line": 330,
+          "line": 335,
           "expression": "assert.throws( () => createAndroidTrainingMaestroDriver({ ...options, input: { ...options.input, platform: 'android' }, }), /requires independent native input observation/, )"
         },
         {
-          "line": 338,
+          "line": 343,
           "expression": "assert.throws(() => createIosTrainingMaestroDriver({ ...options, input: { ...options.input, platform: 'android' }, }), )"
         },
         {
-          "line": 344,
+          "line": 349,
           "expression": "assert.rejects( observeAndroidSavedTrainingJourney({ fixtures: { scope: 'native-entry-ios' } } as Parameters< typeof observeAndroidSavedTrainingJourney >[0]), )"
         },
         {
-          "line": 379,
+          "line": 384,
           "expression": "assert.throws(() => requireAndroidTrainingGuidanceAnchor(tree))"
         },
         {
-          "line": 428,
-          "expression": "assert.throws(() => requireAndroidSessionEditorGuidanceAnchor(tree))"
+          "line": 417,
+          "expression": "assert.throws(() => requireAndroidSessionEditorVisible(tree))"
         }
       ]
     },
@@ -57265,7 +57281,7 @@
       "id": "TST-416ccae93a72",
       "repo": "client",
       "path": "tests/ci/native-training-pilot-evidence.test.ts",
-      "contentHash": "c6de4cd8c68e43ddfc13d28f51742bf0cb4652d4ccf30e3e75474aab5363355d",
+      "contentHash": "cc3b4fc18f1089e39c4d383d5b4a131e0bdb670dd99397a5abe9a59612caf378",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/native-pilot-contract.ts",
@@ -57367,31 +57383,31 @@
           "expression": "assert.deepEqual((await readdir(artifactRoot)).sort(), [ 'capture.private.json', 'external-cleanup.private.json', ])"
         },
         {
-          "line": 322,
+          "line": 327,
           "expression": "assert.rejects(writeFrames(root), /captured exactly once/)"
         },
         {
-          "line": 327,
+          "line": 332,
           "expression": "assert.rejects(otherPlatform(root))"
         },
         {
-          "line": 334,
+          "line": 339,
           "expression": "assert.rejects(writeFrames(root), /captured exactly once/)"
         },
         {
-          "line": 341,
+          "line": 346,
           "expression": "assert.rejects(writeFrames(root), /exact actual-tree selector/)"
         },
         {
-          "line": 347,
+          "line": 352,
           "expression": "assert.equal(frames.length, 9)"
         },
         {
-          "line": 351,
+          "line": 356,
           "expression": "assert.rejects(writeFrames(root), /EEXIST/)"
         },
         {
-          "line": 352,
+          "line": 357,
           "expression": "assert.deepEqual(await readFile(output), saved)"
         }
       ]
@@ -74017,7 +74033,7 @@
       "id": "TST-bde77d5bdb7c",
       "repo": "server",
       "path": "tests/auth-rate-limit.test.ts",
-      "contentHash": "53a37d8ea2db75845b00f7c956132580d7ee4e00933f6b5b54b76024d0307d30",
+      "contentHash": "855fbfdccf15ed551720e5ac3428c6fdbbdd9dcc009b4afcbb15f5681d1507a4",
       "command": "bun run test:unit",
       "ownerPaths": [
         "src/app.ts",
@@ -74062,8 +74078,28 @@
           "line": 168
         },
         {
-          "purpose": "tracks separate budgets per client IP using the X-Real-IP header set by Nginx",
+          "purpose": "tracks separate budgets per client IP using the trusted X-Real-IP header",
           "line": 182
+        },
+        {
+          "purpose": "keys on the socket address so spoofed X-Real-IP cannot reset the budget",
+          "line": 206
+        },
+        {
+          "purpose": "never falls back to X-Forwarded-For when the trusted header is missing",
+          "line": 230
+        },
+        {
+          "purpose": "keys on the last trusted-header entry, the one the proxy added",
+          "line": 243
+        },
+        {
+          "purpose": "keys on the socket address and ignores forwarding headers when none is trusted",
+          "line": 274
+        },
+        {
+          "purpose": "uses the last trusted-header entry and otherwise the socket address",
+          "line": 282
         }
       ],
       "assertions": [
@@ -74122,6 +74158,42 @@
         {
           "line": 203,
           "expression": "expect(clientBFirst.status).toBe(201)"
+        },
+        {
+          "line": 224,
+          "expression": "expect(statuses).toEqual([202, 202, 202, 429])"
+        },
+        {
+          "line": 240,
+          "expression": "expect(statuses).toEqual([201, 201, 201, 429])"
+        },
+        {
+          "line": 257,
+          "expression": "expect(statuses).toEqual([201, 201, 201, 429])"
+        },
+        {
+          "line": 265,
+          "expression": "expect(otherClient.status).toBe(201)"
+        },
+        {
+          "line": 278,
+          "expression": "expect(key(spoofed, serverWithAddress('192.0.2.10'))).toBe('192.0.2.10')"
+        },
+        {
+          "line": 279,
+          "expression": "expect(key(spoofed, serverWithAddress('192.0.2.20'))).toBe('192.0.2.20')"
+        },
+        {
+          "line": 286,
+          "expression": "expect(key(keyRequest({ 'x-real-ip': '198.51.100.1, 203.0.113.10' }), socket)).toBe( '203.0.113.10' )"
+        },
+        {
+          "line": 289,
+          "expression": "expect(key(keyRequest({ 'x-forwarded-for': '198.51.100.1' }), socket)).toBe('192.0.2.10')"
+        },
+        {
+          "line": 290,
+          "expression": "expect(key(keyRequest({ 'x-real-ip': '203.0.113.10, ' }), socket)).toBe('192.0.2.10')"
         }
       ]
     },
@@ -74714,7 +74786,7 @@
       "id": "TST-bffce73afd72",
       "repo": "server",
       "path": "tests/ci-classify-change-scope.test.ts",
-      "contentHash": "ff95e91499ac7ee862d39f25ef21828aabe179a290eb6df36eacb0204f0d599b",
+      "contentHash": "b1e4fa6df47666f5eb5c70e1f2728f43da2aeb22c4acef9d4a64bc2fe38835c2",
       "command": "bun run test:unit",
       "ownerPaths": [".github/workflows/ci.yml", "scripts/ci/classify-change-scope.ts"],
       "requirementReferences": [],
@@ -74770,28 +74842,40 @@
           "line": 47
         },
         {
-          "purpose": "infra and env-example changes stay narrow",
-          "line": 53
+          "purpose": "infra changes force full scope",
+          "line": 55
+        },
+        {
+          "purpose": "env-example changes force full scope",
+          "line": 69
+        },
+        {
+          "purpose": "infra change mixed with docs still forces full scope",
+          "line": 75
+        },
+        {
+          "purpose": "gitignore changes stay narrow",
+          "line": 81
         },
         {
           "purpose": "empty changeset stays narrow",
-          "line": 58
+          "line": 86
         },
         {
           "purpose": "parses simple add/modify/delete entries",
-          "line": 67
+          "line": 95
         },
         {
           "purpose": "parses rename entries keeping old and new paths",
-          "line": 72
+          "line": 100
         },
         {
           "purpose": "parses a mix of modify, rename, and copy entries in one diff",
-          "line": 77
+          "line": 105
         },
         {
           "purpose": "returns an empty list for an empty diff",
-          "line": 89
+          "line": 117
         }
       ],
       "assertions": [
@@ -74840,35 +74924,59 @@
           "expression": "expect(classify([path]).fullScope).toBe(true)"
         },
         {
-          "line": 55,
+          "line": 64,
+          "expression": "expect(result.fullScope).toBe(true)"
+        },
+        {
+          "line": 65,
+          "expression": "expect(result.fullScopeHits).toEqual([path])"
+        },
+        {
+          "line": 71,
+          "expression": "expect(result.fullScope).toBe(true)"
+        },
+        {
+          "line": 72,
+          "expression": "expect(result.fullScopeHits).toEqual(['.env.example'])"
+        },
+        {
+          "line": 77,
+          "expression": "expect(result.fullScope).toBe(true)"
+        },
+        {
+          "line": 78,
+          "expression": "expect(result.fullScopeHits).toEqual(['infra/railway/start.sh'])"
+        },
+        {
+          "line": 83,
           "expression": "expect(result.fullScope).toBe(false)"
         },
         {
-          "line": 60,
+          "line": 88,
           "expression": "expect(result.fullScope).toBe(false)"
         },
         {
-          "line": 61,
+          "line": 89,
           "expression": "expect(result.fullScopeHits).toEqual([])"
         },
         {
-          "line": 62,
+          "line": 90,
           "expression": "expect(result.unknownHits).toEqual([])"
         },
         {
-          "line": 69,
+          "line": 97,
           "expression": "expect(parseNameStatusZ(raw)).toEqual(['src/a.ts', 'src/b.ts', 'src/c.ts'])"
         },
         {
-          "line": 74,
+          "line": 102,
           "expression": "expect(parseNameStatusZ(raw)).toEqual(['src/old.ts', 'src/new.ts'])"
         },
         {
-          "line": 80,
+          "line": 108,
           "expression": "expect(parseNameStatusZ(raw)).toEqual([ 'src/a.ts', 'src/old.ts', 'src/new.ts', 'src/base.ts', 'src/copy.ts', ])"
         },
         {
-          "line": 90,
+          "line": 118,
           "expression": "expect(parseNameStatusZ('')).toEqual([])"
         }
       ]
@@ -74877,7 +74985,7 @@
       "id": "TST-751d33c498b7",
       "repo": "server",
       "path": "tests/config.test.ts",
-      "contentHash": "ec91fd09598c6c4c7c297c8ae16ccb3268e32e55342798219d1e548934fba702",
+      "contentHash": "8aa7976617ee7840bbc8e02d4eaeeca030da8fb82a48a71737094cf4dc45a7c7",
       "command": "bun run test:unit",
       "ownerPaths": ["src/config.ts"],
       "requirementReferences": [],
@@ -74909,16 +75017,28 @@
           "line": 21
         },
         {
+          "purpose": "trusts no client-address header unless one is configured",
+          "line": 27
+        },
+        {
+          "purpose": "requires production to choose the trusted proxy header explicitly",
+          "line": 38
+        },
+        {
+          "purpose": "rejects a trusted proxy header that is not a single header name",
+          "line": 47
+        },
+        {
           "purpose": "trims server-only RevenueCat customer and webhook credentials",
-          "line": 25
+          "line": 53
         },
         {
           "purpose": "rejects a public JWK where a private signing JWK is required",
-          "line": 37
+          "line": 65
         },
         {
           "purpose": "accepts an RSA private JWK for server token signing",
-          "line": 49
+          "line": 77
         }
       ],
       "assertions": [
@@ -74932,26 +75052,54 @@
         },
         {
           "line": 22,
-          "expression": "expect(readConfig({ NODE_ENV: 'production' }).allowedWebOrigins).toEqual([])"
+          "expression": "expect( readConfig({ NODE_ENV: 'production', TRUSTED_PROXY_HEADER: 'x-real-ip' }).allowedWebOrigins ).toEqual([])"
         },
         {
-          "line": 32,
-          "expression": "expect(config.revenueCatSecretApiKey).toBe('sk_test_customer')"
+          "line": 28,
+          "expression": "expect(readConfig({}).trustedProxyHeader).toBeNull()"
+        },
+        {
+          "line": 29,
+          "expression": "expect(readConfig({ TRUSTED_PROXY_HEADER: 'none' }).trustedProxyHeader).toBeNull()"
+        },
+        {
+          "line": 30,
+          "expression": "expect(readConfig({ TRUSTED_PROXY_HEADER: ' X-Real-IP ' }).trustedProxyHeader).toBe( 'x-real-ip' )"
         },
         {
           "line": 33,
+          "expression": "expect(readConfig({ TRUSTED_PROXY_HEADER: 'x_client.ip' }).trustedProxyHeader).toBe( 'x_client.ip' )"
+        },
+        {
+          "line": 39,
+          "expression": "expect(() => readConfig({ NODE_ENV: 'production' })).toThrow( 'TRUSTED_PROXY_HEADER must be set in production' )"
+        },
+        {
+          "line": 42,
+          "expression": "expect( readConfig({ NODE_ENV: 'production', TRUSTED_PROXY_HEADER: 'none' }).trustedProxyHeader ).toBeNull()"
+        },
+        {
+          "line": 48,
+          "expression": "expect(() => readConfig({ TRUSTED_PROXY_HEADER: 'x-real-ip, x-forwarded-for' })).toThrow( 'TRUSTED_PROXY_HEADER must be a request header name or none.' )"
+        },
+        {
+          "line": 60,
+          "expression": "expect(config.revenueCatSecretApiKey).toBe('sk_test_customer')"
+        },
+        {
+          "line": 61,
           "expression": "expect(config.revenueCatWebhookAuthorization).toBe('Bearer webhook-secret')"
         },
         {
-          "line": 34,
+          "line": 62,
           "expression": "expect(config.revenueCatWebhookSigningSecret).toBe('signing-secret')"
         },
         {
-          "line": 38,
+          "line": 66,
           "expression": "expect(() => readConfig({ AUTH_JWT_PRIVATE_JWK: JSON.stringify({ kty: 'RSA', n: 'public-modulus', e: 'AQAB', }), }) ).toThrow('AUTH_JWT_PRIVATE_JWK must be a JSON private JWK.')"
         },
         {
-          "line": 53,
+          "line": 81,
           "expression": "expect( readConfig({ AUTH_JWT_PRIVATE_JWK: JSON.stringify(privateJwk) }).authJwtPrivateJwk ).toMatchObject({ kty: 'RSA', d: expect.any(String) })"
         }
       ]
@@ -75329,6 +75477,97 @@
         {
           "line": 422,
           "expression": "expect(captured).toEqual([ { ownerAuthUid: session.profile.authUid, mealId: 'created-meal' }, { shareToken: 'share-1' }, { ownerAuthUid: session.profile.authUid, shareToken: 'share-1' }, ])"
+        }
+      ]
+    },
+    {
+      "id": "TST-48e03b839517",
+      "repo": "server",
+      "path": "tests/deploy-prod-workflow.test.ts",
+      "contentHash": "8609c924976598f6e36cba862e6be859657710987862683d2714d017b688676f",
+      "command": "bun run test:unit",
+      "ownerPaths": [],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["source-shape-coupling", "logic-review-needed"],
+      "dataMode": "in-process",
+      "platforms": ["host"],
+      "selectors": [],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "investigate",
+      "dispositionReason": "Assertion purposes below require review; retain policy assertions, replace UI/source-shape assertions only after passing behavioral evidence.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "passes on the first read when the migration result is already in the deployment log",
+          "line": 79
+        },
+        {
+          "purpose": "keeps reading the log until the late-indexed migration result appears",
+          "line": 89
+        },
+        {
+          "purpose": "fails after a bounded number of reads when the migration never succeeded",
+          "line": 98
+        }
+      ],
+      "assertions": [
+        {
+          "line": 82,
+          "expression": "expect(result.exitCode).toBe(0)"
+        },
+        {
+          "line": 83,
+          "expression": "expect(result.stdout).toContain('Railway deployment: deployment-1')"
+        },
+        {
+          "line": 84,
+          "expression": "expect(result.stdout).toContain('migrations applied successfully')"
+        },
+        {
+          "line": 85,
+          "expression": "expect(result.reads).toBe(1)"
+        },
+        {
+          "line": 86,
+          "expression": "expect(result.sleeps).toEqual([])"
+        },
+        {
+          "line": 92,
+          "expression": "expect(result.exitCode).toBe(0)"
+        },
+        {
+          "line": 93,
+          "expression": "expect(result.stdout).toContain('migrations applied successfully')"
+        },
+        {
+          "line": 94,
+          "expression": "expect(result.reads).toBe(3)"
+        },
+        {
+          "line": 95,
+          "expression": "expect(result.sleeps).toEqual(['5', '5'])"
+        },
+        {
+          "line": 101,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 102,
+          "expression": "expect(result.stdout).toContain('::error::No successful migration result found.')"
+        },
+        {
+          "line": 103,
+          "expression": "expect(result.reads).toBe(12)"
+        },
+        {
+          "line": 104,
+          "expression": "expect(result.sleeps).toHaveLength(11)"
         }
       ]
     },
@@ -80763,6 +81002,201 @@
       ]
     },
     {
+      "id": "TST-8a02718b4322",
+      "repo": "server",
+      "path": "tests/revenuecat-live-evidence-program.test.ts",
+      "contentHash": "aa91c9db54b211d4ca46bb8387b0ce821e2423f2dcd8a21599be428a653e87c8",
+      "command": "bun run test:unit",
+      "ownerPaths": [],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["provider"],
+      "dataMode": "in-process",
+      "platforms": ["host"],
+      "selectors": [],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "investigate",
+      "dispositionReason": "Assertion purposes below require review; retain policy assertions, replace UI/source-shape assertions only after passing behavioral evidence.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "passes only when RevenueCat and the snapshot match, without printing credentials",
+          "line": 139
+        },
+        {
+          "purpose": "refuses a container outside the production api service before reading anything",
+          "line": 171
+        },
+        {
+          "purpose": "refuses when the connected database is not the expected one",
+          "line": 189
+        },
+        {
+          "purpose": "refuses without a server-only RevenueCat key",
+          "line": 200
+        },
+        {
+          "purpose": "never queries RevenueCat for an App User ID without a production snapshot",
+          "line": 212
+        },
+        {
+          "purpose": "fails at the deadline when the snapshot does not match RevenueCat",
+          "line": 222
+        },
+        {
+          "purpose": "fails when RevenueCat does not match the expected state",
+          "line": 236
+        },
+        {
+          "purpose": "does not let a failed RevenueCat read pass",
+          "line": 247
+        }
+      ],
+      "assertions": [
+        {
+          "line": 145,
+          "expression": "expect(result.exitCode).toBe(0)"
+        },
+        {
+          "line": 146,
+          "expression": "expect(result.stdout.trimEnd().split('\\n').at(-1)).toBe('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 147,
+          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ appUserId: uid, converged: true, revenueCatQueried: true, target: { railwayProjectId: productionApi.RAILWAY_PROJECT_ID, railwayEnvironmentId: productionApi.RAILWAY_ENVI"
+        },
+        {
+          "line": 162,
+          "expression": "expect(result.providerCalls).toEqual([ { url: `https://api.revenuecat.com/v1/subscribers/${uid}`, method: 'GET' }, ])"
+        },
+        {
+          "line": 166,
+          "expression": "expect(output).not.toContain(secretApiKey)"
+        },
+        {
+          "line": 167,
+          "expression": "expect(output).not.toContain(databasePassword)"
+        },
+        {
+          "line": 182,
+          "expression": "expect(result.exitCode).toBe(2)"
+        },
+        {
+          "line": 183,
+          "expression": "expect(result.stderr).toContain('Refusing live evidence verification')"
+        },
+        {
+          "line": 184,
+          "expression": "expect(result.stderr).toContain('not the expected production api service')"
+        },
+        {
+          "line": 185,
+          "expression": "expect(result.stdout).toBe('')"
+        },
+        {
+          "line": 186,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 195,
+          "expression": "expect(result.exitCode).toBe(2)"
+        },
+        {
+          "line": 196,
+          "expression": "expect(result.stderr).toContain(`connected to database ${databaseName}, not mychampions_server`)"
+        },
+        {
+          "line": 197,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 206,
+          "expression": "expect(result.exitCode).toBe(2)"
+        },
+        {
+          "line": 207,
+          "expression": "expect(result.stderr).toContain('server-only RevenueCat sk_* key')"
+        },
+        {
+          "line": 208,
+          "expression": "expect(result.stderr).not.toContain('appl_public_key')"
+        },
+        {
+          "line": 209,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 215,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 216,
+          "expression": "expect(result.stderr).toContain('RevenueCat was not queried')"
+        },
+        {
+          "line": 217,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 218,
+          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ converged: false, revenueCatQueried: false })"
+        },
+        {
+          "line": 219,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 229,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 230,
+          "expression": "expect(result.stderr).toContain('Production subscription snapshot did not converge before the deadline.')"
+        },
+        {
+          "line": 231,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 232,
+          "expression": "expect(result.providerCalls.length).toBeGreaterThanOrEqual(1)"
+        },
+        {
+          "line": 233,
+          "expression": "expect(Date.now() - startedAt).toBeLessThan(10_000)"
+        },
+        {
+          "line": 242,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 243,
+          "expression": "expect(result.stderr).toContain('Canonical RevenueCat privileges do not match the expected live state.')"
+        },
+        {
+          "line": 244,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 253,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 254,
+          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ converged: false, revenueCat: null })"
+        },
+        {
+          "line": 255,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        }
+      ]
+    },
+    {
       "id": "TST-7db1304d52cf",
       "repo": "server",
       "path": "tests/social-identity-service.test.ts",
@@ -81300,7 +81734,7 @@
       "id": "TST-817b0580b094",
       "repo": "server",
       "path": "tests/subscription-entitlements.test.ts",
-      "contentHash": "e2ce5059b434ef3d065165be575c77ca2cfc5bf07c5dd5ce44c0341fb8de088e",
+      "contentHash": "91db178a2e477473c25a9b9571bb2f490e5dad619d60c034be9ab0e1b02c7d69",
       "command": "bun run test:unit",
       "ownerPaths": [
         "src/app.ts",
@@ -81326,328 +81760,328 @@
       "assertionPurposes": [
         {
           "purpose": "stores the authenticated user RevenueCat entitlement snapshot",
-          "line": 171
+          "line": 172
         },
         {
           "purpose": "returns the authenticated user latest local entitlement snapshot",
-          "line": 236
+          "line": 237
         },
         {
           "purpose": "rejects malformed client entitlement expiry without storing a snapshot",
-          "line": 296
+          "line": 297
         },
         {
           "purpose": "returns null when the authenticated user has no local entitlement snapshot",
-          "line": 330
+          "line": 331
         },
         {
           "purpose": "requires local server auth before accepting entitlement snapshots",
-          "line": 362
+          "line": 363
         },
         {
           "purpose": "refuses authenticated client entitlement writes in production",
-          "line": 384
+          "line": 385
         },
         {
           "purpose": "refuses RevenueCat webhooks until webhook authorization is configured",
-          "line": 427
+          "line": 429
         },
         {
           "purpose": "requires a webhook signing secret before accepting RevenueCat events in production",
-          "line": 456
+          "line": 458
         },
         {
           "purpose": "refuses RevenueCat webhooks until canonical customer lookup is configured",
-          "line": 497
+          "line": 500
         },
         {
           "purpose": "acknowledges an authenticated RevenueCat dashboard TEST without reconciling synthetic customer data",
-          "line": 524
+          "line": 527
         },
         {
           "purpose": "stores a RevenueCat webhook entitlement snapshot for the event app user id",
-          "line": 562
+          "line": 565
         },
         {
           "purpose": "verifies RevenueCat HMAC signatures when a signing secret is configured",
-          "line": 621
+          "line": 624
         },
         {
           "purpose": "reconciles both sides of a RevenueCat transfer from canonical customer state",
-          "line": 669
+          "line": 672
         },
         {
           "purpose": "retries later when canonical RevenueCat customer reconciliation fails",
-          "line": 717
+          "line": 720
         },
         {
           "purpose": "returns a retryable failure when canonical privileges cannot be persisted",
-          "line": 748
+          "line": 751
         },
         {
           "purpose": "rejects malformed RevenueCat payloads before customer lookup",
-          "line": 786
+          "line": 789
         },
         {
           "purpose": "deduplicates and trims every customer in a transfer event",
-          "line": 828
+          "line": 831
         },
         {
           "purpose": "rejects RevenueCat webhooks with invalid authorization",
-          "line": 869
+          "line": 872
         },
         {
           "purpose": "rejects a mismatched-length RevenueCat webhook authorization header without throwing",
-          "line": 900
+          "line": 903
         },
         {
           "purpose": "rejects missing, malformed, incorrect, and stale RevenueCat signatures",
-          "line": 940
+          "line": 943
         }
       ],
       "assertions": [
         {
-          "line": 208,
+          "line": 209,
           "expression": "expect(response.status).toBe(202)"
         },
         {
-          "line": 209,
+          "line": 210,
           "expression": "expect(response.json()).resolves.toEqual({ snapshot: { authUid: session.profile.authUid, professionalEntitlementStatus: 'active', aiEntitlementStatus: 'lapsed', professionalEntitlementExpiresAt: '2026-08-03T16:45:00.000Z"
         },
         {
-          "line": 222,
+          "line": 223,
           "expression": "expect(subscriptions.saved).toEqual([ { authUid: session.profile.authUid, professionalEntitlementStatus: 'active', aiEntitlementStatus: 'lapsed', professionalEntitlementExpiresAt: '2026-08-03T16:45:00.000Z', professional"
         },
         {
-          "line": 280,
+          "line": 281,
           "expression": "expect(response.status).toBe(200)"
         },
         {
-          "line": 281,
+          "line": 282,
           "expression": "expect(response.json()).resolves.toEqual({ snapshot: { authUid: session.profile.authUid, professionalEntitlementStatus: 'lapsed', aiEntitlementStatus: 'active', professionalEntitlementExpiresAt: null, professionalEntitle"
         },
         {
-          "line": 326,
+          "line": 327,
           "expression": "expect(response.status).toBe(400)"
         },
         {
-          "line": 327,
+          "line": 328,
           "expression": "expect(subscriptions.saved).toEqual([])"
-        },
-        {
-          "line": 358,
-          "expression": "expect(response.status).toBe(200)"
         },
         {
           "line": 359,
+          "expression": "expect(response.status).toBe(200)"
+        },
+        {
+          "line": 360,
           "expression": "expect(response.json()).resolves.toEqual({ snapshot: null })"
         },
         {
-          "line": 380,
+          "line": 381,
           "expression": "expect(response.status).toBe(401)"
         },
         {
-          "line": 381,
+          "line": 382,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 417,
+          "line": 419,
           "expression": "expect(response.status).toBe(403)"
         },
         {
-          "line": 418,
+          "line": 420,
           "expression": "expect(response.json()).resolves.toEqual({ error: { code: 'client_subscription_snapshot_sync_disabled', message: 'Client entitlement snapshots are disabled in production.', }, })"
         },
         {
-          "line": 424,
+          "line": 426,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 446,
+          "line": 448,
           "expression": "expect(response.status).toBe(503)"
         },
         {
-          "line": 447,
+          "line": 449,
           "expression": "expect(response.json()).resolves.toEqual({ error: { code: 'revenuecat_webhook_not_configured', message: 'RevenueCat webhook authorization is not configured.', }, })"
         },
         {
-          "line": 453,
+          "line": 455,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 487,
+          "line": 490,
           "expression": "expect(response.status).toBe(503)"
         },
         {
-          "line": 488,
+          "line": 491,
           "expression": "expect(response.json()).resolves.toEqual({ error: { code: 'revenuecat_webhook_signing_not_configured', message: 'RevenueCat webhook signing is required in production.', }, })"
         },
         {
-          "line": 494,
+          "line": 497,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 517,
+          "line": 520,
           "expression": "expect(response.status).toBe(503)"
-        },
-        {
-          "line": 518,
-          "expression": "expect(response.json()).resolves.toMatchObject({ error: { code: 'revenuecat_customer_api_not_configured' }, })"
         },
         {
           "line": 521,
+          "expression": "expect(response.json()).resolves.toMatchObject({ error: { code: 'revenuecat_customer_api_not_configured' }, })"
+        },
+        {
+          "line": 524,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 553,
+          "line": 556,
           "expression": "expect(response.status).toBe(200)"
         },
         {
-          "line": 554,
+          "line": 557,
           "expression": "expect(response.json()).resolves.toEqual({ status: 'accepted', reconciledCustomers: 0, })"
         },
         {
-          "line": 558,
+          "line": 561,
           "expression": "expect(customers.requestedAppUserIds).toEqual([])"
         },
         {
-          "line": 559,
+          "line": 562,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 601,
+          "line": 604,
           "expression": "expect(response.status).toBe(200)"
         },
         {
-          "line": 602,
+          "line": 605,
           "expression": "expect(response.json()).resolves.toEqual({ status: 'accepted', reconciledCustomers: 1, })"
         },
         {
-          "line": 606,
+          "line": 609,
           "expression": "expect(customers.requestedAppUserIds).toEqual(['auth-1'])"
         },
         {
-          "line": 607,
+          "line": 610,
           "expression": "expect(subscriptions.saved).toEqual([ { authUid: 'auth-1', professionalEntitlementStatus: 'active', aiEntitlementStatus: 'active', professionalEntitlementExpiresAt: '2026-08-03T16:45:00.000Z', professionalEntitlementRene"
         },
         {
-          "line": 658,
+          "line": 661,
           "expression": "expect(response.status).toBe(200)"
         },
         {
-          "line": 659,
+          "line": 662,
           "expression": "expect(subscriptions.saved).toHaveLength(1)"
         },
         {
-          "line": 660,
+          "line": 663,
           "expression": "expect(subscriptions.saved[0]).toMatchObject({ authUid: 'auth-2', professionalEntitlementStatus: 'lapsed', aiEntitlementStatus: 'lapsed', activeStudentCount: null, source: 'revenuecat', })"
         },
         {
-          "line": 702,
+          "line": 705,
           "expression": "expect(response.status).toBe(200)"
         },
         {
-          "line": 703,
+          "line": 706,
           "expression": "expect(response.json()).resolves.toEqual({ status: 'accepted', reconciledCustomers: 2, })"
         },
         {
-          "line": 707,
+          "line": 710,
           "expression": "expect(customers.requestedAppUserIds).toEqual(['auth-from', 'auth-to'])"
         },
         {
-          "line": 708,
+          "line": 711,
           "expression": "expect(subscriptions.saved).toHaveLength(2)"
         },
         {
-          "line": 709,
+          "line": 712,
           "expression": "expect(subscriptions.saved).toEqual( expect.arrayContaining([ expect.objectContaining({ authUid: 'auth-from', professionalEntitlementStatus: 'lapsed' }), expect.objectContaining({ authUid: 'auth-to', professionalEntitlem"
         },
         {
-          "line": 741,
+          "line": 744,
           "expression": "expect(response.status).toBe(502)"
         },
         {
-          "line": 742,
+          "line": 745,
           "expression": "expect(response.json()).resolves.toMatchObject({ error: { code: 'revenuecat_customer_reconciliation_failed' }, })"
         },
         {
-          "line": 745,
+          "line": 748,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 777,
+          "line": 780,
           "expression": "expect(response.status).toBe(503)"
         },
         {
-          "line": 778,
+          "line": 781,
           "expression": "expect(response.json()).resolves.toEqual({ error: { code: 'revenuecat_snapshot_persistence_failed', message: 'RevenueCat customer state could not be persisted; retry the delivery.', }, })"
         },
         {
-          "line": 819,
+          "line": 822,
           "expression": "expect(response.status).toBe(400)"
         },
         {
-          "line": 820,
+          "line": 823,
           "expression": "expect(response.json()).resolves.toMatchObject({ error: { code: 'invalid_revenuecat_webhook_payload' }, })"
         },
         {
-          "line": 824,
+          "line": 827,
           "expression": "expect(customers.requestedAppUserIds).toEqual([])"
         },
         {
-          "line": 825,
+          "line": 828,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 856,
+          "line": 859,
           "expression": "expect(response.status).toBe(200)"
         },
         {
-          "line": 857,
+          "line": 860,
           "expression": "expect(response.json()).resolves.toEqual({ status: 'accepted', reconciledCustomers: 3, })"
         },
         {
-          "line": 861,
+          "line": 864,
           "expression": "expect(customers.requestedAppUserIds).toEqual([ 'auth-shared', 'auth-from', 'auth-to', ])"
         },
         {
-          "line": 866,
+          "line": 869,
           "expression": "expect(subscriptions.saved).toHaveLength(3)"
         },
         {
-          "line": 896,
+          "line": 899,
           "expression": "expect(response.status).toBe(401)"
         },
         {
-          "line": 897,
+          "line": 900,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 930,
+          "line": 933,
           "expression": "expect(response.status).toBe(401)"
         },
         {
-          "line": 931,
+          "line": 934,
           "expression": "expect(response.json()).resolves.toEqual({ error: { code: 'invalid_revenuecat_webhook_authorization', message: 'Invalid RevenueCat webhook authorization.', }, })"
         },
         {
-          "line": 937,
+          "line": 940,
           "expression": "expect(subscriptions.saved).toEqual([])"
         },
         {
-          "line": 979,
+          "line": 982,
           "expression": "expect(response.status).toBe(401)"
         },
         {
-          "line": 980,
+          "line": 983,
           "expression": "expect(response.json()).resolves.toMatchObject({ error: { code: 'invalid_revenuecat_webhook_signature' }, })"
         },
         {
-          "line": 984,
+          "line": 987,
           "expression": "expect(customers.requestedAppUserIds).toEqual([])"
         },
         {
-          "line": 985,
+          "line": 988,
           "expression": "expect(subscriptions.saved).toEqual([])"
         }
       ]
@@ -82466,7 +82900,7 @@
       "id": "TST-8ca5a4527b24",
       "repo": "server",
       "path": "tests/vm-deployment-contract.test.ts",
-      "contentHash": "840aaffe67dafbe7c806203f2e8efdc80a2ebcd0c519817d8875dc0898e64b63",
+      "contentHash": "f2b4eb8380bf424992c3d478f56f4ef528f71e64e5579704343b550ac92e579a",
       "command": "bun run test:unit",
       "ownerPaths": [],
       "requirementReferences": [],
@@ -82487,484 +82921,660 @@
       "assertionPurposes": [
         {
           "purpose": "pins Bun and keeps application traffic loopback-only behind the existing VM network",
-          "line": 27
+          "line": 102
         },
         {
           "purpose": "keeps GCS credentials mounted read-only and migrations separate from serving containers",
-          "line": 39
+          "line": 114
         },
         {
           "purpose": "limits VM database provisioning to the isolated server and read-only catalog roles",
-          "line": 47
+          "line": 122
         },
         {
           "purpose": "defaults VM database provisioning to no-write mode and rejects an unsafe SSH target",
-          "line": 72
+          "line": 148
         },
         {
           "purpose": "uses a health-checked migration-before-cutover deployment and an Nginx local upstream",
-          "line": 85
+          "line": 161
         },
         {
           "purpose": "requires an explicit immutable image reference before production cutover",
-          "line": 112
+          "line": 188
         },
         {
           "purpose": "supports only an explicit preloaded-image mode for direct VM transfers",
-          "line": 121
+          "line": 197
         },
         {
           "purpose": "refuses deployment before Docker or Nginx when the required VM secrets are absent",
-          "line": 129
+          "line": 205
         },
         {
-          "purpose": "keeps live RevenueCat evidence verification read-only and constrained to the production VM",
-          "line": 142
+          "purpose": "defaults to a dry run that names the pinned production target and never calls Railway",
+          "line": 219
+        },
+        {
+          "purpose": "rejects unsafe requests before calling Railway",
+          "line": 234
+        },
+        {
+          "purpose": "runs the read-only program only in the pinned production api service over one remote line",
+          "line": 256
+        },
+        {
+          "purpose": "fails when Railway SSH exits 0 without the evidence result",
+          "line": 296
+        },
+        {
+          "purpose": "fails with the remote status when the program refuses or fails",
+          "line": 307
+        },
+        {
+          "purpose": "keeps the in-container program read-only, credential-free, and same-iteration",
+          "line": 316
         },
         {
           "purpose": "has a guarded bootstrap path for first public ingress without replacing a healthy slot",
-          "line": 193
+          "line": 355
         },
         {
           "purpose": "keeps Firebase-distribution Dev API/database deployment separate from production",
-          "line": 211
+          "line": 373
         },
         {
           "purpose": "defaults Dev provisioning to no-write mode and refuses an alternate target",
-          "line": 248
+          "line": 411
         }
       ],
       "assertions": [
         {
-          "line": 31,
+          "line": 106,
           "expression": "expect(dockerfile).toContain('FROM oven/bun:1.3.14')"
         },
         {
-          "line": 32,
+          "line": 107,
           "expression": "expect(compose).toContain('127.0.0.1:3400:3400')"
         },
         {
-          "line": 33,
+          "line": 108,
           "expression": "expect(compose).toContain('127.0.0.1:3401:3400')"
         },
         {
-          "line": 34,
+          "line": 109,
           "expression": "expect(compose).toContain('root_default:')"
         },
         {
-          "line": 35,
+          "line": 110,
           "expression": "expect(compose).toContain('external: true')"
         },
         {
-          "line": 36,
+          "line": 111,
           "expression": "expect(compose).toContain('env_file: .env')"
         },
         {
-          "line": 42,
+          "line": 117,
           "expression": "expect(compose).toContain('/run/secrets/mychampions-gcs-service-account.json:ro')"
         },
         {
-          "line": 43,
+          "line": 118,
           "expression": "expect(compose).toContain('migrate:')"
         },
         {
-          "line": 44,
+          "line": 119,
           "expression": "expect(compose).toContain('\"db:migrate\"')"
         },
         {
-          "line": 50,
+          "line": 125,
           "expression": "expect(provision).toContain('mychampions_server')"
         },
         {
-          "line": 51,
+          "line": 126,
           "expression": "expect(provision).toContain('mychampions_server_user')"
         },
         {
-          "line": 52,
+          "line": 127,
           "expression": "expect(provision).toContain('mychampions_catalog_reader')"
         },
         {
-          "line": 53,
+          "line": 128,
           "expression": "expect(provision).toContain('CREATE DATABASE')"
         },
         {
-          "line": 54,
+          "line": 129,
           "expression": "expect(provision).toContain('NOSUPERUSER NOCREATEDB NOCREATEROLE')"
         },
         {
-          "line": 55,
+          "line": 130,
           "expression": "expect(provision).toContain('GRANT SELECT ON ALL TABLES IN SCHEMA public')"
         },
         {
-          "line": 56,
+          "line": 131,
           "expression": "expect(provision).toContain('ALTER DEFAULT PRIVILEGES')"
         },
         {
-          "line": 57,
+          "line": 132,
           "expression": "expect(provision).toContain('REVOKE CREATE ON SCHEMA public FROM PUBLIC')"
         },
         {
-          "line": 58,
+          "line": 133,
           "expression": "expect(provision).toContain('GRANT USAGE, CREATE ON SCHEMA public TO \"$server_role\"')"
         },
         {
-          "line": 59,
+          "line": 134,
           "expression": "expect(provision).toContain('REVENUECAT_SECRET_API_KEY=')"
         },
         {
-          "line": 60,
+          "line": 135,
           "expression": "expect(provision).toContain('REVENUECAT_WEBHOOK_AUTHORIZATION=')"
         },
         {
-          "line": 61,
+          "line": 136,
           "expression": "expect(provision).toContain('REVENUECAT_WEBHOOK_SIGNING_SECRET=')"
         },
         {
-          "line": 62,
-          "expression": "expect(provision).toContain('--apply')"
-        },
-        {
-          "line": 63,
-          "expression": "expect(provision).toContain('psql_admin_query()')"
-        },
-        {
-          "line": 64,
-          "expression": "expect(provision).toContain('psql_admin_stdin()')"
-        },
-        {
-          "line": 65,
-          "expression": "expect(provision).toContain('target_exists=\"$(psql_admin_query')"
-        },
-        {
-          "line": 66,
-          "expression": "expect(provision).not.toContain('target_exists=\"$(psql_admin_stdin')"
-        },
-        {
-          "line": 67,
-          "expression": "expect(provision).toContain( 'install -m 600 \"$temporary_env_file\" \"$remote_env_file\"\\nrm -f \"$temporary_env_file\"\\ntemporary_env_file=\"\"' )"
-        },
-        {
-          "line": 78,
-          "expression": "expect(dryRun.exitCode).toBe(0)"
-        },
-        {
-          "line": 79,
-          "expression": "expect(dryRun.stdout).toContain('Dry run only. No VM state will change.')"
-        },
-        {
-          "line": 80,
-          "expression": "expect(dryRun.stdout).toContain('mychampions_server')"
-        },
-        {
-          "line": 81,
-          "expression": "expect(unsafeHost.exitCode).toBe(1)"
-        },
-        {
-          "line": 82,
-          "expression": "expect(unsafeHost.stderr).toContain('MYCHAMPIONS_VM_SSH_HOST must be digiocean')"
-        },
-        {
-          "line": 89,
-          "expression": "expect(deploy).toContain('run --rm migrate')"
-        },
-        {
-          "line": 90,
-          "expression": "expect(deploy).toContain('/health')"
-        },
-        {
-          "line": 91,
-          "expression": "expect(deploy).toContain('nginx -t')"
-        },
-        {
-          "line": 92,
-          "expression": "expect(deploy).toContain('IMAGE_REPOSITORY and IMAGE_TAG must be explicitly set')"
-        },
-        {
-          "line": 93,
-          "expression": "expect(deploy).not.toContain('IMAGE_REPOSITORY:-ghcr.io/edufelip/mychampions-server')"
-        },
-        {
-          "line": 94,
-          "expression": "expect(deploy).toContain(\"docker inspect --format '{{.State.Running}}' mychampions-server-blue\")"
-        },
-        {
-          "line": 95,
-          "expression": "expect(deploy).toContain('Exactly one MyChampions server slot must be running before cutover.')"
-        },
-        {
-          "line": 96,
-          "expression": "expect(deploy).toContain('REVENUECAT_SECRET_API_KEY')"
-        },
-        {
-          "line": 97,
-          "expression": "expect(deploy).toContain('REVENUECAT_WEBHOOK_AUTHORIZATION')"
-        },
-        {
-          "line": 98,
-          "expression": "expect(deploy).toContain('REVENUECAT_WEBHOOK_SIGNING_SECRET')"
-        },
-        {
-          "line": 99,
-          "expression": "expect(deploy).toContain('read_configured_env_value')"
-        },
-        {
-          "line": 100,
-          "expression": "expect(deploy).toContain('revenuecat_runtime_value=\"$(read_configured_env_value')"
-        },
-        {
-          "line": 101,
-          "expression": "expect(deploy).toContain('[[ -z \"$revenuecat_runtime_value\" ]]')"
-        },
-        {
-          "line": 102,
-          "expression": "expect(deploy).not.toContain('grep -q \"^${revenuecat_runtime_key}=.\"')"
-        },
-        {
-          "line": 103,
-          "expression": "expect(deploy).toContain('server-only sk_* key before production cutover')"
-        },
-        {
-          "line": 104,
-          "expression": "expect(nginx).toContain('127.0.0.1')"
-        },
-        {
-          "line": 105,
-          "expression": "expect(nginx).toContain('$mychampions_server_upstream')"
-        },
-        {
-          "line": 106,
-          "expression": "expect(nginx).toContain('/health')"
-        },
-        {
-          "line": 107,
-          "expression": "expect(nginx).toContain('client_max_body_size 8m;')"
-        },
-        {
-          "line": 108,
-          "expression": "expect(nginx).toContain('listen 443 ssl;')"
-        },
-        {
-          "line": 109,
-          "expression": "expect(nginx).not.toContain('listen 443 ssl http2;')"
-        },
-        {
-          "line": 117,
-          "expression": "expect(result.exitCode).toBe(1)"
-        },
-        {
-          "line": 118,
-          "expression": "expect(result.stderr).toContain('IMAGE_REPOSITORY and IMAGE_TAG must be explicitly set')"
-        },
-        {
-          "line": 124,
-          "expression": "expect(deploy).toContain('IMAGE_PULL must be true or false')"
-        },
-        {
-          "line": 125,
-          "expression": "expect(deploy).toContain('docker image inspect \"${image_repository}:${image_tag}\"')"
-        },
-        {
-          "line": 126,
-          "expression": "expect(deploy).toContain('Skipping registry pull for verified preloaded image')"
+          "line": 137,
+          "expression": "expect(provision).toContain('TRUSTED_PROXY_HEADER=x-real-ip')"
         },
         {
           "line": 138,
-          "expression": "expect(result.exitCode).toBe(1)"
+          "expression": "expect(provision).toContain('--apply')"
         },
         {
           "line": 139,
-          "expression": "expect(result.stderr).toContain('Missing deployment prerequisite')"
+          "expression": "expect(provision).toContain('psql_admin_query()')"
         },
         {
-          "line": 164,
+          "line": 140,
+          "expression": "expect(provision).toContain('psql_admin_stdin()')"
+        },
+        {
+          "line": 141,
+          "expression": "expect(provision).toContain('target_exists=\"$(psql_admin_query')"
+        },
+        {
+          "line": 142,
+          "expression": "expect(provision).not.toContain('target_exists=\"$(psql_admin_stdin')"
+        },
+        {
+          "line": 143,
+          "expression": "expect(provision).toContain( 'install -m 600 \"$temporary_env_file\" \"$remote_env_file\"\\nrm -f \"$temporary_env_file\"\\ntemporary_env_file=\"\"' )"
+        },
+        {
+          "line": 154,
           "expression": "expect(dryRun.exitCode).toBe(0)"
         },
         {
-          "line": 165,
-          "expression": "expect(dryRun.stdout).toContain('Dry run only. No SSH, provider read, or database read was performed.')"
-        },
-        {
-          "line": 166,
-          "expression": "expect(dryRun.stdout).toContain('rc-live-contract-test')"
-        },
-        {
-          "line": 167,
-          "expression": "expect(unsafeHost.exitCode).toBe(2)"
-        },
-        {
-          "line": 168,
-          "expression": "expect(unsafeHost.stderr).toContain('MYCHAMPIONS_VM_SSH_HOST must be digiocean')"
-        },
-        {
-          "line": 169,
-          "expression": "expect(evidenceScript).toContain('select')"
-        },
-        {
-          "line": 170,
-          "expression": "expect(evidenceScript).toContain('subscription_entitlement_snapshots')"
-        },
-        {
-          "line": 171,
-          "expression": "expect(evidenceScript).toContain('RevenueCatRestCustomerManager')"
-        },
-        {
-          "line": 172,
-          "expression": "expect(evidenceScript).not.toMatch(/\\b(insert|update|delete|truncate|drop)\\b/i)"
-        },
-        {
-          "line": 187,
-          "expression": "expect(timeoutLoopIndex).toBeGreaterThan(-1)"
-        },
-        {
-          "line": 188,
-          "expression": "expect(providerRefreshIndex).toBeGreaterThan(timeoutLoopIndex)"
-        },
-        {
-          "line": 189,
-          "expression": "expect(snapshotRefreshIndex).toBeGreaterThan(providerRefreshIndex)"
-        },
-        {
-          "line": 190,
-          "expression": "expect(combinedConvergenceIndex).toBeGreaterThan(snapshotRefreshIndex)"
-        },
-        {
-          "line": 196,
-          "expression": "expect(bootstrap).toContain('apply=false')"
-        },
-        {
-          "line": 197,
-          "expression": "expect(bootstrap).toContain('CERTBOT_EMAIL')"
-        },
-        {
-          "line": 198,
-          "expression": "expect(bootstrap).toContain('certbot certonly --webroot')"
-        },
-        {
-          "line": 199,
-          "expression": "expect(bootstrap).toContain('mychampions-server-blue')"
-        },
-        {
-          "line": 200,
-          "expression": "expect(bootstrap).toContain('mychampions-server-green')"
-        },
-        {
-          "line": 201,
-          "expression": "expect(bootstrap).toContain('blue_running=\"${blue_running:-false}\"')"
-        },
-        {
-          "line": 202,
-          "expression": "expect(bootstrap).toContain('green_running=\"${green_running:-false}\"')"
-        },
-        {
-          "line": 203,
-          "expression": "expect(bootstrap).toContain('resume_existing_ingress')"
-        },
-        {
-          "line": 204,
-          "expression": "expect(bootstrap).toContain('ln -sfn \"$nginx_site\" \"$nginx_enabled\"')"
-        },
-        {
-          "line": 205,
-          "expression": "expect(bootstrap).toContain('seq 1 10')"
-        },
-        {
-          "line": 206,
-          "expression": "expect(bootstrap).toContain('nginx -t')"
-        },
-        {
-          "line": 207,
-          "expression": "expect(bootstrap).toContain('.active_slot')"
-        },
-        {
-          "line": 208,
-          "expression": "expect(bootstrap).toContain('--resolve')"
-        },
-        {
-          "line": 229,
-          "expression": "expect(compose).toContain('name: mychampions-dev-server')"
-        },
-        {
-          "line": 230,
-          "expression": "expect(compose).toContain('127.0.0.1:3402:3400')"
-        },
-        {
-          "line": 231,
-          "expression": "expect(compose).toContain('/opt/mychampions-dev-server/shared/.env')"
-        },
-        {
-          "line": 232,
-          "expression": "expect(compose).toContain('mychampions-dev-server-storage')"
-        },
-        {
-          "line": 233,
-          "expression": "expect(compose).not.toContain('mychampions-gcs-service-account.json')"
-        },
-        {
-          "line": 234,
-          "expression": "expect(provision).toContain('mychampions_dev')"
-        },
-        {
-          "line": 235,
-          "expression": "expect(provision).toContain('mychampions_dev_user')"
-        },
-        {
-          "line": 236,
-          "expression": "expect(provision).toContain('mychampions_dev_catalog_reader')"
-        },
-        {
-          "line": 237,
-          "expression": "expect(provision).toContain('NODE_ENV=development')"
-        },
-        {
-          "line": 238,
-          "expression": "expect(provision).toContain('APP_VARIANT=dev')"
-        },
-        {
-          "line": 239,
-          "expression": "expect(provision).toContain('LOCAL_DEV_AUTH_ENABLED=false')"
-        },
-        {
-          "line": 240,
-          "expression": "expect(provision).toContain('NOSUPERUSER NOCREATEDB NOCREATEROLE')"
-        },
-        {
-          "line": 241,
-          "expression": "expect(ingress).toContain('127.0.0.1:3402')"
-        },
-        {
-          "line": 242,
-          "expression": "expect(deploy).toContain('run --rm migrate')"
-        },
-        {
-          "line": 243,
-          "expression": "expect(deploy).toContain('docker compose -f \"$compose_file\" up -d app')"
-        },
-        {
-          "line": 244,
-          "expression": "expect(deploy).not.toContain('mychampions-server-blue')"
-        },
-        {
-          "line": 245,
-          "expression": "expect(deploy).not.toContain('mychampions-server-green')"
-        },
-        {
-          "line": 254,
-          "expression": "expect(dryRun.exitCode).toBe(0)"
-        },
-        {
-          "line": 255,
+          "line": 155,
           "expression": "expect(dryRun.stdout).toContain('Dry run only. No VM state will change.')"
         },
         {
-          "line": 256,
-          "expression": "expect(dryRun.stdout).toContain('mychampions_dev')"
+          "line": 156,
+          "expression": "expect(dryRun.stdout).toContain('mychampions_server')"
         },
         {
-          "line": 257,
+          "line": 157,
           "expression": "expect(unsafeHost.exitCode).toBe(1)"
         },
         {
-          "line": 258,
+          "line": 158,
+          "expression": "expect(unsafeHost.stderr).toContain('MYCHAMPIONS_VM_SSH_HOST must be digiocean')"
+        },
+        {
+          "line": 165,
+          "expression": "expect(deploy).toContain('run --rm migrate')"
+        },
+        {
+          "line": 166,
+          "expression": "expect(deploy).toContain('/health')"
+        },
+        {
+          "line": 167,
+          "expression": "expect(deploy).toContain('nginx -t')"
+        },
+        {
+          "line": 168,
+          "expression": "expect(deploy).toContain('IMAGE_REPOSITORY and IMAGE_TAG must be explicitly set')"
+        },
+        {
+          "line": 169,
+          "expression": "expect(deploy).not.toContain('IMAGE_REPOSITORY:-ghcr.io/edufelip/mychampions-server')"
+        },
+        {
+          "line": 170,
+          "expression": "expect(deploy).toContain(\"docker inspect --format '{{.State.Running}}' mychampions-server-blue\")"
+        },
+        {
+          "line": 171,
+          "expression": "expect(deploy).toContain('Exactly one MyChampions server slot must be running before cutover.')"
+        },
+        {
+          "line": 172,
+          "expression": "expect(deploy).toContain('REVENUECAT_SECRET_API_KEY')"
+        },
+        {
+          "line": 173,
+          "expression": "expect(deploy).toContain('REVENUECAT_WEBHOOK_AUTHORIZATION')"
+        },
+        {
+          "line": 174,
+          "expression": "expect(deploy).toContain('REVENUECAT_WEBHOOK_SIGNING_SECRET')"
+        },
+        {
+          "line": 175,
+          "expression": "expect(deploy).toContain('read_configured_env_value')"
+        },
+        {
+          "line": 176,
+          "expression": "expect(deploy).toContain('revenuecat_runtime_value=\"$(read_configured_env_value')"
+        },
+        {
+          "line": 177,
+          "expression": "expect(deploy).toContain('[[ -z \"$revenuecat_runtime_value\" ]]')"
+        },
+        {
+          "line": 178,
+          "expression": "expect(deploy).not.toContain('grep -q \"^${revenuecat_runtime_key}=.\"')"
+        },
+        {
+          "line": 179,
+          "expression": "expect(deploy).toContain('server-only sk_* key before production cutover')"
+        },
+        {
+          "line": 180,
+          "expression": "expect(nginx).toContain('127.0.0.1')"
+        },
+        {
+          "line": 181,
+          "expression": "expect(nginx).toContain('$mychampions_server_upstream')"
+        },
+        {
+          "line": 182,
+          "expression": "expect(nginx).toContain('/health')"
+        },
+        {
+          "line": 183,
+          "expression": "expect(nginx).toContain('client_max_body_size 8m;')"
+        },
+        {
+          "line": 184,
+          "expression": "expect(nginx).toContain('listen 443 ssl;')"
+        },
+        {
+          "line": 185,
+          "expression": "expect(nginx).not.toContain('listen 443 ssl http2;')"
+        },
+        {
+          "line": 193,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 194,
+          "expression": "expect(result.stderr).toContain('IMAGE_REPOSITORY and IMAGE_TAG must be explicitly set')"
+        },
+        {
+          "line": 200,
+          "expression": "expect(deploy).toContain('IMAGE_PULL must be true or false')"
+        },
+        {
+          "line": 201,
+          "expression": "expect(deploy).toContain('docker image inspect \"${image_repository}:${image_tag}\"')"
+        },
+        {
+          "line": 202,
+          "expression": "expect(deploy).toContain('Skipping registry pull for verified preloaded image')"
+        },
+        {
+          "line": 214,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 215,
+          "expression": "expect(result.stderr).toContain('Missing deployment prerequisite')"
+        },
+        {
+          "line": 222,
+          "expression": "expect(dryRun.exitCode).toBe(0)"
+        },
+        {
+          "line": 223,
+          "expression": "expect(dryRun.stdout).toContain( 'Dry run only. No Railway SSH, provider read, or database read was performed.' )"
+        },
+        {
+          "line": 226,
+          "expression": "expect(dryRun.stdout).toContain(RAILWAY_PRODUCTION_API.projectId)"
+        },
+        {
+          "line": 227,
+          "expression": "expect(dryRun.stdout).toContain(RAILWAY_PRODUCTION_API.environmentId)"
+        },
+        {
+          "line": 228,
+          "expression": "expect(dryRun.stdout).toContain(RAILWAY_PRODUCTION_API.serviceId)"
+        },
+        {
+          "line": 229,
+          "expression": "expect(dryRun.stdout).toContain('database mychampions_server')"
+        },
+        {
+          "line": 230,
+          "expression": "expect(dryRun.stdout).toContain('rc-live-contract-test')"
+        },
+        {
+          "line": 231,
+          "expression": "expect(dryRun.railwayArgv).toBeNull()"
+        },
+        {
+          "line": 245,
+          "expression": "expect(unsafeUid.exitCode).toBe(2)"
+        },
+        {
+          "line": 246,
+          "expression": "expect(unsafeUid.stderr).toContain('REVENUECAT_TEST_APP_USER_ID must be a nonblank safe ID')"
+        },
+        {
+          "line": 247,
+          "expression": "expect(unknownArgument.exitCode).toBe(2)"
+        },
+        {
+          "line": 248,
+          "expression": "expect(unknownArgument.stderr).toContain('Unknown argument: --project=mychampions-dev')"
+        },
+        {
+          "line": 249,
+          "expression": "expect(unsafeTimeout.exitCode).toBe(2)"
+        },
+        {
+          "line": 250,
+          "expression": "expect(unsafeTimeout.stderr).toContain('REVENUECAT_EVIDENCE_TIMEOUT_SECONDS must be an integer')"
+        },
+        {
+          "line": 251,
+          "expression": "expect(unsafeUid.railwayArgv).toBeNull()"
+        },
+        {
+          "line": 252,
+          "expression": "expect(unknownArgument.railwayArgv).toBeNull()"
+        },
+        {
+          "line": 253,
+          "expression": "expect(unsafeTimeout.railwayArgv).toBeNull()"
+        },
+        {
+          "line": 260,
+          "expression": "expect(result.exitCode).toBe(0)"
+        },
+        {
+          "line": 261,
+          "expression": "expect(result.stdout).toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 262,
+          "expression": "expect(result.stdout).toContain('converged in the same iteration')"
+        },
+        {
+          "line": 263,
+          "expression": "expect(result.railwayStdin).toBe('')"
+        },
+        {
+          "line": 267,
+          "expression": "expect(subcommand).toBe('ssh')"
+        },
+        {
+          "line": 268,
+          "expression": "expect(rest).toEqual([ '--project', RAILWAY_PRODUCTION_API.projectId, '--environment', RAILWAY_PRODUCTION_API.environmentId, '--service', RAILWAY_PRODUCTION_API.serviceId, '--', remoteLine, ])"
+        },
+        {
+          "line": 292,
+          "expression": "expect(match).not.toBeNull()"
+        },
+        {
+          "line": 293,
+          "expression": "expect(Buffer.from(match?.[1] ?? '', 'base64').toString('utf8')).toBe(program)"
+        },
+        {
+          "line": 302,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 303,
+          "expression": "expect(result.stderr).toContain('Railway SSH ended without the evidence result')"
+        },
+        {
+          "line": 304,
+          "expression": "expect(result.stdout).not.toContain('converged in the same iteration')"
+        },
+        {
+          "line": 310,
+          "expression": "expect(result.exitCode).toBe(2)"
+        },
+        {
+          "line": 311,
+          "expression": "expect(result.stderr).toContain('Refusing live evidence verification')"
+        },
+        {
+          "line": 312,
+          "expression": "expect(result.stderr).toContain('Live RevenueCat evidence did not pass (exit 2).')"
+        },
+        {
+          "line": 313,
+          "expression": "expect(result.stdout).not.toContain('converged in the same iteration')"
+        },
+        {
+          "line": 320,
+          "expression": "expect(verifier).not.toContain('digiocean')"
+        },
+        {
+          "line": 321,
+          "expression": "expect(verifier).not.toContain('docker exec')"
+        },
+        {
+          "line": 322,
+          "expression": "expect(verifier).not.toMatch(/railway (run|connect|variables)\\b/)"
+        },
+        {
+          "line": 323,
+          "expression": "expect(program).toContain(\"default_transaction_read_only: 'on'\")"
+        },
+        {
+          "line": 324,
+          "expression": "expect(program).toContain(\"current_setting('transaction_read_only')\")"
+        },
+        {
+          "line": 325,
+          "expression": "expect(program).toContain('RAILWAY_PROJECT_ID')"
+        },
+        {
+          "line": 326,
+          "expression": "expect(program).toContain('RAILWAY_ENVIRONMENT_ID')"
+        },
+        {
+          "line": 327,
+          "expression": "expect(program).toContain('RAILWAY_SERVICE_ID')"
+        },
+        {
+          "line": 328,
+          "expression": "expect(program).toContain('RevenueCatRestCustomerManager')"
+        },
+        {
+          "line": 329,
+          "expression": "expect(program).not.toMatch(/\\b(insert|update|delete|truncate|drop|alter|grant)\\b/i)"
+        },
+        {
+          "line": 330,
+          "expression": "expect(program).not.toMatch(/console\\.\\w+\\([^;]*(secretApiKey|databaseUrl|DATABASE_URL|REVENUECAT_SECRET_API_KEY)/)"
+        },
+        {
+          "line": 345,
+          "expression": "expect(readOnlyCheckIndex).toBeGreaterThan(-1)"
+        },
+        {
+          "line": 346,
+          "expression": "expect(timeoutLoopIndex).toBeGreaterThan(readOnlyCheckIndex)"
+        },
+        {
+          "line": 347,
+          "expression": "expect(snapshotRefreshIndex).toBeGreaterThan(timeoutLoopIndex)"
+        },
+        {
+          "line": 348,
+          "expression": "expect(providerResetIndex).toBeGreaterThan(snapshotRefreshIndex)"
+        },
+        {
+          "line": 349,
+          "expression": "expect(providerGateIndex).toBeGreaterThan(providerResetIndex)"
+        },
+        {
+          "line": 350,
+          "expression": "expect(providerRefreshIndex).toBeGreaterThan(providerGateIndex)"
+        },
+        {
+          "line": 351,
+          "expression": "expect(combinedConvergenceIndex).toBeGreaterThan(providerRefreshIndex)"
+        },
+        {
+          "line": 358,
+          "expression": "expect(bootstrap).toContain('apply=false')"
+        },
+        {
+          "line": 359,
+          "expression": "expect(bootstrap).toContain('CERTBOT_EMAIL')"
+        },
+        {
+          "line": 360,
+          "expression": "expect(bootstrap).toContain('certbot certonly --webroot')"
+        },
+        {
+          "line": 361,
+          "expression": "expect(bootstrap).toContain('mychampions-server-blue')"
+        },
+        {
+          "line": 362,
+          "expression": "expect(bootstrap).toContain('mychampions-server-green')"
+        },
+        {
+          "line": 363,
+          "expression": "expect(bootstrap).toContain('blue_running=\"${blue_running:-false}\"')"
+        },
+        {
+          "line": 364,
+          "expression": "expect(bootstrap).toContain('green_running=\"${green_running:-false}\"')"
+        },
+        {
+          "line": 365,
+          "expression": "expect(bootstrap).toContain('resume_existing_ingress')"
+        },
+        {
+          "line": 366,
+          "expression": "expect(bootstrap).toContain('ln -sfn \"$nginx_site\" \"$nginx_enabled\"')"
+        },
+        {
+          "line": 367,
+          "expression": "expect(bootstrap).toContain('seq 1 10')"
+        },
+        {
+          "line": 368,
+          "expression": "expect(bootstrap).toContain('nginx -t')"
+        },
+        {
+          "line": 369,
+          "expression": "expect(bootstrap).toContain('.active_slot')"
+        },
+        {
+          "line": 370,
+          "expression": "expect(bootstrap).toContain('--resolve')"
+        },
+        {
+          "line": 391,
+          "expression": "expect(compose).toContain('name: mychampions-dev-server')"
+        },
+        {
+          "line": 392,
+          "expression": "expect(compose).toContain('127.0.0.1:3402:3400')"
+        },
+        {
+          "line": 393,
+          "expression": "expect(compose).toContain('/opt/mychampions-dev-server/shared/.env')"
+        },
+        {
+          "line": 394,
+          "expression": "expect(compose).toContain('mychampions-dev-server-storage')"
+        },
+        {
+          "line": 395,
+          "expression": "expect(compose).not.toContain('mychampions-gcs-service-account.json')"
+        },
+        {
+          "line": 396,
+          "expression": "expect(provision).toContain('mychampions_dev')"
+        },
+        {
+          "line": 397,
+          "expression": "expect(provision).toContain('mychampions_dev_user')"
+        },
+        {
+          "line": 398,
+          "expression": "expect(provision).toContain('mychampions_dev_catalog_reader')"
+        },
+        {
+          "line": 399,
+          "expression": "expect(provision).toContain('NODE_ENV=development')"
+        },
+        {
+          "line": 400,
+          "expression": "expect(provision).toContain('APP_VARIANT=dev')"
+        },
+        {
+          "line": 401,
+          "expression": "expect(provision).toContain('LOCAL_DEV_AUTH_ENABLED=false')"
+        },
+        {
+          "line": 402,
+          "expression": "expect(provision).toContain('TRUSTED_PROXY_HEADER=x-real-ip')"
+        },
+        {
+          "line": 403,
+          "expression": "expect(provision).toContain('NOSUPERUSER NOCREATEDB NOCREATEROLE')"
+        },
+        {
+          "line": 404,
+          "expression": "expect(ingress).toContain('127.0.0.1:3402')"
+        },
+        {
+          "line": 405,
+          "expression": "expect(deploy).toContain('run --rm migrate')"
+        },
+        {
+          "line": 406,
+          "expression": "expect(deploy).toContain('docker compose -f \"$compose_file\" up -d app')"
+        },
+        {
+          "line": 407,
+          "expression": "expect(deploy).not.toContain('mychampions-server-blue')"
+        },
+        {
+          "line": 408,
+          "expression": "expect(deploy).not.toContain('mychampions-server-green')"
+        },
+        {
+          "line": 417,
+          "expression": "expect(dryRun.exitCode).toBe(0)"
+        },
+        {
+          "line": 418,
+          "expression": "expect(dryRun.stdout).toContain('Dry run only. No VM state will change.')"
+        },
+        {
+          "line": 419,
+          "expression": "expect(dryRun.stdout).toContain('mychampions_dev')"
+        },
+        {
+          "line": 420,
+          "expression": "expect(unsafeHost.exitCode).toBe(1)"
+        },
+        {
+          "line": 421,
           "expression": "expect(unsafeHost.stderr).toContain('target does not match the approved Dev VM')"
         }
       ]
