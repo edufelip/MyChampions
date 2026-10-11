@@ -1,3 +1,26 @@
+## PR review fixes — 2026-10-11
+
+Status: **Fixed and device-verified locally; pushed to the PRs.** The review of both PRs (app #101, server #25) found these; each fix has a test that fails without it.
+
+- App, medium: native sign-out awaited the cookie store with no bound, so a store that never answers left the user signed in. Each cookie clear is now bounded to 1.5 s, and a second clear runs after the session ends (`8abc8d5`; FR-270).
+- App, low: a form that mounts while the keyboard is open was revealed from the input that had focus, not the new form; the quick-log panel's first reveal on iOS ran before the panel's size settled (`4a7d242`).
+- App, low: a bulk plan assignment dropped its result alert when the same coach left and came back mid-request; pending-request checkboxes all read the same to a screen reader (`eb6e47e`; SC-205, `pro.pending.row.select_named` in en-US, es-ES, pt-BR).
+- App, low: unused 2026-10-01 native session adapter drafts under `.qa/private/` removed and ignored (`9fbd91d`); a temp-directory race in the Maestro MCP stdio test (`92d0e77`).
+- Server, high: hosted CI ran two database-backed test files in the unit lane against the developer database default; they now run in the owned Postgres lane (`3bd79fd`).
+- Server, high: the trailing-slash pattern in the auth rate-limit check was a regular expression with quadratic backtracking (64,000 slashes took 1.4 s); it is now a constant-time strip (`d4c9276`).
+
+Local gates (app `0d6762f`): `yarn typecheck` clean; `yarn lint` 0 errors; `yarn test:unit` 2888 passed, 0 failed; `yarn test:component --ci` 86/86. Server (`d4c9276`): unit 350/350, owned integration lane 24/24 files; hosted CI green on `ubuntu-latest`.
+
+Device round on app `0d6762f`, server `d4c9276`:
+
+| Run                                               | Android                               | iOS                                   |
+| ------------------------------------------------- | ------------------------------------- | ------------------------------------- |
+| Auth, nutrition, training and professional suites | 47/47                                 | 47/47                                 |
+| Session journey                                   | **Passed** `4b81f330f7576af92890ad6b` | **Passed** `9c8ffb2e661e1a5e80cfc4cf` |
+| Connection journey                                | **Passed** `46019b845b036df60efe9d3f` | **Passed** `93a856b4614b4e5fd9e6c17d` |
+
+Deferred (low, recorded in the review ledger): on Android, moving focus between inputs while the keyboard stays open does not re-reveal; a very tall form with large accessibility text can push the focused input out of view on small phones; rotation while the keyboard is open can leave stale padding; a valid reset token is re-hashed on each repeat request (per-IP rate limited).
+
 ## Final verification on the merged branch — 2026-10-10
 
 Status: **Implemented locally; device-verified on both platforms; not pushed, no hosted run yet.** Both repos merged their current `main` (app `313481a`; server `3084e1e` and `c385118`, including server ET-250's trusted-proxy rate-limit key). The testing decision is now D-219 (main took D-218 for the support decision).
