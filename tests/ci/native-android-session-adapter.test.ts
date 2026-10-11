@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { chmod, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -706,12 +706,12 @@ void test('Pre-acquisition abort terminates a spawned owned child before readine
     { mode: 0o600 },
   );
   await writeFile(silent, 'setTimeout(() => {}, 60000);\n', { mode: 0o600 });
+  // The child stays alive until the abort terminates it.
   await writeFile(
     wrapper,
     `#!/bin/sh
 if [ "$1" = "--version" ]; then printf '%s\\n' "${process.version}"; exit 0; fi
-if [ "$1" = "--no-env-file" ]; then shift; fi
-exec "${process.execPath}" "$@"
+exec "${process.execPath}" "${silent}"
 `,
     { mode: 0o700 },
   );
@@ -741,6 +741,63 @@ exec "${process.execPath}" "$@"
     await rm(root, { recursive: true, force: true });
   }
 });
+
+void test(
+  'An owned child that exits during the start census is reported, not awaited forever',
+  { timeout: 20_000 },
+  async () => {
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'android-owned-early-exit-')));
+    const bin = path.join(root, 'bin');
+    const wrapper = path.join(root, 'owned-runtime-wrapper');
+    await writeFile(
+      path.join(root, 'package.json'),
+      JSON.stringify({ name: 'mychampions-server', engines: { bun: process.version } }),
+      { mode: 0o600 },
+    );
+    await writeFile(
+      wrapper,
+      `#!/bin/sh
+if [ "$1" = "--version" ]; then printf '%s\\n' "${process.version}"; exit 0; fi
+exit 3
+`,
+      { mode: 0o700 },
+    );
+    await chmod(wrapper, 0o700);
+    // The start census answers only after the child has exited and closed, so its close
+    // event fires while startOwnedSession is still awaiting the census.
+    await mkdir(bin, { mode: 0o700 });
+    await writeFile(
+      path.join(bin, 'ps'),
+      `#!/bin/sh
+while kill -0 "$2" 2>/dev/null; do sleep 0.05; done
+sleep 0.3
+printf '%s\\n' 'Sun Oct 11 12:00:00 2026'
+`,
+      { mode: 0o700 },
+    );
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${bin}${path.delimiter}${previousPath ?? ''}`;
+    try {
+      await assert.rejects(
+        startOwnedSession({
+          serverRoot: root,
+          appOrigin: 'http://127.0.0.1:42401',
+          bunExecutable: wrapper,
+          deadlineMs: 2000,
+        }),
+        (error: unknown) => {
+          assert(error instanceof OwnedSessionAcquisitionError);
+          assert.equal(error.cleanup, 'failed-recovery-ledger-retained');
+          assert.equal(error.childExitCode, 3);
+          return true;
+        },
+      );
+    } finally {
+      process.env.PATH = previousPath;
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
 
 void test('Android restore and signed-out relaunch use exact transport windows', () => {
   const hydrateHash = createHash('sha256').update('/me/hydrate').digest('hex');

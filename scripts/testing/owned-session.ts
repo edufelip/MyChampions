@@ -854,6 +854,11 @@ export async function startOwnedSession(options: OwnedSessionOptions) {
     else bufferedProtocolLines.push(line);
   });
   child.once('error', () => {}); // Observe a spawn failure before async ownership setup.
+  // Capture close before any await as well: a child that exits during the start census
+  // would otherwise close unobserved and leave acquisition waiting forever.
+  const childClosed = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
+    (resolve) => child.once('close', (code, signal) => resolve({ code, signal })),
+  );
   if (!child.pid)
     throw new OwnedSessionAcquisitionError({
       cleanup: 'not-acquired',
@@ -1191,16 +1196,14 @@ export async function startOwnedSession(options: OwnedSessionOptions) {
   };
   deliverProtocolLine = enqueueProtocolLine;
   for (const line of bufferedProtocolLines.splice(0)) enqueueProtocolLine(line);
-  const exited = new Promise<number>((resolve) =>
-    child.on('close', (code, signal) => {
-      void queue.then(() => {
-        if (!closed) fail(new Error('Owned session exited without a validated close receipt'));
-        const result = code ?? (signal === 'SIGINT' ? 130 : signal === 'SIGTERM' ? 143 : 2);
-        if (closed && closed.exitCode !== result)
-          fail(new Error('Owned session exit differs from its receipt'));
-        clearTimeout(failureDeadline);
-        resolve(result);
-      });
+  const exited = childClosed.then(({ code, signal }) =>
+    queue.then(() => {
+      if (!closed) fail(new Error('Owned session exited without a validated close receipt'));
+      const result = code ?? (signal === 'SIGINT' ? 130 : signal === 'SIGTERM' ? 143 : 2);
+      if (closed && closed.exitCode !== result)
+        fail(new Error('Owned session exit differs from its receipt'));
+      clearTimeout(failureDeadline);
+      return result;
     }),
   );
   const request = (
