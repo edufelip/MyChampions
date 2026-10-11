@@ -40,7 +40,7 @@
     "format:check": "prettier --check \"app/**/*.{ts,tsx}\" \"features/**/*.{ts,tsx}\" \"scripts/**/*.{js,mjs,ts}\" \"tests/**/*.{js,mjs,ts,tsx}\" \"e2e/**/*.{js,mjs,ts,tsx}\" \"*.{js,mjs,json,ts}\"",
     "prepare": "husky",
     "test": "yarn test:unit",
-    "test:unit": "tsx --test constants/**/*.test.ts features/*.test.ts features/**/*.test.ts localization/**/*.test.ts tests/ci/*.test.ts",
+    "test:unit": "bash scripts/testing/run-unit-tests.sh constants/**/*.test.ts features/*.test.ts features/**/*.test.ts localization/**/*.test.ts tests/ci/*.test.ts",
     "test:all": "yarn test:unit && yarn test:component",
     "test:impact": "tsx scripts/ci/validate-test-impact.ts",
     "test:impact:resolver": "tsx --test tests/ci/test-impact-resolver.test.ts",

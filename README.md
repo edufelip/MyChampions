@@ -121,6 +121,11 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    yarn test:unit
    ```
 
+   The unit suite runs with `TMPDIR` set to a private, per-run directory under
+   `~/.mychampions-unit-tmp` (`scripts/testing/run-unit-tests.sh`), removed when it
+   ends. The native harness refuses temp paths that another account could write to,
+   so a shared `/tmp` or group-writable runner `TMPDIR` would fail its tests.
+
    Rendered component checks use `yarn test:component`; `yarn test:all` runs both
    unit and component suites. Component checks exercise real UI state/handlers
    with native adapters and external transport mocked. They do not replace
