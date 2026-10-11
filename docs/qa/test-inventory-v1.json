@@ -15141,7 +15141,7 @@
       "id": "TST-826fd42ba1e0",
       "repo": "client",
       "path": "features/auth/server-auth-source.test.ts",
-      "contentHash": "f4d5140faa9a8226d4d21d5718dfd6dd5c4d05e660fd759f7d060c7b7e51c7a0",
+      "contentHash": "4b2e52d707a03dcf71d6f0091fca5826b9a85f541327af3249fd94def1c24972",
       "command": "yarn test:unit",
       "ownerPaths": ["features/auth/server-auth-source.ts"],
       "requirementReferences": [],
@@ -15185,80 +15185,84 @@
           "line": 264
         },
         {
+          "purpose": "finishes native sign-out when the cookie store never answers",
+          "line": 311
+        },
+        {
           "purpose": "finishes native sign-out when the cookie store cannot be cleared",
-          "line": 309
+          "line": 349
         },
         {
           "purpose": "does not restore an expired persisted local server session",
-          "line": 323
+          "line": 363
         },
         {
           "purpose": "fails closed when corrupted persisted session cleanup storage fails",
-          "line": 358
+          "line": 398
         },
         {
           "purpose": "refreshes an expired persisted local server session when a refresh token exists",
-          "line": 375
+          "line": 415
         },
         {
           "purpose": "single-flights concurrent access-token refreshes",
-          "line": 445
+          "line": 485
         },
         {
           "purpose": "does not restore a cleared session when an older refresh finishes after sign-out",
-          "line": 507
+          "line": 547
         },
         {
           "purpose": "does not let an older account refresh overwrite a replacement session",
-          "line": 572
+          "line": 612
         },
         {
           "purpose": "does not return or persist a refreshed token after sign-out races its storage write",
-          "line": 659
+          "line": 699
         },
         {
           "purpose": "repairs persistence and returns no old token when account replacement races refresh storage",
-          "line": 717
+          "line": 757
         },
         {
           "purpose": "keeps a refreshed in-memory session usable when its persistence write fails",
-          "line": 800
+          "line": 840
         },
         {
           "purpose": "clears the active session when token refresh is rejected",
-          "line": 862
+          "line": 902
         },
         {
           "purpose": "keeps a still-valid session usable when proactive refresh has a transport failure",
-          "line": 899
-        },
-        {
-          "purpose": "preserves an expired session and refresh credential across retryable 5xx failures",
           "line": 939
         },
         {
+          "purpose": "preserves an expired session and refresh credential across retryable 5xx failures",
+          "line": 979
+        },
+        {
           "purpose": "preserves persisted-session refresh credentials when refresh transport fails",
-          "line": 999
+          "line": 1039
         },
         {
           "purpose": "preserves persisted-session refresh credentials when URL resolution fails",
-          "line": 1048
+          "line": 1088
         },
         {
           "purpose": "preserves persisted-session refresh credentials when a success payload is malformed",
-          "line": 1094
+          "line": 1134
         },
         {
           "purpose": "returns null instead of calling the network when the server URL is missing",
-          "line": 1140
+          "line": 1180
         },
         {
           "purpose": "does not use the local dev-session endpoint for prod app variant",
-          "line": 1156
+          "line": 1196
         },
         {
           "purpose": "does not use deterministic local dev-session endpoints for any non-dev app variant",
-          "line": 1179
+          "line": 1219
         }
       ],
       "assertions": [
@@ -15379,279 +15383,291 @@
           "expression": "assert.equal(await restoreServerAuthSession({ storage }), null)"
         },
         {
-          "line": 306,
-          "expression": "assert.deepEqual(calls, ['cookies:server-token-1', 'storage:none'])"
+          "line": 308,
+          "expression": "assert.deepEqual(calls, ['cookies:server-token-1', 'storage:none', 'cookies:none'])"
         },
         {
-          "line": 320,
+          "line": 336,
+          "expression": "assert.equal(getCurrentServerAccessToken(), 'server-token-1')"
+        },
+        {
+          "line": 345,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 354,
+          "line": 346,
+          "expression": "assert.equal(await storage.getItem('auth.server.session'), null)"
+        },
+        {
+          "line": 360,
+          "expression": "assert.equal(getCurrentServerAccessToken(), null)"
+        },
+        {
+          "line": 394,
           "expression": "assert.equal(restored, null)"
         },
         {
-          "line": 355,
+          "line": 395,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 371,
+          "line": 411,
           "expression": "assert.equal(restored, null)"
         },
         {
-          "line": 372,
+          "line": 412,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 432,
+          "line": 472,
           "expression": "assert.equal(requests.length, 1)"
         },
         {
-          "line": 433,
+          "line": 473,
           "expression": "assert.equal(requests[0]?.method, 'POST')"
         },
         {
-          "line": 434,
+          "line": 474,
           "expression": "assert.equal(requests[0]?.url, 'http://server.test/auth/session/refresh')"
         },
         {
-          "line": 435,
+          "line": 475,
           "expression": "assert.deepEqual(await requests[0]?.json(), { refreshToken: 'refresh-token-1', sessionMode: 'bearer', })"
         },
         {
-          "line": 439,
+          "line": 479,
           "expression": "assert.equal(restored?.accessToken, 'refreshed-token')"
         },
         {
-          "line": 440,
+          "line": 480,
           "expression": "assert.equal(restored?.profile.lockedRole, 'student')"
         },
         {
-          "line": 441,
+          "line": 481,
           "expression": "assert.deepEqual(restored?.user.authProviderIds, ['apple'])"
         },
         {
-          "line": 442,
+          "line": 482,
           "expression": "assert.equal(getCurrentServerAccessToken(), 'refreshed-token')"
         },
         {
-          "line": 500,
+          "line": 540,
           "expression": "assert.equal(refreshCalls, 1)"
         },
         {
-          "line": 501,
+          "line": 541,
           "expression": "assert.deepEqual( [first, second, third], ['refreshed-token', 'refreshed-token', 'refreshed-token'], )"
         },
         {
-          "line": 567,
+          "line": 607,
           "expression": "assert.equal(await staleRefresh, null)"
         },
         {
-          "line": 568,
+          "line": 608,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 569,
+          "line": 609,
           "expression": "assert.equal(getCurrentServerUser(), null)"
         },
         {
-          "line": 654,
+          "line": 694,
           "expression": "assert.equal(await staleRefresh, null)"
         },
         {
-          "line": 655,
+          "line": 695,
           "expression": "assert.equal(getCurrentServerAccessToken(), 'second-token')"
         },
         {
-          "line": 656,
+          "line": 696,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'second_user')"
         },
         {
-          "line": 706,
+          "line": 746,
           "expression": "assert.equal(getCurrentServerAccessToken(), 'stale-refreshed-token')"
         },
         {
-          "line": 711,
+          "line": 751,
           "expression": "assert.equal(await staleRefresh, null)"
         },
         {
-          "line": 712,
+          "line": 752,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 713,
+          "line": 753,
           "expression": "assert.equal(await storage.getItem('auth.server.session'), null)"
         },
         {
-          "line": 714,
+          "line": 754,
           "expression": "assert.equal(await restoreServerAuthSession({ storage }), null)"
         },
         {
-          "line": 790,
+          "line": 830,
           "expression": "assert.equal(await staleRefresh, null)"
         },
         {
-          "line": 791,
+          "line": 831,
           "expression": "assert.equal(getCurrentServerAccessToken(), 'second-token')"
         },
         {
-          "line": 792,
+          "line": 832,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'second_user')"
         },
         {
-          "line": 796,
+          "line": 836,
           "expression": "assert.equal(restored?.accessToken, 'second-token')"
         },
         {
-          "line": 797,
+          "line": 837,
           "expression": "assert.equal(restored?.user.uid, 'second_user')"
         },
         {
-          "line": 856,
+          "line": 896,
           "expression": "assert.equal(token, 'refreshed-token')"
         },
         {
-          "line": 857,
+          "line": 897,
           "expression": "assert.equal(getCurrentServerAccessToken(), 'refreshed-token')"
         },
         {
-          "line": 858,
+          "line": 898,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'local_user')"
         },
         {
-          "line": 859,
+          "line": 899,
           "expression": "assert.equal(await storage.getItem('auth.server.session'), persistedBeforeRefresh)"
         },
         {
-          "line": 894,
+          "line": 934,
           "expression": "assert.equal(token, null)"
         },
         {
-          "line": 895,
+          "line": 935,
           "expression": "assert.equal(getCurrentServerUser(), null)"
         },
         {
-          "line": 896,
+          "line": 936,
           "expression": "assert.equal(await storage.getItem('auth.server.session'), null)"
         },
         {
-          "line": 934,
+          "line": 974,
           "expression": "assert.equal(token, 'expiring-token')"
         },
         {
-          "line": 935,
+          "line": 975,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'local_user')"
         },
         {
-          "line": 936,
+          "line": 976,
           "expression": "assert.equal(await storage.getItem('auth.server.session'), persistedBeforeFailure)"
         },
         {
-          "line": 972,
+          "line": 1012,
           "expression": "assert.equal(failedToken, null)"
         },
         {
-          "line": 973,
+          "line": 1013,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'local_user')"
         },
         {
-          "line": 974,
+          "line": 1014,
           "expression": "assert.equal(await storage.getItem('auth.server.session'), persistedBeforeFailure)"
         },
         {
-          "line": 995,
+          "line": 1035,
           "expression": "assert.equal(recoveredToken, 'refreshed-token')"
         },
         {
-          "line": 996,
+          "line": 1036,
           "expression": "assert.equal(getCurrentServerAccessToken(), 'refreshed-token')"
         },
         {
-          "line": 1037,
+          "line": 1077,
           "expression": "assert.equal(restored?.refreshToken, 'refresh-token-1')"
         },
         {
-          "line": 1038,
+          "line": 1078,
           "expression": "assert.equal(restored?.profile.authUid, 'local_user')"
         },
         {
-          "line": 1039,
+          "line": 1079,
           "expression": "assert.equal(restored?.profile.lockedRole, 'student')"
         },
         {
-          "line": 1040,
+          "line": 1080,
           "expression": "assert.equal(restored?.profile.acceptedTermsVersion, 'v1')"
         },
         {
-          "line": 1041,
+          "line": 1081,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 1042,
+          "line": 1082,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'local_user')"
         },
         {
-          "line": 1043,
+          "line": 1083,
           "expression": "assert.equal(getCurrentServerProfile()?.lockedRole, 'student')"
         },
         {
-          "line": 1044,
+          "line": 1084,
           "expression": "assert.equal(getCurrentServerProfile()?.acceptedTermsVersion, 'v1')"
         },
         {
-          "line": 1045,
+          "line": 1085,
           "expression": "assert.notEqual(await storage.getItem('auth.server.session'), null)"
         },
         {
-          "line": 1088,
+          "line": 1128,
           "expression": "assert.equal(restored?.refreshToken, 'refresh-token-1')"
         },
         {
-          "line": 1089,
+          "line": 1129,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 1090,
+          "line": 1130,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'local_user')"
         },
         {
-          "line": 1091,
+          "line": 1131,
           "expression": "assert.notEqual(await storage.getItem('auth.server.session'), null)"
         },
         {
-          "line": 1134,
+          "line": 1174,
           "expression": "assert.equal(restored?.refreshToken, 'refresh-token-1')"
         },
         {
-          "line": 1135,
+          "line": 1175,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 1136,
+          "line": 1176,
           "expression": "assert.equal(getCurrentServerUser()?.uid, 'local_user')"
         },
         {
-          "line": 1137,
+          "line": 1177,
           "expression": "assert.notEqual(await storage.getItem('auth.server.session'), null)"
         },
         {
-          "line": 1152,
+          "line": 1192,
           "expression": "assert.equal(session, null)"
         },
         {
-          "line": 1153,
+          "line": 1193,
           "expression": "assert.equal(getCurrentServerAccessToken(), null)"
         },
         {
-          "line": 1172,
+          "line": 1212,
           "expression": "assert.equal(session, null)"
         },
         {
-          "line": 1203,
+          "line": 1243,
           "expression": "assert.equal(emailSession, null)"
         },
         {
-          "line": 1204,
+          "line": 1244,
           "expression": "assert.equal(socialSession, null)"
         }
       ]
@@ -71768,7 +71784,7 @@
       "id": "TST-c046834d2e4a",
       "repo": "client",
       "path": "tests/component/ds-keyboard.test.tsx",
-      "contentHash": "fea0248991039c364b7a0cca8ebd36adeb626215a3d38bf033b25a94cd34cfec",
+      "contentHash": "e2242e70c750bff2d40e3e3c590f3627af2ceb854f96eb1ebacd67eecdf614da",
       "command": "yarn test:component",
       "ownerPaths": [
         "components/ds/primitives/DsScreen.tsx",
@@ -71783,7 +71799,7 @@
       "platforms": ["host"],
       "selectors": ["overlay", "screen", "screen.keyboardSpacer", "spacer"],
       "hazards": {
-        "sleeps": 0,
+        "sleeps": 1,
         "coordinates": 0,
         "synchronizationBypasses": 0
       },
@@ -71794,165 +71810,177 @@
       "assertionPurposes": [
         {
           "purpose": "a keyboard frame needs a height and falls back to the window bottom for its top",
-          "line": 21
+          "line": 22
         },
         {
           "purpose": "overlap is the part of a view below the keyboard top",
-          "line": 28
+          "line": 29
         },
         {
           "purpose": "reveal scrolls only as far as needed and keeps a tall target top visible",
-          "line": 38
+          "line": 39
         },
         {
           "purpose": "a sheet is capped between the top safe area and the keyboard only while it is open",
-          "line": 46
+          "line": 47
         },
         {
           "purpose": "pads a bottom panel by the measured overlap and clears it when the keyboard hides",
-          "line": 72
+          "line": 73
         },
         {
           "purpose": "stays at zero while disabled",
-          "line": 82
+          "line": 83
         },
         {
           "purpose": "is opt-in: a default screen keeps its scroll props and never adds keyboard space",
-          "line": 91
+          "line": 92
         },
         {
           "purpose": "adds the covered height as bottom space while the keyboard is open",
-          "line": 103
+          "line": 104
         },
         {
           "purpose": "keeps a screen-chosen tap behavior",
-          "line": 119
+          "line": 120
         },
         {
           "purpose": "scrolls a screen input that the keyboard covers into view, even with a sheet open",
-          "line": 199
+          "line": 221
         },
         {
           "purpose": "leaves the screen behind an open sheet where it was while the sheet input is focused",
-          "line": 210
+          "line": 232
+        },
+        {
+          "purpose": "reveals a form that mounts while the keyboard is open, not the input that had focus",
+          "line": 243
         }
       ],
       "assertions": [
         {
-          "line": 22,
+          "line": 23,
           "expression": "expect(toDsKeyboardFrame(null)).toBeNull()"
         },
         {
-          "line": 23,
+          "line": 24,
           "expression": "expect(toDsKeyboardFrame({ screenY: 844, height: 0 })).toBeNull()"
         },
         {
-          "line": 24,
+          "line": 25,
           "expression": "expect(toDsKeyboardFrame({ screenY: 500, height: 344 })).toEqual({ top: 500, height: 344 })"
         },
         {
-          "line": 25,
+          "line": 26,
           "expression": "expect(toDsKeyboardFrame({ screenY: 0, height: 300 }, 844)).toEqual({ top: 544, height: 300 })"
         },
         {
-          "line": 30,
+          "line": 31,
           "expression": "expect(computeKeyboardOverlap(844, null)).toBe(0)"
         },
         {
-          "line": 31,
+          "line": 32,
           "expression": "expect(computeKeyboardOverlap(844, keyboard)).toBe(344)"
         },
         {
-          "line": 32,
+          "line": 33,
           "expression": "expect(computeKeyboardOverlap(760, keyboard)).toBe(260)"
         },
         {
-          "line": 33,
+          "line": 34,
           "expression": "expect(computeKeyboardOverlap(480, keyboard)).toBe(0)"
         },
         {
-          "line": 35,
+          "line": 36,
           "expression": "expect(computeKeyboardOverlap(0, keyboard)).toBe(344)"
         },
         {
-          "line": 40,
+          "line": 41,
           "expression": "expect(computeRevealScrollDelta({ top: 200, bottom: 300, ...visible })).toBe(0)"
         },
         {
-          "line": 41,
+          "line": 42,
           "expression": "expect(computeRevealScrollDelta({ top: 520, bottom: 640, ...visible })).toBe(140)"
         },
         {
-          "line": 42,
+          "line": 43,
           "expression": "expect(computeRevealScrollDelta({ top: 40, bottom: 90, ...visible })).toBe(-60)"
         },
         {
-          "line": 43,
+          "line": 44,
           "expression": "expect(computeRevealScrollDelta({ top: 300, bottom: 900, ...visible })).toBe(200)"
         },
         {
-          "line": 48,
+          "line": 49,
           "expression": "expect(computeKeyboardSheetBounds({ ...sheet, overlap: 0 })).toBeNull()"
         },
         {
-          "line": 51,
+          "line": 52,
           "expression": "expect(computeKeyboardSheetBounds({ ...sheet, overlap: 344 })).toEqual({ minHeight: available, maxHeight: available, })"
         },
         {
-          "line": 55,
+          "line": 56,
           "expression": "expect(computeKeyboardSheetBounds({ ...sheet, overlap: 100, preferredMinHeight: 200 })).toEqual( { minHeight: 200, maxHeight: 844 - 100 - 47 - DsSpace.sm }, )"
         },
         {
-          "line": 75,
+          "line": 76,
           "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 0 })"
         },
         {
-          "line": 77,
+          "line": 78,
           "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 300 })"
         },
         {
-          "line": 79,
+          "line": 80,
           "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 0 })"
         },
         {
-          "line": 86,
+          "line": 87,
           "expression": "expect(screen.getByTestId('overlay')).toHaveStyle({ paddingBottom: 0 })"
         },
         {
-          "line": 98,
+          "line": 99,
           "expression": "expect(screen.getByTestId('screen')).not.toHaveProp('keyboardShouldPersistTaps')"
         },
         {
-          "line": 100,
+          "line": 101,
           "expression": "expect(screen.queryByTestId('screen.keyboardSpacer')).toBeNull()"
-        },
-        {
-          "line": 111,
-          "expression": "expect(screen.getByTestId('screen')).toHaveProp('keyboardShouldPersistTaps', 'handled')"
         },
         {
           "line": 112,
+          "expression": "expect(screen.getByTestId('screen')).toHaveProp('keyboardShouldPersistTaps', 'handled')"
+        },
+        {
+          "line": 113,
           "expression": "expect(screen.queryByTestId('screen.keyboardSpacer')).toBeNull()"
         },
         {
-          "line": 114,
+          "line": 115,
           "expression": "expect(screen.getByTestId('screen.keyboardSpacer')).toHaveStyle({ height: 344 })"
         },
         {
-          "line": 116,
+          "line": 117,
           "expression": "expect(screen.queryByTestId('screen.keyboardSpacer')).toBeNull()"
         },
         {
-          "line": 125,
+          "line": 126,
           "expression": "expect(screen.getByTestId('screen')).toHaveProp('keyboardShouldPersistTaps', 'always')"
         },
         {
-          "line": 207,
+          "line": 229,
           "expression": "expect(scrollTo).toHaveBeenCalledWith({ y: 900 + 40 - (844 - 344 - 16), animated: true })"
         },
         {
-          "line": 218,
+          "line": 240,
           "expression": "expect(scrollTo).not.toHaveBeenCalled()"
+        },
+        {
+          "line": 251,
+          "expression": "expect(scrollTo).not.toHaveBeenCalled()"
+        },
+        {
+          "line": 257,
+          "expression": "expect(scrollTo).toHaveBeenCalledWith({ y: 1020 - 484, animated: true })"
         }
       ]
     },
@@ -72780,11 +72808,12 @@
       "id": "TST-712c5a09c72e",
       "repo": "client",
       "path": "tests/component/professional-students-roster-refresh.test.tsx",
-      "contentHash": "273445951fa64e1767ae584db64b91afa620898282bd773f40e62cf647f41e83",
+      "contentHash": "39e1ffd54348e51df1036743ea545f68457fd20519af64870a85c075a54d1556",
       "command": "yarn test:component",
       "ownerPaths": [
         "app/professional/students.tsx",
-        "features/professional/professional-source.ts"
+        "features/professional/professional-source.ts",
+        "localization/en-US.ts"
       ],
       "requirementReferences": ["TC-206", "TC-214"],
       "requirementStatus": "source-reference-needs-review",
@@ -72815,156 +72844,184 @@
       "assertionPurposes": [
         {
           "purpose": "reads the current roster on return and ignores the older focused request",
-          "line": 202
+          "line": 203
         },
         {
           "purpose": "does not let an older rejection clear a newer request or its loading state",
-          "line": 223
+          "line": 224
         },
         {
           "purpose": "preserves the active filter while a focused return refreshes the roster",
-          "line": 243
+          "line": 244
         },
         {
           "purpose": "ignores a bulk completion from the blurred identity and clears its stale spinner on return",
-          "line": 270
+          "line": 271
+        },
+        {
+          "purpose": "reports a bulk completion and clears the selection when the same coach refocused meanwhile",
+          "line": 310
         },
         {
           "purpose": "does not start or publish a retry after blur, then resumes on focus",
-          "line": 309
+          "line": 341
         },
         {
           "purpose": "ignores a response from the previous authenticated identity",
-          "line": 328
+          "line": 360
         }
       ],
       "assertions": [
         {
-          "line": 208,
+          "line": 209,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 212,
+          "line": 213,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
         },
         {
-          "line": 215,
+          "line": 216,
           "expression": "expect(await screen.findByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         },
         {
-          "line": 218,
+          "line": 219,
           "expression": "expect(screen.getByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         },
         {
-          "line": 229,
+          "line": 230,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 232,
+          "line": 233,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
         },
         {
-          "line": 235,
+          "line": 236,
           "expression": "expect(screen.getByTestId('pro.students.loading')).toBeOnTheScreen()"
         },
         {
-          "line": 238,
+          "line": 239,
           "expression": "expect(await screen.findByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         },
         {
-          "line": 249,
+          "line": 250,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 254,
+          "line": 255,
           "expression": "expect(screen.queryByTestId('pro.students.row.existing-active')).toBeNull()"
         },
         {
-          "line": 257,
+          "line": 258,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
         },
         {
-          "line": 260,
+          "line": 261,
           "expression": "expect(screen.getByTestId('pro.students.filter.active').props.accessibilityState).toMatchObject( { selected: true, }, )"
         },
         {
-          "line": 265,
+          "line": 266,
           "expression": "expect(await screen.findByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         },
         {
-          "line": 278,
+          "line": 279,
           "expression": "expect(await screen.findByTestId('pro.students.row.existing-active')).toBeOnTheScreen()"
         },
         {
-          "line": 285,
+          "line": 286,
           "expression": "expect(mockBulkAssign).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 293,
-          "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
-        },
-        {
-          "line": 296,
+          "line": 294,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
         },
         {
           "line": 297,
-          "expression": "expect(screen.getByTestId('pro.students.bulk.assignSelected')).toBeOnTheScreen()"
+          "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
         },
         {
           "line": 298,
-          "expression": "expect(screen.getByTestId('pro.students.loading')).toBeOnTheScreen()"
+          "expression": "expect(screen.getByTestId('pro.students.bulk.assignSelected')).toBeOnTheScreen()"
         },
         {
           "line": 299,
+          "expression": "expect(screen.getByTestId('pro.students.loading')).toBeOnTheScreen()"
+        },
+        {
+          "line": 300,
           "expression": "expect(alert).not.toHaveBeenCalled()"
         },
         {
-          "line": 302,
+          "line": 303,
           "expression": "expect(await screen.findByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         },
         {
-          "line": 303,
+          "line": 304,
           "expression": "expect(screen.queryByTestId('pro.students.loading')).toBeNull()"
         },
         {
-          "line": 312,
+          "line": 317,
+          "expression": "expect(await screen.findByTestId('pro.students.row.existing-active')).toBeOnTheScreen()"
+        },
+        {
+          "line": 324,
+          "expression": "expect(mockBulkAssign).toHaveBeenCalledTimes(1)"
+        },
+        {
+          "line": 328,
+          "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
+        },
+        {
+          "line": 331,
+          "expression": "expect(alert).toHaveBeenCalledWith(enUS['pro.plan.assign.success'])"
+        },
+        {
+          "line": 333,
+          "expression": "expect(screen.queryByTestId('pro.students.bulk.assignSelected')).toBeNull()"
+        },
+        {
+          "line": 335,
+          "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
+        },
+        {
+          "line": 344,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 313,
+          "line": 345,
           "expression": "expect(screen.getByTestId('pro.students.retry')).toBeOnTheScreen()"
         },
         {
-          "line": 317,
+          "line": 349,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 318,
+          "line": 350,
           "expression": "expect(screen.getByTestId('pro.students.error')).toBeOnTheScreen()"
         },
         {
-          "line": 322,
+          "line": 354,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
         },
         {
-          "line": 323,
+          "line": 355,
           "expression": "expect(await screen.findByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         },
         {
-          "line": 336,
+          "line": 368,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(1)"
         },
         {
-          "line": 340,
+          "line": 372,
           "expression": "expect(readRoster).toHaveBeenCalledTimes(2)"
         },
         {
-          "line": 343,
+          "line": 375,
           "expression": "expect(await screen.findByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         },
         {
-          "line": 346,
+          "line": 378,
           "expression": "expect(screen.getByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen()"
         }
       ]
@@ -73578,7 +73635,7 @@
       "id": "TST-58a6ae3189ee",
       "repo": "server",
       "path": "tests/auth-email.test.ts",
-      "contentHash": "e95d6a67b0551c8fcb1b431e421c65e59b1dfda10e0849476e74d81ae981d8a4",
+      "contentHash": "5828ac4a908cc407e6d4bf081cf7645a1f059018d44e78b178bd27101dab440d",
       "command": "bun run test:unit",
       "ownerPaths": [
         "src/app.ts",
@@ -73604,164 +73661,88 @@
       "assertionPurposes": [
         {
           "purpose": "keeps Postgres email auth selected when retired provider flags are present",
-          "line": 60
-        },
-        {
-          "purpose": "creates local email credentials without issuing a session, then allows sign-in",
-          "line": 69
-        },
-        {
-          "purpose": "responds identically to create-account for a duplicate email as for a brand-new one (ET-75)",
-          "line": 120
+          "line": 59
         },
         {
           "purpose": "still returns the generic accepted response when the gateway reports duplicate_email directly",
-          "line": 186
+          "line": 68
         },
         {
           "purpose": "fails closed when the email auth provider is not configured",
-          "line": 218
+          "line": 100
         },
         {
           "purpose": "issues a server session after provider-backed email sign-in succeeds",
-          "line": 241
+          "line": 123
         },
         {
           "purpose": "passes normalized email and trimmed display name to provider-backed account creation",
-          "line": 286
+          "line": 168
         }
       ],
       "assertions": [
         {
-          "line": 66,
+          "line": 65,
           "expression": "expect(gateway).toBeInstanceOf(LocalEmailAuthGateway)"
         },
         {
-          "line": 86,
-          "expression": "expect(createResponse.status).toBe(202)"
-        },
-        {
-          "line": 87,
-          "expression": "expect(createResponse.json()).resolves.toEqual({ status: 'accepted' })"
-        },
-        {
-          "line": 88,
-          "expression": "expect(createResponse.headers.get('set-cookie')).toBeNull()"
-        },
-        {
-          "line": 98,
-          "expression": "expect(signInResponse.status).toBe(201)"
-        },
-        {
-          "line": 100,
-          "expression": "expect(signInSession.profile).toMatchObject({ emailNormalized: email, displayName: 'Local Email User', })"
-        },
-        {
-          "line": 104,
-          "expression": "expect(signInSession.profile.authUid).toStartWith('local_email_')"
-        },
-        {
-          "line": 114,
-          "expression": "expect(invalidPasswordResponse.status).toBe(401)"
-        },
-        {
-          "line": 115,
-          "expression": "expect(invalidPasswordResponse.json()).resolves.toMatchObject({ error: { code: 'invalid_credentials' }, })"
-        },
-        {
-          "line": 151,
-          "expression": "expect(firstResponse.status).toBe(202)"
-        },
-        {
-          "line": 152,
-          "expression": "expect(secondResponse.status).toBe(202)"
-        },
-        {
-          "line": 153,
-          "expression": "expect(secondResponse.status).toBe(firstResponse.status)"
-        },
-        {
-          "line": 157,
-          "expression": "expect(firstBody).toEqual({ status: 'accepted' })"
-        },
-        {
-          "line": 158,
-          "expression": "expect(secondBody).toEqual(firstBody)"
-        },
-        {
-          "line": 160,
-          "expression": "expect(firstResponse.headers.get('set-cookie')).toBeNull()"
-        },
-        {
-          "line": 161,
-          "expression": "expect(secondResponse.headers.get('set-cookie')).toBeNull()"
-        },
-        {
-          "line": 172,
-          "expression": "expect(signInResponse.status).toBe(201)"
-        },
-        {
-          "line": 183,
-          "expression": "expect(impostorSignInResponse.status).toBe(401)"
-        },
-        {
-          "line": 214,
+          "line": 96,
           "expression": "expect(response.status).toBe(202)"
         },
         {
-          "line": 215,
+          "line": 97,
           "expression": "expect(response.json()).resolves.toEqual({ status: 'accepted' })"
         },
         {
-          "line": 232,
+          "line": 114,
           "expression": "expect(response.status).toBe(503)"
         },
         {
-          "line": 233,
+          "line": 115,
           "expression": "expect(response.json()).resolves.toEqual({ error: { code: 'configuration', message: 'Email auth provider is not configured for this local server.', }, })"
         },
         {
-          "line": 247,
+          "line": 129,
           "expression": "expect(input).toEqual({ email: 'user@example.test', password: 'Password1!' })"
         },
         {
-          "line": 272,
+          "line": 154,
           "expression": "expect(response.status).toBe(201)"
         },
         {
-          "line": 273,
+          "line": 155,
           "expression": "expect(response.headers.get('set-cookie')).toContain('mychampions_access_token=')"
         },
         {
-          "line": 275,
+          "line": 157,
           "expression": "expect(session.accessToken).toBeString()"
         },
         {
-          "line": 276,
+          "line": 158,
           "expression": "expect(session.refreshToken).toBeString()"
         },
         {
-          "line": 277,
+          "line": 159,
           "expression": "expect(session.authProviderIds).toEqual(['email_password'])"
         },
         {
-          "line": 278,
+          "line": 160,
           "expression": "expect(session.emailVerified).toBe(false)"
         },
         {
-          "line": 279,
+          "line": 161,
           "expression": "expect(session.profile).toMatchObject({ authUid: 'provider-user-1', emailNormalized: 'user@example.test', displayName: 'Provider User', })"
         },
         {
-          "line": 294,
+          "line": 176,
           "expression": "expect(input).toEqual({ email: 'new@example.test', password: 'Password1!', displayName: 'New User', })"
         },
         {
-          "line": 324,
+          "line": 206,
           "expression": "expect(response.status).toBe(202)"
         },
         {
-          "line": 325,
+          "line": 207,
           "expression": "expect(response.json()).resolves.toEqual({ status: 'accepted' })"
         }
       ]
@@ -74033,7 +74014,7 @@
       "id": "TST-bde77d5bdb7c",
       "repo": "server",
       "path": "tests/auth-rate-limit.test.ts",
-      "contentHash": "855fbfdccf15ed551720e5ac3428c6fdbbdd9dcc009b4afcbb15f5681d1507a4",
+      "contentHash": "481aa528d99b62a535eb4f997e9b3302c25da748b885df81ce660c7a2314e6df",
       "command": "bun run test:unit",
       "ownerPaths": [
         "src/app.ts",
@@ -74100,6 +74081,14 @@
         {
           "purpose": "uses the last trusted-header entry and otherwise the socket address",
           "line": 282
+        },
+        {
+          "purpose": "does not route a doubled trailing slash, so stripping one slash leaves no bypass",
+          "line": 293
+        },
+        {
+          "purpose": "classifies long runs of slashes in constant time",
+          "line": 310
         }
       ],
       "assertions": [
@@ -74194,6 +74183,26 @@
         {
           "line": 290,
           "expression": "expect(key(keyRequest({ 'x-real-ip': '203.0.113.10, ' }), socket)).toBe('192.0.2.10')"
+        },
+        {
+          "line": 307,
+          "expression": "expect(response.status).toBe(404)"
+        },
+        {
+          "line": 314,
+          "expression": "expect(isAuthRateLimitedPath(hostile)).toBe(false)"
+        },
+        {
+          "line": 315,
+          "expression": "expect(performance.now() - started).toBeLessThan(50)"
+        },
+        {
+          "line": 316,
+          "expression": "expect(isAuthRateLimitedPath('/auth/email/sign-in/')).toBe(true)"
+        },
+        {
+          "line": 317,
+          "expression": "expect(isAuthRateLimitedPath('/auth/email/sign-in//')).toBe(false)"
         }
       ]
     },
@@ -78504,6 +78513,109 @@
       ]
     },
     {
+      "id": "TST-872b7acebbb2",
+      "repo": "server",
+      "path": "tests/postgres-email-auth-api.test.ts",
+      "contentHash": "98506db45ce086af320c538a77063c8af6ed8f166d5e31b0d2738b9a5b8a7628",
+      "command": "bun run test:integration",
+      "ownerPaths": ["src/app.ts", "tests/helpers/test-database.ts"],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["postgres-integration"],
+      "dataMode": "postgres",
+      "platforms": ["host"],
+      "selectors": [],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "retain",
+      "dispositionReason": "Retain until overlapping coverage and execution evidence justify a change.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "creates local email credentials without issuing a session, then allows sign-in",
+          "line": 13
+        },
+        {
+          "purpose": "responds identically to create-account for a duplicate email as for a brand-new one (ET-75)",
+          "line": 64
+        }
+      ],
+      "assertions": [
+        {
+          "line": 30,
+          "expression": "expect(createResponse.status).toBe(202)"
+        },
+        {
+          "line": 31,
+          "expression": "expect(createResponse.json()).resolves.toEqual({ status: 'accepted' })"
+        },
+        {
+          "line": 32,
+          "expression": "expect(createResponse.headers.get('set-cookie')).toBeNull()"
+        },
+        {
+          "line": 42,
+          "expression": "expect(signInResponse.status).toBe(201)"
+        },
+        {
+          "line": 44,
+          "expression": "expect(signInSession.profile).toMatchObject({ emailNormalized: email, displayName: 'Local Email User', })"
+        },
+        {
+          "line": 48,
+          "expression": "expect(signInSession.profile.authUid).toStartWith('local_email_')"
+        },
+        {
+          "line": 58,
+          "expression": "expect(invalidPasswordResponse.status).toBe(401)"
+        },
+        {
+          "line": 59,
+          "expression": "expect(invalidPasswordResponse.json()).resolves.toMatchObject({ error: { code: 'invalid_credentials' }, })"
+        },
+        {
+          "line": 95,
+          "expression": "expect(firstResponse.status).toBe(202)"
+        },
+        {
+          "line": 96,
+          "expression": "expect(secondResponse.status).toBe(202)"
+        },
+        {
+          "line": 97,
+          "expression": "expect(secondResponse.status).toBe(firstResponse.status)"
+        },
+        {
+          "line": 101,
+          "expression": "expect(firstBody).toEqual({ status: 'accepted' })"
+        },
+        {
+          "line": 102,
+          "expression": "expect(secondBody).toEqual(firstBody)"
+        },
+        {
+          "line": 104,
+          "expression": "expect(firstResponse.headers.get('set-cookie')).toBeNull()"
+        },
+        {
+          "line": 105,
+          "expression": "expect(secondResponse.headers.get('set-cookie')).toBeNull()"
+        },
+        {
+          "line": 116,
+          "expression": "expect(signInResponse.status).toBe(201)"
+        },
+        {
+          "line": 127,
+          "expression": "expect(impostorSignInResponse.status).toBe(401)"
+        }
+      ]
+    },
+    {
       "id": "TST-434b84957864",
       "repo": "server",
       "path": "tests/postgres-exercise-search-gateway.test.ts",
@@ -79774,6 +79886,201 @@
       ]
     },
     {
+      "id": "TST-5c21ac871c62",
+      "repo": "server",
+      "path": "tests/postgres-revenuecat-live-evidence-program.test.ts",
+      "contentHash": "b0737e34edda4ceede34298c3ed19f4ecedb1576e3297ddc31dbd6866cd99ced",
+      "command": "bun run test:integration",
+      "ownerPaths": ["tests/helpers/test-database.ts"],
+      "requirementReferences": [],
+      "requirementStatus": "unmapped-review-required",
+      "layers": ["provider"],
+      "dataMode": "postgres",
+      "platforms": ["host"],
+      "selectors": [],
+      "hazards": {
+        "sleeps": 0,
+        "coordinates": 0,
+        "synchronizationBypasses": 0
+      },
+      "disposition": "investigate",
+      "dispositionReason": "Assertion purposes below require review; retain policy assertions, replace UI/source-shape assertions only after passing behavioral evidence.",
+      "replacementIds": [],
+      "evidenceStatus": "unverified",
+      "assertionPurposes": [
+        {
+          "purpose": "passes only when RevenueCat and the snapshot match, without printing credentials",
+          "line": 139
+        },
+        {
+          "purpose": "refuses a container outside the production api service before reading anything",
+          "line": 171
+        },
+        {
+          "purpose": "refuses when the connected database is not the expected one",
+          "line": 189
+        },
+        {
+          "purpose": "refuses without a server-only RevenueCat key",
+          "line": 200
+        },
+        {
+          "purpose": "never queries RevenueCat for an App User ID without a production snapshot",
+          "line": 212
+        },
+        {
+          "purpose": "fails at the deadline when the snapshot does not match RevenueCat",
+          "line": 222
+        },
+        {
+          "purpose": "fails when RevenueCat does not match the expected state",
+          "line": 236
+        },
+        {
+          "purpose": "does not let a failed RevenueCat read pass",
+          "line": 247
+        }
+      ],
+      "assertions": [
+        {
+          "line": 145,
+          "expression": "expect(result.exitCode).toBe(0)"
+        },
+        {
+          "line": 146,
+          "expression": "expect(result.stdout.trimEnd().split('\\n').at(-1)).toBe('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 147,
+          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ appUserId: uid, converged: true, revenueCatQueried: true, target: { railwayProjectId: productionApi.RAILWAY_PROJECT_ID, railwayEnvironmentId: productionApi.RAILWAY_ENVI"
+        },
+        {
+          "line": 162,
+          "expression": "expect(result.providerCalls).toEqual([ { url: `https://api.revenuecat.com/v1/subscribers/${uid}`, method: 'GET' }, ])"
+        },
+        {
+          "line": 166,
+          "expression": "expect(output).not.toContain(secretApiKey)"
+        },
+        {
+          "line": 167,
+          "expression": "expect(output).not.toContain(databasePassword)"
+        },
+        {
+          "line": 182,
+          "expression": "expect(result.exitCode).toBe(2)"
+        },
+        {
+          "line": 183,
+          "expression": "expect(result.stderr).toContain('Refusing live evidence verification')"
+        },
+        {
+          "line": 184,
+          "expression": "expect(result.stderr).toContain('not the expected production api service')"
+        },
+        {
+          "line": 185,
+          "expression": "expect(result.stdout).toBe('')"
+        },
+        {
+          "line": 186,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 195,
+          "expression": "expect(result.exitCode).toBe(2)"
+        },
+        {
+          "line": 196,
+          "expression": "expect(result.stderr).toContain(`connected to database ${databaseName}, not mychampions_server`)"
+        },
+        {
+          "line": 197,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 206,
+          "expression": "expect(result.exitCode).toBe(2)"
+        },
+        {
+          "line": 207,
+          "expression": "expect(result.stderr).toContain('server-only RevenueCat sk_* key')"
+        },
+        {
+          "line": 208,
+          "expression": "expect(result.stderr).not.toContain('appl_public_key')"
+        },
+        {
+          "line": 209,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 215,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 216,
+          "expression": "expect(result.stderr).toContain('RevenueCat was not queried')"
+        },
+        {
+          "line": 217,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 218,
+          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ converged: false, revenueCatQueried: false })"
+        },
+        {
+          "line": 219,
+          "expression": "expect(result.providerCalls).toEqual([])"
+        },
+        {
+          "line": 229,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 230,
+          "expression": "expect(result.stderr).toContain('Production subscription snapshot did not converge before the deadline.')"
+        },
+        {
+          "line": 231,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 232,
+          "expression": "expect(result.providerCalls.length).toBeGreaterThanOrEqual(1)"
+        },
+        {
+          "line": 233,
+          "expression": "expect(Date.now() - startedAt).toBeLessThan(10_000)"
+        },
+        {
+          "line": 242,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 243,
+          "expression": "expect(result.stderr).toContain('Canonical RevenueCat privileges do not match the expected live state.')"
+        },
+        {
+          "line": 244,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        },
+        {
+          "line": 253,
+          "expression": "expect(result.exitCode).toBe(1)"
+        },
+        {
+          "line": 254,
+          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ converged: false, revenueCat: null })"
+        },
+        {
+          "line": 255,
+          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
+        }
+      ]
+    },
+    {
       "id": "TST-0becd68d78a4",
       "repo": "server",
       "path": "tests/postgres-social-identity-repository.test.ts",
@@ -80998,201 +81305,6 @@
         {
           "line": 403,
           "expression": "expect(stalledBody.getCustomerPrivileges('user-1')).rejects.toMatchObject({ code: 'network', })"
-        }
-      ]
-    },
-    {
-      "id": "TST-8a02718b4322",
-      "repo": "server",
-      "path": "tests/revenuecat-live-evidence-program.test.ts",
-      "contentHash": "aa91c9db54b211d4ca46bb8387b0ce821e2423f2dcd8a21599be428a653e87c8",
-      "command": "bun run test:unit",
-      "ownerPaths": [],
-      "requirementReferences": [],
-      "requirementStatus": "unmapped-review-required",
-      "layers": ["provider"],
-      "dataMode": "in-process",
-      "platforms": ["host"],
-      "selectors": [],
-      "hazards": {
-        "sleeps": 0,
-        "coordinates": 0,
-        "synchronizationBypasses": 0
-      },
-      "disposition": "investigate",
-      "dispositionReason": "Assertion purposes below require review; retain policy assertions, replace UI/source-shape assertions only after passing behavioral evidence.",
-      "replacementIds": [],
-      "evidenceStatus": "unverified",
-      "assertionPurposes": [
-        {
-          "purpose": "passes only when RevenueCat and the snapshot match, without printing credentials",
-          "line": 139
-        },
-        {
-          "purpose": "refuses a container outside the production api service before reading anything",
-          "line": 171
-        },
-        {
-          "purpose": "refuses when the connected database is not the expected one",
-          "line": 189
-        },
-        {
-          "purpose": "refuses without a server-only RevenueCat key",
-          "line": 200
-        },
-        {
-          "purpose": "never queries RevenueCat for an App User ID without a production snapshot",
-          "line": 212
-        },
-        {
-          "purpose": "fails at the deadline when the snapshot does not match RevenueCat",
-          "line": 222
-        },
-        {
-          "purpose": "fails when RevenueCat does not match the expected state",
-          "line": 236
-        },
-        {
-          "purpose": "does not let a failed RevenueCat read pass",
-          "line": 247
-        }
-      ],
-      "assertions": [
-        {
-          "line": 145,
-          "expression": "expect(result.exitCode).toBe(0)"
-        },
-        {
-          "line": 146,
-          "expression": "expect(result.stdout.trimEnd().split('\\n').at(-1)).toBe('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
-        },
-        {
-          "line": 147,
-          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ appUserId: uid, converged: true, revenueCatQueried: true, target: { railwayProjectId: productionApi.RAILWAY_PROJECT_ID, railwayEnvironmentId: productionApi.RAILWAY_ENVI"
-        },
-        {
-          "line": 162,
-          "expression": "expect(result.providerCalls).toEqual([ { url: `https://api.revenuecat.com/v1/subscribers/${uid}`, method: 'GET' }, ])"
-        },
-        {
-          "line": 166,
-          "expression": "expect(output).not.toContain(secretApiKey)"
-        },
-        {
-          "line": 167,
-          "expression": "expect(output).not.toContain(databasePassword)"
-        },
-        {
-          "line": 182,
-          "expression": "expect(result.exitCode).toBe(2)"
-        },
-        {
-          "line": 183,
-          "expression": "expect(result.stderr).toContain('Refusing live evidence verification')"
-        },
-        {
-          "line": 184,
-          "expression": "expect(result.stderr).toContain('not the expected production api service')"
-        },
-        {
-          "line": 185,
-          "expression": "expect(result.stdout).toBe('')"
-        },
-        {
-          "line": 186,
-          "expression": "expect(result.providerCalls).toEqual([])"
-        },
-        {
-          "line": 195,
-          "expression": "expect(result.exitCode).toBe(2)"
-        },
-        {
-          "line": 196,
-          "expression": "expect(result.stderr).toContain(`connected to database ${databaseName}, not mychampions_server`)"
-        },
-        {
-          "line": 197,
-          "expression": "expect(result.providerCalls).toEqual([])"
-        },
-        {
-          "line": 206,
-          "expression": "expect(result.exitCode).toBe(2)"
-        },
-        {
-          "line": 207,
-          "expression": "expect(result.stderr).toContain('server-only RevenueCat sk_* key')"
-        },
-        {
-          "line": 208,
-          "expression": "expect(result.stderr).not.toContain('appl_public_key')"
-        },
-        {
-          "line": 209,
-          "expression": "expect(result.providerCalls).toEqual([])"
-        },
-        {
-          "line": 215,
-          "expression": "expect(result.exitCode).toBe(1)"
-        },
-        {
-          "line": 216,
-          "expression": "expect(result.stderr).toContain('RevenueCat was not queried')"
-        },
-        {
-          "line": 217,
-          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
-        },
-        {
-          "line": 218,
-          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ converged: false, revenueCatQueried: false })"
-        },
-        {
-          "line": 219,
-          "expression": "expect(result.providerCalls).toEqual([])"
-        },
-        {
-          "line": 229,
-          "expression": "expect(result.exitCode).toBe(1)"
-        },
-        {
-          "line": 230,
-          "expression": "expect(result.stderr).toContain('Production subscription snapshot did not converge before the deadline.')"
-        },
-        {
-          "line": 231,
-          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
-        },
-        {
-          "line": 232,
-          "expression": "expect(result.providerCalls.length).toBeGreaterThanOrEqual(1)"
-        },
-        {
-          "line": 233,
-          "expression": "expect(Date.now() - startedAt).toBeLessThan(10_000)"
-        },
-        {
-          "line": 242,
-          "expression": "expect(result.exitCode).toBe(1)"
-        },
-        {
-          "line": 243,
-          "expression": "expect(result.stderr).toContain('Canonical RevenueCat privileges do not match the expected live state.')"
-        },
-        {
-          "line": 244,
-          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
-        },
-        {
-          "line": 253,
-          "expression": "expect(result.exitCode).toBe(1)"
-        },
-        {
-          "line": 254,
-          "expression": "expect(evidenceJson(result.stdout)).toMatchObject({ converged: false, revenueCat: null })"
-        },
-        {
-          "line": 255,
-          "expression": "expect(result.stdout).not.toContain('REVENUECAT_LIVE_EVIDENCE_CONVERGED')"
         }
       ]
     },

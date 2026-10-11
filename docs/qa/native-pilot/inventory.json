@@ -4,7 +4,7 @@
     "id": "mychampions-native-pilot-declaration-v1",
     "createdAt": "2026-09-28T00:00:00Z",
     "updatedAt": "2026-09-28T00:00:00Z",
-    "commit": "2023ef9aaf42f2437b77bf42ac9903d51dee9005",
+    "commit": "eb6e47e2e12e37d535cf9f363f3bf160d564cf35",
     "dirty": true,
     "build": "unknown",
     "target": "native-dev-pilot-unqualified",
@@ -93,7 +93,7 @@
       "paths": [
         "docs/screens/v2/SC-205-student-roster.md"
       ],
-      "revision": "c6b975928334c32bd822a9a10065b3d39de971941e9e9519927b1b10a655f3af"
+      "revision": "6ec4e2863470322831f01cb164cae8a4a4c984b9ad1fb1529280d27efa7e54ed"
     },
     {
       "id": "SRC-use-cases",
@@ -165,7 +165,7 @@
       "paths": [
         "features/auth/server-auth-source.ts"
       ],
-      "revision": "b0b2a1b4a28a103991bce532c23d00d057510da58aaea11080a588ae23cf07b9"
+      "revision": "e814302b9ad57a05dfc8b087bd44294a6f984d81be04c4032a049c25ec93939c"
     },
     {
       "id": "SRC-account-source",
@@ -597,7 +597,7 @@
       "paths": [
         "app/professional/pending.tsx"
       ],
-      "revision": "c7c3fb1cd2b4a87872d38533fae1b114343a684b0bad6adc78c0fd205458ebf8"
+      "revision": "ed40afd63dae2324d3513a3641a6c022046b6388d7858a474ac527d86de584a3"
     },
     {
       "id": "SRC-roster-source",
@@ -606,7 +606,7 @@
       "paths": [
         "app/professional/students.tsx"
       ],
-      "revision": "062d08442d0b75cfb47f48675545ae3908ce7f93e9bc2cfc86ef4fea20794507"
+      "revision": "476d902d1ec1dc7db4e51cafdcd7a63d6d2c1e3885b6c9edfc94e2e87cedaf77"
     },
     {
       "id": "SRC-home-source",
@@ -1389,7 +1389,7 @@
       "paths": [
         "localization/en-US.ts"
       ],
-      "revision": "373f24eb14d0962e32e846efcec7959e5f749106d4a8c4fcf1bba8c5da65d2c2"
+      "revision": "d58a547030e1cec273264a2f2b272bd15250073b98847ee5ce0f5833382d6406"
     },
     {
       "id": "SRC-save-retry-observer",
