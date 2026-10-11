@@ -55,3 +55,4 @@ app-example
 
 # Owned isolated native-control dependency link; not a source input.
 /node_modules
+.qa/private/

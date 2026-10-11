@@ -1,6 +1,0 @@
-Private v5 profile supplemental source compile (temporary transpiled outputs; no canonical edits)
-canonical_capture_sha256=3421ffc87b3d8afb572cfd1e166169cb281504630c9f17bc633414632dac5b18
-v4_manifest_sha256=91bdcfd3ad61e285ff9e25bc5bd9f37fa3384970e4932ff3757bc85ed16704de
-esbuild_and_node_check_status=0
-output_root=/tmp/mychampions-v5-profile-*
---- diagnostics ---
