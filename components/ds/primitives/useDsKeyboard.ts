@@ -244,7 +244,7 @@ export function useDsKeyboardOverlap(
 // Mounted targets app-wide. A scroll view only uses a target that contains the
 // focused input and sits inside its own content (both checked by measureLayout).
 const keyboardTargets = new Set<DsMeasurableNode>();
-const targetMountListeners = new Set<() => void>();
+const targetMountListeners = new Set<(target: DsMeasurableNode) => void>();
 
 /**
  * Callback ref for a view that must stay fully visible above the keyboard
@@ -261,7 +261,8 @@ export function useDsKeyboardTarget(): (node: object | null) => void {
     if (!nodeRef.current) return;
     keyboardTargets.add(nodeRef.current);
     // A form that mounts while the keyboard is already open.
-    targetMountListeners.forEach((listener) => listener());
+    const mounted = nodeRef.current;
+    targetMountListeners.forEach((listener) => listener(mounted));
   }, []);
 }
 
@@ -320,46 +321,56 @@ export function useDsKeyboardAwareScroll({
   const pendingRevealRef = useRef(false);
   const [spacerHeight, setSpacerHeight] = useState(0);
 
-  const reveal = useCallback(() => {
-    const keyboard = keyboardRef.current;
-    const scrollView = scrollRef.current as (ScrollView & DsMeasurableNode) | null;
-    const focused = TextInput.State.currentlyFocusedInput() as DsMeasurableNode | null;
-    const content = innerViewRef.current as DsMeasurableNode | null;
-    if (!keyboard || !scrollView || !focused || !content) return;
-    const revealInScrollView = () =>
-      measureOnPage(scrollView, (viewportTop, viewportHeight) => {
-        const covered = computeKeyboardOverlap(viewportTop + viewportHeight, keyboard);
-        resolveRevealNode(focused, [...keyboardTargets], (node) => {
-          node.measureLayout?.(
-            content as never,
-            (_left, top, _width, height) => {
-              const offset = offsetRef.current;
-              const delta = computeRevealScrollDelta({
-                top,
-                bottom: top + height,
-                visibleTop:
-                  offset + Math.max(0, topInset - viewportTop) + DS_KEYBOARD_REVEAL_MARGIN,
-                visibleBottom: offset + viewportHeight - covered - DS_KEYBOARD_REVEAL_MARGIN,
-              });
-              if (delta !== 0) {
-                scrollView.scrollTo({ y: Math.max(0, offset + delta), animated: true });
-              }
-            },
-            // The node is not inside this scroll view (another screen).
-            () => undefined,
-          );
+  const reveal = useCallback(
+    (mountedTarget?: DsMeasurableNode) => {
+      const keyboard = keyboardRef.current;
+      const scrollView = scrollRef.current as (ScrollView & DsMeasurableNode) | null;
+      // A target that just mounted is revealed itself: its autofocused input may
+      // not be the focused input yet, so the lookup could still find the old one.
+      const focused =
+        mountedTarget ?? (TextInput.State.currentlyFocusedInput() as DsMeasurableNode | null);
+      const content = innerViewRef.current as DsMeasurableNode | null;
+      if (!keyboard || !scrollView || !focused || !content) return;
+      const revealInScrollView = () =>
+        measureOnPage(scrollView, (viewportTop, viewportHeight) => {
+          const covered = computeKeyboardOverlap(viewportTop + viewportHeight, keyboard);
+          const pickNode = (done: (node: DsMeasurableNode) => void) =>
+            mountedTarget
+              ? done(mountedTarget)
+              : resolveRevealNode(focused, [...keyboardTargets], done);
+          pickNode((node) => {
+            node.measureLayout?.(
+              content as never,
+              (_left, top, _width, height) => {
+                const offset = offsetRef.current;
+                const delta = computeRevealScrollDelta({
+                  top,
+                  bottom: top + height,
+                  visibleTop:
+                    offset + Math.max(0, topInset - viewportTop) + DS_KEYBOARD_REVEAL_MARGIN,
+                  visibleBottom: offset + viewportHeight - covered - DS_KEYBOARD_REVEAL_MARGIN,
+                });
+                if (delta !== 0) {
+                  scrollView.scrollTo({ y: Math.max(0, offset + delta), animated: true });
+                }
+              },
+              // The node is not inside this scroll view (another screen).
+              () => undefined,
+            );
+          });
         });
+      if (mode === 'resized') {
+        // This scroll view lives inside the sheet that lifts it.
+        revealInScrollView();
+        return;
+      }
+      // A screen leaves an open sheet's or panel's inputs to that sheet.
+      isInsideSelfLiftingView(focused, (inside) => {
+        if (!inside) revealInScrollView();
       });
-    if (mode === 'resized') {
-      // This scroll view lives inside the sheet that lifts it.
-      revealInScrollView();
-      return;
-    }
-    // A screen leaves an open sheet's or panel's inputs to that sheet.
-    isInsideSelfLiftingView(focused, (inside) => {
-      if (!inside) revealInScrollView();
-    });
-  }, [mode, topInset]);
+    },
+    [mode, topInset],
+  );
 
   useEffect(() => {
     if (!active) {
@@ -385,14 +396,14 @@ export function useDsKeyboardAwareScroll({
         // reveal once that has settled (onLayout reveals sooner when the
         // frame changes).
         pendingRevealRef.current = true;
-        revealTimer = setTimeout(reveal, (event?.duration ?? 0) + 50);
+        revealTimer = setTimeout(() => reveal(), (event?.duration ?? 0) + 50);
         return;
       }
       measureOnPage(scrollRef.current as DsMeasurableNode | null, (top, height) => {
         if (current !== sequence) return;
         const next = computeKeyboardOverlap(top + height, keyboard);
         if (next === spacerRef.current) {
-          requestAnimationFrame(reveal);
+          requestAnimationFrame(() => reveal());
           return;
         }
         // Reveal once the spacer is laid out, so there is room to scroll into.
@@ -401,8 +412,8 @@ export function useDsKeyboardAwareScroll({
         setSpacerHeight(next);
       });
     };
-    const onTargetMount = () => {
-      if (keyboardRef.current) requestAnimationFrame(reveal);
+    const onTargetMount = (target: DsMeasurableNode) => {
+      if (keyboardRef.current) requestAnimationFrame(() => reveal(target));
     };
     apply(currentKeyboardFrame());
     const unsubscribe = subscribeToKeyboard(apply);

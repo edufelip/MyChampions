@@ -562,7 +562,12 @@ function QuickLogPanel({
     );
   }, []);
   useEffect(() => {
-    if (keyboardOverlap > 0) revealGrams();
+    if (keyboardOverlap <= 0) return;
+    revealGrams();
+    // On iOS the panel shrinks with the keyboard animation, and a scroll issued
+    // before it settles is clamped to the old size; reveal again once it has.
+    const settled = setTimeout(revealGrams, 350);
+    return () => clearTimeout(settled);
   }, [keyboardOverlap, revealGrams]);
   useWebDialogAccessibility({
     dialogTitleTestID: 'meal.library.quickLog.title',

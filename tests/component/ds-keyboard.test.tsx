@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import { useRef, type RefObject } from 'react';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { useEffect, useRef, type RefObject } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
 import {
@@ -9,6 +9,7 @@ import {
   toDsKeyboardFrame,
   useDsKeyboardAwareScroll,
   useDsKeyboardOverlap,
+  useDsKeyboardTarget,
 } from '@/components/ds/primitives/useDsKeyboard';
 import { DsSpace } from '@/constants/design-system';
 import { hideKeyboard, measureHostViewsAs, showKeyboard } from './keyboard-test-utils';
@@ -141,7 +142,27 @@ describe('keyboard-aware screen reveal', () => {
     return <View ref={ref} testID="sheet" />;
   }
 
-  function Screen({ withSheet }: { withSheet: boolean }) {
+  // An inline form registered as a keyboard target, measuring `top` within the
+  // screen content.
+  function FormTarget({ top }: { top: number }) {
+    const register = useDsKeyboardTarget();
+    useEffect(() => {
+      register({
+        measureLayout: (
+          relativeTo: unknown,
+          onSuccess: (x: number, y: number, width: number, height: number) => void,
+          onFail: () => void,
+        ) => {
+          if (relativeTo === refs.content?.current) onSuccess(0, top, 390, 120);
+          else onFail();
+        },
+      });
+      return () => register(null);
+    }, [register, top]);
+    return null;
+  }
+
+  function Screen({ withSheet, withForm = false }: { withSheet: boolean; withForm?: boolean }) {
     const keyboard = useDsKeyboardAwareScroll({ enabled: true, mode: 'spacer' });
     const { innerViewRef, ...scrollViewProps } = keyboard.scrollViewProps as {
       innerViewRef: RefObject<View | null>;
@@ -163,6 +184,7 @@ describe('keyboard-aware screen reveal', () => {
         </ScrollView>
         {/* Rendered inside the screen, like ExerciseSearchModal in SC-208. */}
         {withSheet ? <Sheet /> : null}
+        {withForm ? <FormTarget top={900} /> : null}
       </>
     );
   }
@@ -216,5 +238,22 @@ describe('keyboard-aware screen reveal', () => {
     focusInput(600, { inSheet: true });
     await openKeyboard();
     expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  test('reveals a form that mounts while the keyboard is open, not the input that had focus', async () => {
+    measureHostViewsAs(ScrollView, 0, 844);
+    measureHostViewsAs(View, 0, 844);
+    const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo');
+    await render(<Screen withSheet={false} />);
+    // The plan name near the top still reports focus while the new form mounts.
+    focusInput(100, { inSheet: false });
+    await openKeyboard();
+    expect(scrollTo).not.toHaveBeenCalled();
+    await screen.rerender(<Screen withSheet={false} withForm />);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    // Form 900..1020 against a visible bottom of 844 - 344 - 16 = 484.
+    expect(scrollTo).toHaveBeenCalledWith({ y: 1020 - 484, animated: true });
   });
 });
