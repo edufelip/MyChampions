@@ -54031,7 +54031,7 @@
       "id": "TST-0ffea54aad8d",
       "repo": "client",
       "path": "tests/ci/native-pilot-runner.test.ts",
-      "contentHash": "b13e1f5cf7b093a8f630e9a899ccf4a995ad5c548abbb1e5f2a94e56debb122b",
+      "contentHash": "475e0e7be3d3184dca775ccc2cfcf5a5b33d6f1a56880855eb2dc3e06a5ac92b",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/capture-native-testability.ts",
@@ -54060,832 +54060,832 @@
       "assertionPurposes": [
         {
           "purpose": "native dispatch admits only reviewed integration cells",
-          "line": 99
+          "line": 102
         },
         {
           "purpose": "connection dispatch accepts only the matching integrated Maestro platform",
-          "line": 186
+          "line": 189
         },
         {
           "purpose": "camera public dispatch forwards only the reviewed iOS selection to an injected runner",
-          "line": 207
+          "line": 210
         },
         {
           "purpose": "camera public receipt bindings cover every declared UI/API/SQL kind",
-          "line": 295
+          "line": 298
         },
         {
           "purpose": "camera producer receipt binds the separate caller root and original deadline",
-          "line": 330
+          "line": 333
         },
         {
           "purpose": "public camera dispatch reaches the actual adapter chain without acquisition",
-          "line": 416
+          "line": 419
         },
         {
           "purpose": "public cleanup retains a verified zero-acquisition boundary and blocks unavailable proof",
-          "line": 620
+          "line": 623
         },
         {
           "purpose": "late terminal signals preserve the original Android runtime failure precedence",
-          "line": 663
+          "line": 666
         },
         {
           "purpose": "SIGINT/SIGTERM during actual preflight retain cancellation receipts without native acquisition",
-          "line": 866
+          "line": 869
         },
         {
           "purpose": "real native entry point blocks before acquisition and writes redacted immutable schema-valid receipts",
-          "line": 954
+          "line": 957
         },
         {
           "purpose": "shared repository identity detects dirty tracked/untracked bytes and deletion in a disposable Git fixture",
-          "line": 1191
+          "line": 1206
         },
         {
           "purpose": "repository identity stops git and descriptor walks when the caller cancels",
-          "line": 1232
+          "line": 1247
         },
         {
           "purpose": "repository identity closes a descriptor when cancellation lands immediately after open",
-          "line": 1267
+          "line": 1282
         },
         {
           "purpose": "runner preflight identity publication uses the live signal and opaque observation",
-          "line": 1301
+          "line": 1316
         },
         {
           "purpose": "terminal repository observation retains a real client row when the server read fails",
-          "line": 1314
+          "line": 1329
         },
         {
           "purpose": "terminal repository observation retains a real server row when the client read fails",
-          "line": 1349
+          "line": 1364
         },
         {
           "purpose": "terminal repository observation records unknown on client cancellation and closes the opened descriptor",
-          "line": 1380
+          "line": 1395
         },
         {
           "purpose": "terminal repository observation closes its descriptor when a deadline aborts an in-flight read",
-          "line": 1413
+          "line": 1428
         },
         {
           "purpose": "terminal finalization uses best-effort repository evidence and blocks source-unknown output",
-          "line": 1441
+          "line": 1456
         }
       ],
       "assertions": [
         {
-          "line": 57,
+          "line": 60,
           "expression": "assert.equal(await realpath(file), file)"
         },
         {
-          "line": 58,
+          "line": 61,
           "expression": "assert.equal((await stat(file)).mode & 0o777, 0o600)"
         },
         {
-          "line": 66,
+          "line": 69,
           "expression": "assert.equal(value.requestedRunId, runId)"
         },
         {
-          "line": 68,
+          "line": 71,
           "expression": "assert.ok( value.kind === 'private native pilot requested identity and output binding; not passing evidence' || value.kind === 'private blocked native pilot preflight identity; not passing evidence', )"
         },
         {
-          "line": 73,
+          "line": 76,
           "expression": "assert.equal(value.requestedAttemptId, `${runId}:first`)"
         },
         {
-          "line": 74,
+          "line": 77,
           "expression": "assert.equal(value.outputRoot, root)"
         },
         {
-          "line": 75,
+          "line": 78,
           "expression": "assert.equal(value.outputParent, path.dirname(root))"
         },
         {
-          "line": 77,
+          "line": 80,
           "expression": "assert.equal(artifact, 'execution-deadlines.private.json')"
         },
         {
-          "line": 78,
+          "line": 81,
           "expression": "assert.equal(value.kind, 'resolved public native execution bounds; not behavioral evidence')"
         },
         {
-          "line": 106,
+          "line": 109,
           "expression": "assert.equal(nativePilotExecutionAdapter(base), 'ios-save-retry')"
         },
         {
-          "line": 107,
+          "line": 110,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...base, platform: 'android', scenario: 'SCN-save-retry-android', }), 'android-save-retry', )"
         },
         {
-          "line": 115,
+          "line": 118,
           "expression": "assert.equal(nativePilotExecutionAdapter({ ...base, engine: 'detox' as never }), null)"
         },
         {
-          "line": 116,
+          "line": 119,
           "expression": "assert.equal(nativePilotExecutionAdapter({ ...base, mode: 'fixture' }), null)"
         },
         {
-          "line": 117,
+          "line": 120,
           "expression": "assert.equal(nativePilotExecutionAdapter({ ...base, platform: 'android' }), null)"
         },
         {
-          "line": 119,
+          "line": 122,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...base, platform, scenario: `SCN-training-${platform}` }), 'training', )"
         },
         {
-          "line": 123,
+          "line": 126,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...base, platform, engine: 'detox' as never, scenario: `SCN-training-${platform}`, }), null, )"
         },
         {
-          "line": 132,
+          "line": 135,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...base, platform, scenario: `SCN-session-${platform}`, }), platform === 'ios' ? 'ios-session' : 'android-session', )"
         },
         {
-          "line": 140,
+          "line": 143,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...base, platform, engine: 'detox' as never, scenario: `SCN-session-${platform}`, }), null, )"
         },
         {
-          "line": 149,
+          "line": 152,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...base, platform, mode: 'fixture', scenario: `SCN-session-${platform}`, }), null, )"
         },
         {
-          "line": 158,
+          "line": 161,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...base, platform, scenario: `SCN-session-${platform === 'ios' ? 'android' : 'ios'}`, }), null, )"
         },
         {
-          "line": 173,
+          "line": 176,
           "expression": "assert.equal(nativePilotExecutionAdapter(camera), 'camera')"
         },
         {
-          "line": 174,
+          "line": 177,
           "expression": "assert.equal(nativePilotExecutionAdapter({ ...camera, engine: 'detox' as never }), null)"
         },
         {
-          "line": 175,
+          "line": 178,
           "expression": "assert.equal(nativePilotExecutionAdapter({ ...camera, mode: 'fixture' }), null)"
         },
         {
-          "line": 176,
+          "line": 179,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...camera, platform: 'android', scenario: 'SCN-camera-denied-android', }), 'camera', )"
         },
         {
-          "line": 194,
+          "line": 197,
           "expression": "assert.equal(nativePilotExecutionAdapter(args), 'connection')"
         },
         {
-          "line": 195,
+          "line": 198,
           "expression": "assert.equal(nativePilotExecutionAdapter({ ...args, engine: 'detox' as never }), null)"
         },
         {
-          "line": 196,
+          "line": 199,
           "expression": "assert.equal(nativePilotExecutionAdapter({ ...args, mode: 'fixture' }), null)"
         },
         {
-          "line": 197,
+          "line": 200,
           "expression": "assert.equal( nativePilotExecutionAdapter({ ...args, platform: platform === 'ios' ? 'android' : 'ios', }), null, )"
         },
         {
-          "line": 228,
+          "line": 231,
           "expression": "assert.deepEqual(received, options)"
         },
         {
-          "line": 231,
+          "line": 234,
           "expression": "assert.equal(calls, 1)"
         },
         {
-          "line": 232,
+          "line": 235,
           "expression": "assert.deepEqual(result, sentinel)"
         },
         {
-          "line": 235,
+          "line": 238,
           "expression": "assert.rejects( runIosCameraAttemptForPublicDispatch({ ...options, deadlineAt: performance.now() - 1 }, () => { expiredCalls++; return Promise.resolve(sentinel as never); }), /deadline must remain in the original future "
         },
         {
-          "line": 242,
+          "line": 245,
           "expression": "assert.equal(expiredCalls, 0, 'Expired public deadline must reject before capture dispatch')"
         },
         {
-          "line": 245,
+          "line": 248,
           "expression": "assert.equal(resolveIosCameraDiagnosticOption({ requested: true, selection }), true)"
         },
         {
-          "line": 246,
+          "line": 249,
           "expression": "assert.equal(resolveIosCameraDiagnosticOption({ requested: undefined, selection }), undefined)"
         },
         {
-          "line": 247,
+          "line": 250,
           "expression": "assert.throws( () => resolveIosCameraDiagnosticOption({ requested: true, selection: { ...selection, arguments: { ...selection.arguments, engine: 'detox' as never }, }, }), /requires the iOS Maestro camera integration sel"
         },
         {
-          "line": 261,
+          "line": 264,
           "expression": "assert.deepEqual(received, diagnosticOptions)"
         },
         {
-          "line": 265,
+          "line": 268,
           "expression": "assert.deepEqual(diagnosticResult, sentinel)"
         },
         {
-          "line": 267,
+          "line": 270,
           "expression": "assert.rejects( runIosCameraAttemptForPublicDispatch( { ...options, selection: { ...selection, arguments: { ...selection.arguments, platform: 'android' }, }, }, () => Promise.resolve(sentinel as never), ), /reviewed iOS "
         },
         {
-          "line": 280,
+          "line": 283,
           "expression": "assert.rejects( runIosCameraAttemptForPublicDispatch( { ...diagnosticOptions, selection: { ...selection, arguments: { ...selection.arguments, scenario: 'SCN-session-ios' }, }, }, () => Promise.resolve(sentinel as never),"
         },
         {
-          "line": 296,
+          "line": 299,
           "expression": "assert.deepEqual(nativeCameraPublicEvidenceBindings['NAT-camera-normal-entry'], { ui: ['camera-prompt.png', 'camera-prompt-hierarchy.json'], api: ['transport-observations.private.json'], sql: ['camera-connection-before.p"
         },
         {
-          "line": 301,
+          "line": 304,
           "expression": "assert.deepEqual(nativeCameraPublicEvidenceBindings['NAT-camera-denial-guidance'], { ui: ['camera-guidance.png', 'camera-guidance-hierarchy.json'], })"
         },
         {
-          "line": 304,
+          "line": 307,
           "expression": "assert.deepEqual(nativeCameraPublicEvidenceBindings['NAT-camera-manual-submit'], { ui: [ 'camera-manual.png', 'camera-manual-hierarchy.json', 'camera-pending.png', 'camera-pending-hierarchy.json', ], api: ['transport-obs"
         },
         {
-          "line": 314,
+          "line": 317,
           "expression": "assert.deepEqual(nativeCameraPublicEvidenceBindings['NAT-camera-unrelated-state'], { sql: [ 'camera-isolation-before.private.json', 'camera-isolation-after.private.json', 'camera-training-before.private.json', 'camera-tr"
         },
         {
-          "line": 325,
+          "line": 328,
           "expression": "assert.equal(all.includes('camera-training-before.private.json'), true)"
         },
         {
-          "line": 326,
+          "line": 329,
           "expression": "assert.equal(all.includes('camera-training-after.private.json'), true)"
         },
         {
-          "line": 327,
+          "line": 330,
           "expression": "assert.equal(all.includes('transport-observations.private.json'), true)"
         },
         {
-          "line": 383,
+          "line": 386,
           "expression": "assert.rejects( requireCameraCallerOutputRootBinding({ captureRoot, outputRoot, requestedRunId, captureRunId, deadlineAt: deadlineAt + 1, report, }), /strictEqual|Expected values|AssertionError/, 'A deadline changed afte"
         },
         {
-          "line": 399,
+          "line": 402,
           "expression": "assert.rejects( requireCameraCallerOutputRootBinding({ captureRoot, outputRoot, requestedRunId, captureRunId, deadlineAt, report: legacyBudgetOnly, }), /binding is missing/, 'A budget-only binding must not stand in for t"
         },
         {
-          "line": 459,
+          "line": 462,
           "expression": "assert.equal(captureOptions.requestedRunId, requestedRunId)"
         },
         {
-          "line": 460,
+          "line": 463,
           "expression": "assert.equal(captureOptions.callerOutputRoot, outputRoot)"
         },
         {
-          "line": 461,
+          "line": 464,
           "expression": "assert.equal(captureOptions.deadlineAtMonotonicMs, deadlineAt)"
         },
         {
-          "line": 462,
+          "line": 465,
           "expression": "assert.equal(captureOptions.signal, controller.signal)"
         },
         {
-          "line": 463,
+          "line": 466,
           "expression": "assert.equal(captureOptions.credentialInteractionDiagnostic, true)"
         },
         {
-          "line": 542,
+          "line": 545,
           "expression": "assert.equal(input.signal, controller.signal)"
         },
         {
-          "line": 575,
+          "line": 578,
           "expression": "assert.equal(passed.result.verificationResult, 'passed')"
         },
         {
-          "line": 576,
+          "line": 579,
           "expression": "assert.equal(passed.result.artifactRoot, passed.captureRoot)"
         },
         {
-          "line": 577,
+          "line": 580,
           "expression": "assert.equal(passed.result.stagedManifestPath, null)"
         },
         {
-          "line": 578,
+          "line": 581,
           "expression": "assert.deepEqual(passed.trace, [ `capture:${passed.captureRoot}`, 'observe', `cleanup:${passed.captureRoot}`, 'validate', ])"
         },
         {
-          "line": 584,
+          "line": 587,
           "expression": "assert.notEqual(passed.captureRoot, passed.outputRoot)"
         },
         {
-          "line": 586,
+          "line": 589,
           "expression": "assert.equal((await stat(terminalSidecar)).mode & 0o777, 0o600)"
         },
         {
-          "line": 592,
+          "line": 595,
           "expression": "assert.equal(terminalReport.verificationResult, 'passed')"
         },
         {
-          "line": 593,
+          "line": 596,
           "expression": "assert.equal(terminalReport.stagedManifestPath, null)"
         },
         {
-          "line": 594,
+          "line": 597,
           "expression": "assert.equal(terminalReport.nativePassingCases, 0)"
         },
         {
-          "line": 599,
+          "line": 602,
           "expression": "assert.equal(rejected.result.verificationResult, 'failed')"
         },
         {
-          "line": 600,
+          "line": 603,
           "expression": "assert.equal(rejected.result.stagedManifestPath, null)"
         },
         {
-          "line": 601,
+          "line": 604,
           "expression": "assert.deepEqual(rejected.trace, [ `capture:${rejected.captureRoot}`, 'observe', `cleanup:${rejected.captureRoot}`, ])"
         },
         {
-          "line": 610,
+          "line": 613,
           "expression": "assert.equal(cancelled.result.verificationResult, 'not-executed')"
         },
         {
-          "line": 611,
+          "line": 614,
           "expression": "assert.equal(cancelled.result.stagedManifestPath, null)"
         },
         {
-          "line": 612,
+          "line": 615,
           "expression": "assert.deepEqual(cancelled.trace, [ `capture:${cancelled.captureRoot}`, 'observe', `cleanup:${cancelled.captureRoot}`, ])"
         },
         {
-          "line": 621,
+          "line": 624,
           "expression": "assert.equal( nativePilotCleanupStatus({ runtime: { externalCleanupResult: 'passed', captureCleanup: 'not-acquired' }, stage: 'runtime-execution-failed', }), 'not-acquired', )"
         },
         {
-          "line": 629,
+          "line": 632,
           "expression": "assert.equal( nativePilotCleanupStatus({ runtime: { externalCleanupResult, captureCleanup: 'not-acquired' }, stage: 'runtime-execution-failed', }), 'failed-recovery-ledger-retained', )"
         },
         {
-          "line": 636,
+          "line": 639,
           "expression": "assert.equal( nativePilotCleanupStatus({ runtime: { externalCleanupResult: 'passed', captureCleanup: 'cleaned' }, stage: 'passed', }), 'cleaned', )"
         },
         {
-          "line": 649,
+          "line": 652,
           "expression": "assert.equal( nativePilotCleanupStatus({ runtime: { externalCleanupResult: 'passed', captureCleanup }, stage: 'runtime-cleanup-failed', }), 'failed-recovery-ledger-retained', )"
         },
         {
-          "line": 656,
+          "line": 659,
           "expression": "assert.equal(nativePilotCleanupStatus({ stage: 'invalid-environment' }), 'not-acquired')"
         },
         {
-          "line": 657,
+          "line": 660,
           "expression": "assert.equal( nativePilotCleanupStatus({ stage: 'runtime-execution-failed' }), 'failed-recovery-ledger-retained', )"
         },
         {
-          "line": 683,
+          "line": 686,
           "expression": "assert.equal(childFailure?.result, 'harness-blocked')"
         },
         {
-          "line": 684,
+          "line": 687,
           "expression": "assert.equal(childFailure?.exitCode, 2)"
         },
         {
-          "line": 685,
+          "line": 688,
           "expression": "assert.equal(childFailure?.blockerCode, 'runtime-execution-failed')"
         },
         {
-          "line": 693,
+          "line": 696,
           "expression": "assert.equal(classifiedChildFailure?.blockerCode, 'runtime-execution-failed')"
         },
         {
-          "line": 694,
+          "line": 697,
           "expression": "assert.match(classifiedChildFailure?.detail ?? '', /child-failed/)"
         },
         {
-          "line": 707,
+          "line": 710,
           "expression": "assert.equal(outputLimitDiagnostic.execution, 'output-limit')"
         },
         {
-          "line": 708,
+          "line": 711,
           "expression": "assert.deepEqual(outputLimitDiagnostic.outputFailure, { reason: 'limit', stream: 'stdout', bytes: 42, message: 'bounded stdout exceeded its configured limit', })"
         },
         {
-          "line": 722,
+          "line": 725,
           "expression": "assert.equal(outputFailureDiagnostic.execution, 'output-failed')"
         },
         {
-          "line": 728,
+          "line": 731,
           "expression": "assert.equal(censusPreservesPrecedence.execution, 'harness-blocked')"
         },
         {
-          "line": 740,
+          "line": 743,
           "expression": "assert.equal(outputDecision?.blockerCode, 'runtime-execution-failed')"
         },
         {
-          "line": 741,
+          "line": 744,
           "expression": "assert.match(outputDecision?.detail ?? '', /output-limit/)"
         },
         {
-          "line": 753,
+          "line": 756,
           "expression": "assert.equal(outputDoesNotReplaceDeadline?.blockerCode, 'native-command-deadline')"
         },
         {
-          "line": 766,
+          "line": 769,
           "expression": "assert.equal(censusFailure?.blockerCode, 'runtime-verification-failed')"
         },
         {
-          "line": 767,
+          "line": 770,
           "expression": "assert.match(censusFailure?.detail ?? '', /1 original native census diagnostic/)"
         },
         {
-          "line": 775,
+          "line": 778,
           "expression": "assert.equal(cleanupFailure?.blockerCode, 'runtime-cleanup-failed')"
         },
         {
-          "line": 776,
+          "line": 779,
           "expression": "assert.equal(cleanupFailure?.exitCode, 2)"
         },
         {
-          "line": 788,
+          "line": 791,
           "expression": "assert.equal(commandDeadline?.blockerCode, 'native-command-deadline')"
         },
         {
-          "line": 789,
+          "line": 792,
           "expression": "assert.equal(commandDeadline?.exitCode, 2)"
         },
         {
-          "line": 802,
+          "line": 805,
           "expression": "assert.equal(bootstrapDeadline?.blockerCode, 'runtime-bootstrap-deadline')"
         },
         {
-          "line": 803,
+          "line": 806,
           "expression": "assert.equal(bootstrapDeadline?.exitCode, 2)"
         },
         {
-          "line": 815,
+          "line": 818,
           "expression": "assert.equal(bootstrapWithUnknownChild?.blockerCode, 'runtime-bootstrap-deadline')"
         },
         {
-          "line": 821,
+          "line": 824,
           "expression": "assert.equal(bootstrapWithOutputFailure?.blockerCode, 'runtime-execution-failed')"
         },
         {
-          "line": 836,
+          "line": 839,
           "expression": "assert.equal(postCaptureFailure?.blockerCode, 'runtime-post-capture-failed')"
         },
         {
-          "line": 837,
+          "line": 840,
           "expression": "assert.equal(postCaptureFailure?.exitCode, 2)"
         },
         {
-          "line": 845,
+          "line": 848,
           "expression": "assert.equal(wholeCaptureDeadline?.blockerCode, 'native-whole-capture-deadline')"
         },
         {
-          "line": 846,
+          "line": 849,
           "expression": "assert.equal(wholeCaptureDeadline?.exitCode, 2)"
         },
         {
-          "line": 861,
+          "line": 864,
           "expression": "assert.equal(cancellation?.result, 'cancelled')"
         },
         {
-          "line": 862,
+          "line": 865,
           "expression": "assert.equal(cancellation?.exitCode, 143)"
         },
         {
-          "line": 863,
+          "line": 866,
           "expression": "assert.equal(cancellation?.blockerCode, 'cancelled-runtime')"
         },
         {
-          "line": 910,
+          "line": 913,
           "expression": "assert.ok(child.kill(signal))"
         },
         {
-          "line": 922,
+          "line": 925,
           "expression": "assert.equal(timedOut, false, 'owned preflight subprocess exceeded 30 seconds')"
         },
         {
-          "line": 923,
+          "line": 926,
           "expression": "assert.equal(code, exitCode)"
         },
         {
-          "line": 924,
+          "line": 927,
           "expression": "assert.equal(signalled, true)"
         },
         {
-          "line": 925,
+          "line": 928,
           "expression": "assert.equal(stderr, '')"
         },
         {
-          "line": 927,
+          "line": 930,
           "expression": "assert.ok(match)"
-        },
-        {
-          "line": 932,
-          "expression": "assert.equal(row.result, 'cancelled')"
-        },
-        {
-          "line": 933,
-          "expression": "assert.equal(row.exitCode, exitCode)"
-        },
-        {
-          "line": 934,
-          "expression": "assert.equal(row.blocker.code, 'cancelled-preflight')"
         },
         {
           "line": 935,
-          "expression": "assert.equal(row.childExitCode, null)"
+          "expression": "assert.equal(row.result, 'cancelled')"
         },
         {
           "line": 936,
-          "expression": "assert.deepEqual(row.cleanup, { status: 'not-acquired', ownedResourceIds: [], recoveryRecordPath: null, })"
+          "expression": "assert.equal(row.exitCode, exitCode)"
         },
         {
-          "line": 941,
-          "expression": "assert.deepEqual(row.assertions, [])"
+          "line": 937,
+          "expression": "assert.equal(row.blocker.code, 'cancelled-preflight')"
         },
         {
-          "line": 943,
-          "expression": "assert.equal(new Set(row.artifacts).size, row.artifacts.length)"
-        },
-        {
-          "line": 945,
-          "expression": "assert.ok( artifact === 'attempt-identity.private.json' || artifact === 'execution-deadlines.private.json', )"
-        },
-        {
-          "line": 1138,
-          "expression": "assert.equal(result.code, 2)"
-        },
-        {
-          "line": 1139,
-          "expression": "assert.equal(result.stderr, '')"
-        },
-        {
-          "line": 1140,
-          "expression": "assert.ok(!result.stdout.includes(privateValue))"
-        },
-        {
-          "line": 1142,
-          "expression": "assert.ok(match)"
-        },
-        {
-          "line": 1145,
-          "expression": "assert.ok( file.startsWith(path.join(repository, '.qa/artifacts/native-pilot-attempts') + path.sep), )"
-        },
-        {
-          "line": 1148,
-          "expression": "assert.equal(await realpath(file), file)"
-        },
-        {
-          "line": 1149,
-          "expression": "assert.equal((await stat(root)).mode & 0o777, 0o700)"
-        },
-        {
-          "line": 1150,
-          "expression": "assert.equal((await stat(file)).mode & 0o777, 0o600)"
-        },
-        {
-          "line": 1155,
-          "expression": "assert.equal(row.blocker.code, item.code)"
-        },
-        {
-          "line": 1156,
-          "expression": "assert.equal(row.result, 'harness-blocked')"
-        },
-        {
-          "line": 1157,
-          "expression": "assert.equal(row.exitCode, 2)"
-        },
-        {
-          "line": 1158,
+          "line": 938,
           "expression": "assert.equal(row.childExitCode, null)"
         },
         {
-          "line": 1159,
-          "expression": "assert.equal(row.cleanup.status, 'not-acquired')"
+          "line": 939,
+          "expression": "assert.deepEqual(row.cleanup, { status: 'not-acquired', ownedResourceIds: [], recoveryRecordPath: null, })"
         },
         {
-          "line": 1160,
-          "expression": "assert.deepEqual(row.cleanup.ownedResourceIds, [])"
-        },
-        {
-          "line": 1161,
+          "line": 944,
           "expression": "assert.deepEqual(row.assertions, [])"
         },
         {
+          "line": 946,
+          "expression": "assert.equal(new Set(row.artifacts).size, row.artifacts.length)"
+        },
+        {
+          "line": 948,
+          "expression": "assert.ok( artifact === 'attempt-identity.private.json' || artifact === 'execution-deadlines.private.json', )"
+        },
+        {
+          "line": 1150,
+          "expression": "assert.equal(result.code, 2)"
+        },
+        {
+          "line": 1151,
+          "expression": "assert.equal(result.stderr, '')"
+        },
+        {
+          "line": 1152,
+          "expression": "assert.ok(!result.stdout.includes(privateValue))"
+        },
+        {
+          "line": 1154,
+          "expression": "assert.ok(match)"
+        },
+        {
+          "line": 1157,
+          "expression": "assert.ok( file.startsWith(path.join(repository, '.qa/artifacts/native-pilot-attempts') + path.sep), )"
+        },
+        {
+          "line": 1160,
+          "expression": "assert.equal(await realpath(file), file)"
+        },
+        {
+          "line": 1161,
+          "expression": "assert.equal((await stat(root)).mode & 0o777, 0o700)"
+        },
+        {
           "line": 1162,
-          "expression": "assert.deepEqual( row.artifacts, item.code === 'native-host-lock-required' ? ['attempt-identity.private.json', 'execution-deadlines.private.json'] : ['attempt-identity.private.json'], )"
+          "expression": "assert.equal((await stat(file)).mode & 0o777, 0o600)"
+        },
+        {
+          "line": 1167,
+          "expression": "assert.equal(row.blocker.code, item.code)"
+        },
+        {
+          "line": 1168,
+          "expression": "assert.equal(row.result, 'harness-blocked')"
+        },
+        {
+          "line": 1169,
+          "expression": "assert.equal(row.exitCode, 2)"
+        },
+        {
+          "line": 1170,
+          "expression": "assert.equal(row.childExitCode, null)"
         },
         {
           "line": 1171,
-          "expression": "assert.deepEqual( row.repositories.map((source) => source.name), ['client', 'server'], )"
+          "expression": "assert.equal(row.cleanup.status, 'not-acquired')"
         },
         {
-          "line": 1176,
-          "expression": "assert.deepEqual(row.repositoryEvidence, { status: 'observed', missing: [], reason: null })"
+          "line": 1172,
+          "expression": "assert.deepEqual(row.cleanup.ownedResourceIds, [])"
         },
         {
-          "line": 1178,
-          "expression": "assert.match(source.sha, /^[a-f0-9]{40}$/)"
+          "line": 1173,
+          "expression": "assert.deepEqual(row.assertions, [])"
         },
         {
-          "line": 1179,
-          "expression": "assert.match(source.workingTreeHash!, /^[a-f0-9]{64}$/)"
-        },
-        {
-          "line": 1182,
-          "expression": "assert.equal(row.scenarioId, 'invalid-selection')"
+          "line": 1174,
+          "expression": "assert.deepEqual( row.artifacts, item.code === 'native-host-lock-required' ? ['attempt-identity.private.json', 'execution-deadlines.private.json'] : ['attempt-identity.private.json'], )"
         },
         {
           "line": 1183,
-          "expression": "assert.ok(!bytes.includes(privateValue))"
-        },
-        {
-          "line": 1184,
-          "expression": "assert.rejects(writeFile(file, 'must not overwrite', { flag: 'wx' }), { code: 'EEXIST' })"
-        },
-        {
-          "line": 1185,
-          "expression": "assert.equal(await readFile(file, 'utf8'), bytes)"
+          "expression": "assert.deepEqual( row.repositories.map((source) => source.name), ['client', 'server'], )"
         },
         {
           "line": 1188,
-          "expression": "assert.equal(new Set(ids).size, cases.length)"
+          "expression": "assert.deepEqual(row.repositoryEvidence, { status: 'observed', missing: [], reason: null })"
+        },
+        {
+          "line": 1190,
+          "expression": "assert.match(source.sha, /^[a-f0-9]{40}$/)"
+        },
+        {
+          "line": 1191,
+          "expression": "assert.match(source.workingTreeHash!, /^[a-f0-9]{64}$/)"
+        },
+        {
+          "line": 1194,
+          "expression": "assert.equal(row.scenarioId, 'invalid-selection')"
+        },
+        {
+          "line": 1195,
+          "expression": "assert.ok(!bytes.includes(privateValue))"
         },
         {
           "line": 1196,
-          "expression": "assert.rejects(repositoryIdentity(root, 'fixture'))"
+          "expression": "assert.rejects(writeFile(file, 'must not overwrite', { flag: 'wx' }), { code: 'EEXIST', })"
         },
         {
-          "line": 1210,
-          "expression": "assert.equal(clean.name, 'fixture')"
+          "line": 1199,
+          "expression": "assert.equal(await readFile(file, 'utf8'), bytes)"
+        },
+        {
+          "line": 1202,
+          "expression": "assert.equal(new Set(ids).size, cases.length)"
         },
         {
           "line": 1211,
-          "expression": "assert.equal(clean.dirty, false)"
-        },
-        {
-          "line": 1214,
-          "expression": "assert.equal(first.dirty, true)"
-        },
-        {
-          "line": 1215,
-          "expression": "assert.notEqual(first.workingTreeHash, clean.workingTreeHash)"
-        },
-        {
-          "line": 1218,
-          "expression": "assert.equal(second.sha, clean.sha)"
-        },
-        {
-          "line": 1219,
-          "expression": "assert.notEqual(second.workingTreeHash, first.workingTreeHash)"
-        },
-        {
-          "line": 1222,
-          "expression": "assert.notEqual(modified.workingTreeHash, second.workingTreeHash)"
+          "expression": "assert.rejects(repositoryIdentity(root, 'fixture'))"
         },
         {
           "line": 1225,
-          "expression": "assert.equal(deleted.dirty, true)"
+          "expression": "assert.equal(clean.name, 'fixture')"
         },
         {
           "line": 1226,
+          "expression": "assert.equal(clean.dirty, false)"
+        },
+        {
+          "line": 1229,
+          "expression": "assert.equal(first.dirty, true)"
+        },
+        {
+          "line": 1230,
+          "expression": "assert.notEqual(first.workingTreeHash, clean.workingTreeHash)"
+        },
+        {
+          "line": 1233,
+          "expression": "assert.equal(second.sha, clean.sha)"
+        },
+        {
+          "line": 1234,
+          "expression": "assert.notEqual(second.workingTreeHash, first.workingTreeHash)"
+        },
+        {
+          "line": 1237,
+          "expression": "assert.notEqual(modified.workingTreeHash, second.workingTreeHash)"
+        },
+        {
+          "line": 1240,
+          "expression": "assert.equal(deleted.dirty, true)"
+        },
+        {
+          "line": 1241,
           "expression": "assert.notEqual(deleted.workingTreeHash, modified.workingTreeHash)"
         },
         {
-          "line": 1252,
+          "line": 1267,
           "expression": "assert.rejects(repositoryIdentity(root, 'fixture', { signal: beforeGit.signal }))"
         },
         {
-          "line": 1255,
+          "line": 1270,
           "expression": "assert.rejects( repositoryIdentity(root, 'fixture', { signal: afterRead.signal, afterFirstRead: () => afterRead.abort('cancel-after-first-read'), }), )"
         },
         {
-          "line": 1261,
+          "line": 1276,
           "expression": "assert.equal(afterRead.signal.aborted, true)"
         },
         {
-          "line": 1286,
+          "line": 1301,
           "expression": "assert.rejects( repositoryIdentity(root, 'fixture', { signal: controller.signal, afterOpen: () => controller.abort('cancel-after-open'), afterDescriptorClose: () => { descriptorClosed = true; }, }), )"
         },
         {
-          "line": 1295,
+          "line": 1310,
           "expression": "assert.equal(descriptorClosed, true)"
         },
         {
-          "line": 1306,
+          "line": 1321,
           "expression": "assert.match(runner, /readRepositoryIdentityWithSignal/)"
         },
         {
-          "line": 1307,
+          "line": 1322,
           "expression": "assert.match(runner, /interruptedBeforeIdentity/)"
         },
         {
-          "line": 1308,
+          "line": 1323,
           "expression": "assert.match(runner, /createRepositoryObservation/)"
         },
         {
-          "line": 1309,
+          "line": 1324,
           "expression": "assert.match(runner, /repositoryObservation/)"
         },
         {
-          "line": 1310,
+          "line": 1325,
           "expression": "assert.match(runner, /repositoryEvidenceForReceipt/)"
         },
         {
-          "line": 1311,
+          "line": 1326,
           "expression": "assert.match(runner, /repositoryRootsBefore/)"
         },
         {
-          "line": 1329,
+          "line": 1344,
           "expression": "assert.equal(observation.evidence.status, 'partial')"
         },
         {
-          "line": 1330,
+          "line": 1345,
           "expression": "assert.deepEqual(observation.evidence.missing, ['server'])"
         },
         {
-          "line": 1331,
+          "line": 1346,
           "expression": "assert.deepEqual( observation.sources.map((source) => source.name), ['client'], )"
         },
         {
-          "line": 1335,
+          "line": 1350,
           "expression": "assert.equal(observation.roots.client, clientRoot)"
         },
         {
-          "line": 1336,
+          "line": 1351,
           "expression": "assert.equal(observation.roots.server, serverRoot)"
         },
         {
-          "line": 1337,
+          "line": 1352,
           "expression": "assert.equal( observation.sources.some((source) => source.name === 'server'), false, )"
         },
         {
-          "line": 1364,
+          "line": 1379,
           "expression": "assert.equal(observation.evidence.status, 'partial')"
         },
         {
-          "line": 1365,
+          "line": 1380,
           "expression": "assert.deepEqual(observation.evidence.missing, ['client'])"
         },
         {
-          "line": 1366,
+          "line": 1381,
           "expression": "assert.deepEqual( observation.sources.map((source) => source.name), ['server'], )"
         },
         {
-          "line": 1370,
+          "line": 1385,
           "expression": "assert.equal(observation.roots.client, clientRoot)"
         },
         {
-          "line": 1371,
+          "line": 1386,
           "expression": "assert.equal(observation.roots.server, serverRoot)"
         },
         {
-          "line": 1400,
+          "line": 1415,
           "expression": "assert.equal(observation.evidence.status, 'unknown')"
         },
         {
-          "line": 1401,
+          "line": 1416,
           "expression": "assert.deepEqual(observation.evidence.missing, ['client', 'server'])"
         },
         {
-          "line": 1402,
+          "line": 1417,
           "expression": "assert.deepEqual(observation.sources, [])"
         },
         {
-          "line": 1403,
+          "line": 1418,
           "expression": "assert.equal(descriptorClosed, true)"
         },
         {
-          "line": 1404,
+          "line": 1419,
           "expression": "assert.equal(serverReadCalled, false)"
         },
         {
-          "line": 1430,
+          "line": 1445,
           "expression": "assert.equal(observation.evidence.status, 'unknown')"
         },
         {
-          "line": 1431,
+          "line": 1446,
           "expression": "assert.deepEqual(observation.evidence.missing, ['client', 'server'])"
         },
         {
-          "line": 1432,
+          "line": 1447,
           "expression": "assert.equal(descriptorClosed, true)"
         },
         {
-          "line": 1446,
+          "line": 1461,
           "expression": "assert.match(runner, /readRepositorySourcesBestEffort\\(root, controller\\.signal\\)/)"
         },
         {
-          "line": 1447,
+          "line": 1462,
           "expression": "assert.match(runner, /repositoryEvidenceForReceipt && !signalCode && !deadlineExpired/)"
         },
         {
-          "line": 1448,
+          "line": 1463,
           "expression": "assert.match(runner, /no source rows were synthesized/)"
         },
         {
-          "line": 1449,
+          "line": 1464,
           "expression": "assert.match(runner, /code: 'runtime-verification-failed'/)"
         }
       ]
@@ -58046,7 +58046,7 @@
       "id": "TST-5ba5ce77af8a",
       "repo": "client",
       "path": "tests/ci/owned-android-emulator.test.ts",
-      "contentHash": "417763576a111d2886a209183e2a1fbec84c8ba217b09015fbf4985224f99a4b",
+      "contentHash": "f539696bad5cdce83e601624cea22c5bea95ccd3b6162ff1b4fb958c96bfb30b",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/ci/android-runner-slot.ts",
@@ -58133,8 +58133,12 @@
           "line": 558
         },
         {
-          "purpose": "Android preflight failure records exact acquisition root without creating target resources",
+          "purpose": "Android acquisition refuses a non-macOS host before writing anything",
           "line": 586
+        },
+        {
+          "purpose": "Android preflight failure records exact acquisition root without creating target resources",
+          "line": 614
         }
       ],
       "assertions": [
@@ -58431,39 +58435,51 @@
           "expression": "assert.throws( () => localAndroidPilotEnvironment({ ...slot, userHome: '/unsafe java/home' }, '/sdk'), /whitespace/, )"
         },
         {
-          "line": 593,
-          "expression": "assert.rejects( acquireOwnedAndroidEmulator({ runtimeParent, artifactRoot, sdkRoot: '/no-sdk-is-read', systemImage: 'invalid', }), /Unsafe or unsupported/, )"
+          "line": 596,
+          "expression": "assert.rejects( acquireOwnedAndroidEmulator({ runtimeParent, artifactRoot, sdkRoot: '/no-sdk-is-read', systemImage: 'invalid', }), /requires macOS\\/HVF/, )"
         },
         {
-          "line": 602,
+          "line": 605,
           "expression": "assert.deepEqual(await readdir(runtimeParent), [])"
         },
         {
-          "line": 607,
+          "line": 606,
+          "expression": "assert.deepEqual(await readdir(artifactRoot), [])"
+        },
+        {
+          "line": 624,
+          "expression": "assert.rejects( acquireOwnedAndroidEmulator({ runtimeParent, artifactRoot, sdkRoot: '/no-sdk-is-read', systemImage: 'invalid', }), /Unsafe or unsupported/, )"
+        },
+        {
+          "line": 633,
+          "expression": "assert.deepEqual(await readdir(runtimeParent), [])"
+        },
+        {
+          "line": 641,
           "expression": "assert.equal(intent.captureRunId, path.basename(artifactRoot))"
         },
         {
-          "line": 608,
+          "line": 642,
           "expression": "assert.equal(intent.runtimeParent, runtimeParent)"
         },
         {
-          "line": 609,
+          "line": 643,
           "expression": "assert.equal( intent.runtimeRoot, path.join(runtimeParent, `mychampions-pilot-${String(intent.runId)}`), )"
         },
         {
-          "line": 613,
+          "line": 647,
           "expression": "assert.equal( failure.kind, 'original Android preflight failure before target resource creation', )"
         },
         {
-          "line": 617,
+          "line": 651,
           "expression": "assert.equal(failure.runId, intent.runId)"
         },
         {
-          "line": 618,
+          "line": 652,
           "expression": "assert.equal(failure.runtimeRoot, intent.runtimeRoot)"
         },
         {
-          "line": 619,
+          "line": 653,
           "expression": "assert.deepEqual((await readdir(artifactRoot)).sort(), [ 'android-acquisition-owner.private.json', 'android-preflight-failure.private.json', ])"
         }
       ]
@@ -61542,7 +61558,7 @@
       "id": "TST-dfc3a6679949",
       "repo": "client",
       "path": "tests/ci/prepare-exploration.test.ts",
-      "contentHash": "4b2bf5c004ad449ce091adcf21885a62863dd50b77c780f0d13207f33e552c59",
+      "contentHash": "612ae1497ea389bf13816836c6ba51a1707815c42268d8578b6f331ee8fdbd6d",
       "command": "yarn test:unit",
       "ownerPaths": ["scripts/testing/prepare-exploration.ts"],
       "requirementReferences": [],
@@ -61563,248 +61579,248 @@
       "assertionPurposes": [
         {
           "purpose": "charter registry contains the five bounded exploration definitions with all locale paths",
-          "line": 106
+          "line": 108
         },
         {
           "purpose": "preparation argument parsing requires explicit platform, locale and charter and rejects arbitrary runner options",
-          "line": 135
+          "line": 137
         },
         {
           "purpose": "missing target/build/connector context produces a private blocked preparation with no observations or fake pass",
-          "line": 179
+          "line": 181
         },
         {
           "purpose": "an independently supplied available context prepares only a redacted, not-run artifact",
-          "line": 226
+          "line": 228
         },
         {
           "purpose": "explicitly unavailable prerequisites remain blocked and never become an exploration result",
-          "line": 309
+          "line": 311
         },
         {
           "purpose": "supplied context and evidence require private ownership and integration origins stay loopback-only",
-          "line": 366
+          "line": 368
         },
         {
           "purpose": "context secrets, wrong connector, and unsafe artifact roots fail before an artifact can claim readiness",
-          "line": 447
+          "line": 449
         }
       ],
       "assertions": [
         {
-          "line": 94,
+          "line": 96,
           "expression": "assert.ok(evidenceFile.startsWith(`${path.resolve(root)}${path.sep}`))"
         },
         {
-          "line": 108,
+          "line": 110,
           "expression": "assert.equal(charters.length, 5)"
         },
         {
-          "line": 109,
+          "line": 111,
           "expression": "assert.deepEqual( charters.map((charter) => charter.id).sort(), [ 'EXP-COMPACT-KEYBOARD-SCROLL', 'EXP-INTERRUPTED-DRAFT-RELAUNCH', 'EXP-PERMISSION-FALLBACK', 'EXP-TWO-ROLE-CONSISTENCY', 'EXP-VALIDATION-SAVE-RECOVERY', ]."
         },
         {
-          "line": 120,
+          "line": 122,
           "expression": "assert.deepEqual(charter.locales, [...EXPLORATION_LOCALES])"
         },
         {
-          "line": 121,
+          "line": 123,
           "expression": "assert.equal(charter.budget.maxDurationMinutes, EXPLORATION_MAX_DURATION_MINUTES)"
         },
         {
-          "line": 122,
+          "line": 124,
           "expression": "assert.equal(charter.budget.maxUiActions, EXPLORATION_MAX_UI_ACTIONS)"
         },
         {
-          "line": 123,
+          "line": 125,
           "expression": "assert.equal(charter.budget.unchangedFailureLimit, EXPLORATION_UNCHANGED_FAILURE_LIMIT)"
         },
         {
-          "line": 124,
+          "line": 126,
           "expression": "assert.ok(charter.allowedActions.length >= 4)"
         },
         {
-          "line": 125,
+          "line": 127,
           "expression": "assert.ok(charter.excludedExternalEffects.length >= 3)"
         },
         {
-          "line": 126,
+          "line": 128,
           "expression": "assert.equal(charter.artifactPolicy.directoryMode, '0700')"
         },
         {
-          "line": 127,
+          "line": 129,
           "expression": "assert.equal(charter.artifactPolicy.fileMode, '0600')"
         },
         {
-          "line": 128,
+          "line": 130,
           "expression": "assert.equal(charter.artifactPolicy.rawEvidence, 'private-only')"
         },
         {
-          "line": 129,
+          "line": 131,
           "expression": "assert.equal(charter.artifactPolicy.publicSummary, 'redacted-status-only')"
         },
         {
-          "line": 130,
+          "line": 132,
           "expression": "assert.ok(charter.requirementPaths.length > 0)"
         },
         {
-          "line": 131,
+          "line": 133,
           "expression": "assert.ok(charter.scenario.sourceRefs.every((ref) => charter.requirementRefs.includes(ref)))"
         },
         {
-          "line": 136,
+          "line": 138,
           "expression": "assert.deepEqual( parsePrepareExplorationArguments([ '--locale=en-US', '--platform', 'ios', '--charter', 'EXP-COMPACT-KEYBOARD-SCROLL', ]), { charter: 'EXP-COMPACT-KEYBOARD-SCROLL', platform: 'ios', locale: 'en-US' }, )"
         },
         {
-          "line": 146,
+          "line": 148,
           "expression": "assert.deepEqual( parsePrepareExplorationArguments([ '--charter=EXP-PERMISSION-FALLBACK', '--platform=web', '--locale=pt-BR', '--context=ctx.json', '--artifact-root=.qa/artifacts/run', ]), { charter: 'EXP-PERMISSION-FALL"
         },
         {
-          "line": 176,
+          "line": 178,
           "expression": "assert.throws(() => parsePrepareExplorationArguments(argv))"
         },
         {
-          "line": 192,
+          "line": 194,
           "expression": "assert.equal(result.status, 'blocked')"
         },
         {
-          "line": 193,
+          "line": 195,
           "expression": "assert.equal(result.explorationStatus, 'not-run')"
-        },
-        {
-          "line": 198,
-          "expression": "assert.equal(coverage.gitSha, null)"
-        },
-        {
-          "line": 199,
-          "expression": "assert.deepEqual(coverage.attempts, [])"
         },
         {
           "line": 200,
-          "expression": "assert.deepEqual(coverage.observations, [])"
+          "expression": "assert.equal(coverage.gitSha, null)"
         },
         {
           "line": 201,
-          "expression": "assert.deepEqual(coverage.evidencePaths, [])"
-        },
-        {
-          "line": 203,
-          "expression": "assert.equal(scenario.status, 'blocked')"
-        },
-        {
-          "line": 204,
-          "expression": "assert.equal(scenario.blocker, 'PREPARATION_ONLY')"
-        },
-        {
-          "line": 208,
-          "expression": "assert.equal(preparation.explorationStatus, 'not-run')"
-        },
-        {
-          "line": 209,
-          "expression": "assert.equal(JSON.stringify(preparation).includes('do-not-store'), false)"
-        },
-        {
-          "line": 210,
-          "expression": "assert.deepEqual(preparation.observations, [])"
-        },
-        {
-          "line": 211,
-          "expression": "assert.deepEqual(preparation.attempts, [])"
-        },
-        {
-          "line": 212,
-          "expression": "assert.match( await readFile(path.join(artifactRoot, 'exploration.md'), 'utf8'), /PREPARATION_ONLY/, )"
-        },
-        {
-          "line": 218,
-          "expression": "assert.equal(rootMode, 0o700)"
-        },
-        {
-          "line": 219,
-          "expression": "assert.equal(fileMode, 0o600)"
-        },
-        {
-          "line": 220,
-          "expression": "assert.deepEqual((await readdir(path.join(artifactRoot, 'evidence'))).sort(), [])"
-        },
-        {
-          "line": 252,
-          "expression": "assert.equal(result.status, 'prepared')"
-        },
-        {
-          "line": 253,
-          "expression": "assert.deepEqual(result.runtimeRequalificationRequired, [ 'target', 'build', 'tool', 'locale', 'roles', 'fixture', 'reset', ])"
-        },
-        {
-          "line": 262,
-          "expression": "assert.deepEqual(result.blockedReasons, [ 'PREPARATION_ONLY: no native, browser, backend or connector action was executed', ])"
-        },
-        {
-          "line": 268,
-          "expression": "assert.deepEqual(coverage.target, { schemaVersion: 1, platform: 'web', locale: 'pt-BR', targetStatus: 'available', buildStatus: 'available', connectorStatus: 'available', roleStatuses: ['available', 'available'], fixture"
-        },
-        {
-          "line": 280,
           "expression": "assert.deepEqual(coverage.attempts, [])"
         },
         {
-          "line": 281,
+          "line": 202,
+          "expression": "assert.deepEqual(coverage.observations, [])"
+        },
+        {
+          "line": 203,
+          "expression": "assert.deepEqual(coverage.evidencePaths, [])"
+        },
+        {
+          "line": 205,
+          "expression": "assert.equal(scenario.status, 'blocked')"
+        },
+        {
+          "line": 206,
+          "expression": "assert.equal(scenario.blocker, 'PREPARATION_ONLY')"
+        },
+        {
+          "line": 210,
+          "expression": "assert.equal(preparation.explorationStatus, 'not-run')"
+        },
+        {
+          "line": 211,
+          "expression": "assert.equal(JSON.stringify(preparation).includes('do-not-store'), false)"
+        },
+        {
+          "line": 212,
+          "expression": "assert.deepEqual(preparation.observations, [])"
+        },
+        {
+          "line": 213,
+          "expression": "assert.deepEqual(preparation.attempts, [])"
+        },
+        {
+          "line": 214,
+          "expression": "assert.match( await readFile(path.join(artifactRoot, 'exploration.md'), 'utf8'), /PREPARATION_ONLY/, )"
+        },
+        {
+          "line": 220,
+          "expression": "assert.equal(rootMode, 0o700)"
+        },
+        {
+          "line": 221,
+          "expression": "assert.equal(fileMode, 0o600)"
+        },
+        {
+          "line": 222,
+          "expression": "assert.deepEqual((await readdir(path.join(artifactRoot, 'evidence'))).sort(), [])"
+        },
+        {
+          "line": 254,
+          "expression": "assert.equal(result.status, 'prepared')"
+        },
+        {
+          "line": 255,
+          "expression": "assert.deepEqual(result.runtimeRequalificationRequired, [ 'target', 'build', 'tool', 'locale', 'roles', 'fixture', 'reset', ])"
+        },
+        {
+          "line": 264,
+          "expression": "assert.deepEqual(result.blockedReasons, [ 'PREPARATION_ONLY: no native, browser, backend or connector action was executed', ])"
+        },
+        {
+          "line": 270,
+          "expression": "assert.deepEqual(coverage.target, { schemaVersion: 1, platform: 'web', locale: 'pt-BR', targetStatus: 'available', buildStatus: 'available', connectorStatus: 'available', roleStatuses: ['available', 'available'], fixture"
+        },
+        {
+          "line": 282,
+          "expression": "assert.deepEqual(coverage.attempts, [])"
+        },
+        {
+          "line": 283,
           "expression": "assert.equal( coverage.budgetEnforcement, 'declaration-only: T16-B must enforce wall-clock and actual UI-action counters', )"
         },
         {
-          "line": 285,
+          "line": 287,
           "expression": "assert.deepEqual(coverage.runtimeRequalification, { status: 'pending-independent-requalification', resources: ['target', 'build', 'tool', 'locale', 'roles', 'fixture', 'reset'], })"
         },
         {
-          "line": 289,
+          "line": 291,
           "expression": "assert.match(String(coverage.roleSessionProof), /pending/)"
         },
         {
-          "line": 290,
+          "line": 292,
           "expression": "assert.equal((coverage.scenarios as Record<string, unknown>[])[0].status, 'blocked')"
         },
         {
-          "line": 297,
+          "line": 299,
           "expression": "assert.equal(privatePreparation.includes('do-not-store'), false)"
         },
         {
-          "line": 300,
+          "line": 302,
           "expression": "assert.equal( (await stat(path.join(artifactRoot, 'preparation.private.json'))).mode & 0o777, 0o600, )"
         },
         {
-          "line": 358,
+          "line": 360,
           "expression": "assert.equal(result.status, 'blocked')"
         },
         {
-          "line": 360,
+          "line": 362,
           "expression": "assert.equal(result.explorationStatus, 'not-run')"
         },
         {
-          "line": 380,
+          "line": 382,
           "expression": "assert.rejects( prepareExploration( { charter: charter.id, platform: 'android', locale: 'en-US', contextPath, artifactRoot, }, { repositoryRoot }, ), /Exploration context must have mode 0600/, )"
         },
         {
-          "line": 396,
+          "line": 398,
           "expression": "assert.rejects( prepareExploration( { charter: charter.id, platform: 'android', locale: 'en-US', contextPath, artifactRoot, }, { repositoryRoot }, ), /Context evidence must have mode 0600/, )"
         },
         {
-          "line": 412,
+          "line": 414,
           "expression": "assert.rejects( prepareExploration( { charter: charter.id, platform: 'android', locale: 'en-US', contextPath, artifactRoot, }, { repositoryRoot }, ), /Context evidence immediate parent must be an owned private directory "
         },
         {
-          "line": 429,
+          "line": 431,
           "expression": "assert.rejects( prepareExploration( { charter: charter.id, platform: 'android', locale: 'en-US', contextPath, artifactRoot, }, { repositoryRoot }, ), /target\\.apiOrigin must use a loopback origin for local integration pr"
         },
         {
-          "line": 459,
+          "line": 461,
           "expression": "assert.rejects( prepareExploration( { charter: charter.id, platform: 'ios', locale: 'es-ES', contextPath: badSecretPath, artifactRoot: path.join(root, 'secret-run'), }, { repositoryRoot }, ), /unknown field password/, )"
         },
         {
-          "line": 480,
+          "line": 482,
           "expression": "assert.rejects( prepareExploration( { charter: charter.id, platform: 'ios', locale: 'es-ES', contextPath: wrongConnectorPath, artifactRoot: path.join(root, 'wrong-connector-run'), }, { repositoryRoot }, ), /connector doe"
         },
         {
-          "line": 493,
+          "line": 495,
           "expression": "assert.rejects( prepareExploration( { charter: charter.id, platform: 'ios', locale: 'es-ES', artifactRoot: os.tmpdir() }, { repositoryRoot }, ), /must remain within \\.qa\\/artifacts/, )"
         }
       ]
@@ -67677,7 +67693,7 @@
       "id": "TST-7860a750cdce",
       "repo": "client",
       "path": "tests/ci/t16-owned-runtime-v4.test.ts",
-      "contentHash": "3b355080ec2930ddfd61d5b1a1f1ba2a80e69fc05a5c837382ca03f282931c89",
+      "contentHash": "db80673458fddcf207f27058f4d4bac7a733471f01b70ba8a605ec5efec78eb5",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/native-pilot-invocation.ts",
@@ -67703,112 +67719,112 @@
       "assertionPurposes": [
         {
           "purpose": "qa:explore parser requires the checked-in charter, first attempt, and MCP command",
-          "line": 49
+          "line": 50
         },
         {
           "purpose": "qa:explore chooser only returns a declared reversible assertion",
-          "line": 73
+          "line": 74
         },
         {
           "purpose": "cold-reset validation binds the original receipt bytes and rejects later mutation",
-          "line": 112
+          "line": 113
         },
         {
           "purpose": "qa:explore route fails before native acquisition for a foreign source root",
-          "line": 172
+          "line": 174
         },
         {
           "purpose": "qa:explore rejects an expired absolute owner deadline before preparation",
-          "line": 184
+          "line": 186
         },
         {
           "purpose": "qa:explore package route points at the owned production entrypoint",
-          "line": 195
+          "line": 197
         },
         {
           "purpose": "MCP command verification rejects replacement and symlink substitution",
-          "line": 207
+          "line": 209
         },
         {
           "purpose": "T16 operation scope rejects pre-abort and late completion before publication",
-          "line": 250
+          "line": 252
         }
       ],
       "assertions": [
         {
-          "line": 51,
+          "line": 52,
           "expression": "assert.equal(parsed.charterId, 'EXP-TWO-ROLE-CONSISTENCY')"
         },
         {
-          "line": 52,
+          "line": 53,
           "expression": "assert.equal(parsed.attemptId, `${runId}:first`)"
         },
         {
-          "line": 53,
+          "line": 54,
           "expression": "assert.deepEqual(parsed.maestroArgs, ['mcp', 'server'])"
         },
         {
-          "line": 55,
+          "line": 56,
           "expression": "assert.throws( () => parseT16OwnedExplorationArguments( validArguments().map((value) => (value === 'mcp' ? 'stdio' : value)), ), /MCP argv must include the mcp subcommand/, )"
         },
         {
-          "line": 62,
+          "line": 63,
           "expression": "assert.throws( () => parseT16OwnedExplorationArguments( validArguments().map((value) => value.startsWith('--attempt-id=') ? `--attempt-id=${runId}:second` : value, ), ), /attempt must be the first attempt/, )"
         },
         {
-          "line": 98,
+          "line": 99,
           "expression": "assert.deepEqual(action, { id: 'Check the final relationship from the professional home', command: 'assertVisible', selector: { id: 'pro.home.screen' }, })"
         },
         {
-          "line": 109,
+          "line": 110,
           "expression": "assert.equal(noMatch, null)"
         },
         {
-          "line": 159,
+          "line": 161,
           "expression": "assert.equal(prepared.expectation.fixtureResetId, 'fixture-reset')"
         },
         {
-          "line": 163,
+          "line": 165,
           "expression": "assert.rejects( validateT16ColdResetBindingOnDisk(binding, repositoryRoot), /hash differs|identity changed|blocker/, )"
         },
         {
-          "line": 173,
+          "line": 175,
           "expression": "assert.rejects( import('../../scripts/testing/run-t16-owned-exploration').then(({ runT16OwnedExploration }) => runT16OwnedExploration({ repositoryRoot: '/tmp', args: parseT16OwnedExplorationArguments(validArguments()), }"
         },
         {
-          "line": 185,
+          "line": 187,
           "expression": "assert.rejects( runT16OwnedExploration({ repositoryRoot, args: parseT16OwnedExplorationArguments(validArguments()), deadlineAtMonotonicMs: Number(process.hrtime.bigint() / 1_000_000n) - 1, }), /deadline reached before pr"
         },
         {
-          "line": 201,
+          "line": 203,
           "expression": "assert.equal( packageJson.scripts?.['qa:explore'], 'tsx scripts/testing/run-t16-owned-exploration.ts', )"
         },
         {
-          "line": 226,
+          "line": 228,
           "expression": "assert.rejects( readOwnedMcpCommandObservation(commandPath, { signal: preAborted.signal }), /command read cancelled before preparation/, )"
         },
         {
-          "line": 230,
+          "line": 232,
           "expression": "assert.rejects( readOwnedMcpCommandObservation(commandPath, { deadlineAtMonotonicMs: Number(process.hrtime.bigint() / 1_000_000n) - 1, }), /descriptor read deadline reached/, )"
         },
         {
-          "line": 239,
+          "line": 241,
           "expression": "assert.rejects( verifyOwnedMcpCommand(command), /size changed|hash changed|identity changed/, )"
         },
         {
-          "line": 244,
+          "line": 246,
           "expression": "assert.rejects(readOwnedMcpCommandObservation(linkPath), /regular non-symlink|canonical/)"
         },
         {
-          "line": 255,
+          "line": 257,
           "expression": "assert.throws(() => preAbortedScope.check('preparation'), /cancelled before preparation/)"
         },
         {
-          "line": 266,
+          "line": 268,
           "expression": "assert.rejects( scope.wait('late operation', async () => { await new Promise((resolve) => setTimeout(resolve, 15)); completed = true; return 'late'; }), /deadline reached/, )"
         },
         {
-          "line": 274,
+          "line": 276,
           "expression": "assert.equal(completed, true)"
         }
       ]
@@ -67817,7 +67833,7 @@
       "id": "TST-e93835d2cfda",
       "repo": "client",
       "path": "tests/ci/t16b-outer-cleanup-reset-binding.test.ts",
-      "contentHash": "252de904fe9be6214d78cdcdecda9668463a6a4b8441da1a282a82f9eeee3c0b",
+      "contentHash": "c9aa463b81a7f6e7b11dba6ae99c78d55032ebfc914a3120f3e1a0577c9e2657",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/native-connection-attempt-binding.ts",
@@ -67842,136 +67858,136 @@
       "assertionPurposes": [
         {
           "purpose": "binds passed outer cleanup to the exact protected receipt and preserves facts",
-          "line": 103
+          "line": 105
         },
         {
           "purpose": "retains failed outer cleanup as failure with unknown facts, never false defaults",
-          "line": 123
+          "line": 125
         },
         {
           "purpose": "rejects a passed receipt that omits independent outer census facts",
-          "line": 156
+          "line": 158
         },
         {
           "purpose": "rejects a passed receipt with an incomplete backend resource projection",
-          "line": 173
+          "line": 175
         },
         {
           "purpose": "terminal projection rejects a forged passed outer binding before publication",
-          "line": 190
+          "line": 192
         },
         {
           "purpose": "keeps a clean MCP controller result blocked when outer cleanup is absent",
-          "line": 234
+          "line": 236
         },
         {
           "purpose": "keeps a shape-valid but unread parent binding blocked until protected reread",
-          "line": 252
+          "line": 254
         },
         {
           "purpose": "keeps a leaked MCP controller result blocked despite a passed-looking outer object",
-          "line": 270
+          "line": 272
         },
         {
           "purpose": "rejects a symlinked external cleanup receipt before parsing",
-          "line": 291
+          "line": 293
         },
         {
           "purpose": "binds reset, target, build, backend and SQL evidence through one parent selection bundle",
-          "line": 314
+          "line": 316
         },
         {
           "purpose": "rejects parent selection when reset evidence or attempt identity is missing",
-          "line": 336
+          "line": 338
         }
       ],
       "assertions": [
         {
-          "line": 111,
+          "line": 113,
           "expression": "assert.equal(binding.scope, 'outer-ios-native-session')"
         },
         {
-          "line": 112,
+          "line": 114,
           "expression": "assert.equal(binding.facts.result, 'passed')"
         },
         {
-          "line": 113,
+          "line": 115,
           "expression": "assert.equal(binding.facts.ownedDeviceAbsent, true)"
         },
         {
-          "line": 114,
+          "line": 116,
           "expression": "assert.equal(binding.facts.cacheAbsent, true)"
         },
         {
-          "line": 115,
+          "line": 117,
           "expression": "assert.equal(binding.source.path, 'external-cleanup.private.json')"
         },
         {
-          "line": 116,
+          "line": 118,
           "expression": "assert.equal(binding.source.sha256.length, 64)"
         },
         {
-          "line": 144,
+          "line": 146,
           "expression": "assert.equal(binding.facts.result, 'failed')"
         },
         {
-          "line": 145,
+          "line": 147,
           "expression": "assert.equal(binding.facts.ownedDeviceAbsent, null)"
         },
         {
-          "line": 146,
+          "line": 148,
           "expression": "assert.equal(binding.facts.cacheAbsent, null)"
         },
         {
-          "line": 147,
+          "line": 149,
           "expression": "assert.throws( () => requirePassedOuterCleanupFacts(binding.facts), /outer cleanup did not pass/, )"
         },
         {
-          "line": 160,
+          "line": 162,
           "expression": "assert.throws( () => readT16BOuterCleanupBinding({ artifactRoot: root, expectedCaptureRunId: runId, }), /retained owned survivors|outer cleanup/, )"
         },
         {
-          "line": 177,
+          "line": 179,
           "expression": "assert.throws( () => readT16BOuterCleanupBinding({ artifactRoot: root, expectedCaptureRunId: runId, }), /cleanup docker\\.volume is missing/, )"
         },
         {
-          "line": 203,
+          "line": 205,
           "expression": "assert.throws( () => projectIosConnectionT16BTerminal({ artifactRoot: '/owned/.qa/artifacts/native-pilot/run', execution: { status: 'explored' }, outerCleanup: { facts: forged } as never, parentOwnedInput: null, captureC"
         },
         {
-          "line": 248,
+          "line": 250,
           "expression": "assert.equal(terminal.status, 'blocked')"
         },
         {
-          "line": 266,
+          "line": 268,
           "expression": "assert.equal(terminal.status, 'blocked')"
         },
         {
-          "line": 287,
+          "line": 289,
           "expression": "assert.equal(terminal.status, 'blocked')"
         },
         {
-          "line": 300,
+          "line": 302,
           "expression": "assert.throws( () => readT16BOuterCleanupBinding({ artifactRoot: root, expectedCaptureRunId: runId, }), /escaped|symlink|owned bounded immutable input/, )"
         },
         {
-          "line": 319,
+          "line": 321,
           "expression": "assert.equal(binding.requestedAttemptId, `${runId}:first`)"
         },
         {
-          "line": 320,
+          "line": 322,
           "expression": "assert.equal(binding.backendAttemptId, `${backendRunId}:first`)"
         },
         {
-          "line": 321,
+          "line": 323,
           "expression": "assert.deepEqual(Object.keys(binding.selectionEvidence).sort(), [ 'authApi', 'build', 'fixture', 'locale', 'ownership', 'reset', 'roles', 'sql', 'target', 'tool', ])"
         },
         {
-          "line": 339,
+          "line": 341,
           "expression": "assert.throws( () => buildT16BParentOwnedInputBinding({ connectionBinding: connectionBinding(), selectionEvidence: missingReset, }), /selectionEvidence\\.reset/, )"
         },
         {
-          "line": 351,
+          "line": 353,
           "expression": "assert.throws( () => buildT16BParentOwnedInputBinding({ connectionBinding: forged, selectionEvidence: selectionEvidence(), }), /parent binding attempt differs/, )"
         }
       ]
@@ -67980,7 +67996,7 @@
       "id": "TST-1cc4665cedd9",
       "repo": "client",
       "path": "tests/ci/t16b-outer-cleanup-v3.test.ts",
-      "contentHash": "ce366735407658b7edac518c0836a0929fc9027c6f3481983f557bf4cd4cb6eb",
+      "contentHash": "1e5cfa8f284061623864810dbc33d25ab368d99c272ca35f1d863837156247e6",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/native-connection-attempt-binding.ts",
@@ -68006,64 +68022,64 @@
       "assertionPurposes": [
         {
           "purpose": "terminal consumes only a protected parent reread with descriptor identities",
-          "line": 151
+          "line": 153
         },
         {
           "purpose": "parent reread rejects a same-path mutation and a late reread catches it",
-          "line": 179
+          "line": 181
         },
         {
           "purpose": "parent reread rejects same-byte inode replacement after selection",
-          "line": 212
+          "line": 214
         },
         {
           "purpose": "a compact or forged parent object cannot become an observed terminal",
-          "line": 234
+          "line": 236
         },
         {
           "purpose": "outer cleanup and evidence preparation cannot cross an abort or absolute deadline fence",
-          "line": 257
+          "line": 259
         }
       ],
       "assertions": [
         {
-          "line": 170,
+          "line": 172,
           "expression": "assert.equal(terminal.status, 'observed')"
         },
         {
-          "line": 171,
+          "line": 173,
           "expression": "assert.equal(terminal.parentOwnedInput?.verification.verified, true)"
         },
         {
-          "line": 172,
+          "line": 174,
           "expression": "assert.equal(terminal.parentOwnedInput?.selectionEvidence.target.identity.nlink, 1)"
         },
         {
-          "line": 195,
+          "line": 197,
           "expression": "assert.rejects( verifyT16BParentOwnedInputBinding({ artifactRoot: root, binding: compact }), /selectionEvidence\\.target (?:size|hash) changed/, )"
         },
         {
-          "line": 199,
+          "line": 201,
           "expression": "assert.notDeepEqual(before, await readFile(path.join(root, 'selection-target.private.json')))"
         },
         {
-          "line": 203,
+          "line": 205,
           "expression": "assert.rejects( verifyT16BParentOwnedInputBinding({ artifactRoot: root, binding: verified }), /selectionEvidence\\.target (?:size|hash) changed/, )"
         },
         {
-          "line": 225,
+          "line": 227,
           "expression": "assert.rejects( verifyT16BParentOwnedInputBinding({ artifactRoot: root, binding: compact }), /selectionEvidence\\.target descriptor identity changed/, )"
         },
         {
-          "line": 253,
+          "line": 255,
           "expression": "assert.equal(terminal.status, 'blocked')"
         },
         {
-          "line": 269,
+          "line": 271,
           "expression": "assert.rejects(cleanup, /outer cleanup cancelled/)"
         },
         {
-          "line": 272,
+          "line": 274,
           "expression": "assert.rejects( awaitT16Lifecycle( () => new Promise((resolve) => setTimeout(resolve, 10)), new AbortController().signal, deadline, 'evidence preparation control', ), /T16 lifecycle deadline reached during evidence prepa"
         }
       ]
