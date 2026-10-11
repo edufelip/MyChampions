@@ -237,7 +237,8 @@ async function removeDirectory(directory: string): Promise<void> {
     await session.close().catch(() => undefined);
     trackedSessions.delete(session);
   }
-  await rm(directory, { recursive: true, force: true });
+  // A closed session's child can still be flushing files; rm retries ENOTEMPTY.
+  await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 }
 
 async function waitForEnvelope(
