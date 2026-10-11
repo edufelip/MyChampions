@@ -503,7 +503,10 @@ function PendingRow({
     connection.specialty === 'nutritionist'
       ? t('pro.students.specialty.nutritionist')
       : t('pro.students.specialty.fitness_coach');
-  const selectLabel = t('pro.pending.row.select').replace('{specialty}', specialtyLabel);
+  // Name the student when known, so each checkbox is distinguishable to a screen reader.
+  const selectLabel = connection.studentDisplayName
+    ? t('pro.pending.row.select_named').replace('{name}', connection.studentDisplayName)
+    : t('pro.pending.row.select').replace('{specialty}', specialtyLabel);
 
   const onCheckboxKeyDown = (event: WebKeyboardEvent) => {
     if (event.key !== ' ' && event.key !== 'Spacebar') {
@@ -572,6 +575,12 @@ function PendingRow({
         >
           {specialtyLabel}
         </Text>
+        {/* Without a name, the request id keeps rows distinguishable (and searchable). */}
+        {connection.studentDisplayName ? null : (
+          <Text style={[styles.rowId, { color: theme.color.textSecondary }]} numberOfLines={1}>
+            {connection.id}
+          </Text>
+        )}
       </View>
 
       <View style={styles.rowActions}>
@@ -775,6 +784,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   rowSpecialtySecondary: {
+    ...DsTypography.caption,
+  },
+  rowId: {
     ...DsTypography.caption,
   },
   rowActions: {

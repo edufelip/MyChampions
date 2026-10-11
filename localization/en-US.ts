@@ -193,6 +193,7 @@ export const enUS = {
   'pro.pending.bulk_deny.success': 'Requests denied successfully.',
   'pro.pending.bulk_deny.error': 'Some requests could not be denied. Try again.',
   'pro.pending.row.select': 'Select {specialty} request',
+  'pro.pending.row.select_named': 'Select the request from {name}',
   'pro.pending.confirm.cta': 'Accept',
   'pro.pending.deny.cta': 'Deny',
   'pro.pending.empty': 'No pending connection requests.',

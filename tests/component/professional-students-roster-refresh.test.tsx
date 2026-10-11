@@ -7,6 +7,7 @@ import {
 } from '@/features/professional/professional-source';
 import type * as ReactModule from 'react';
 import type * as ReactNativeModule from 'react-native';
+import { enUS } from '@/localization/en-US';
 
 type FocusEffect = () => void | (() => void);
 
@@ -301,6 +302,37 @@ describe('professional roster focus refresh (SC-205/TC-206/TC-214)', () => {
     await act(() => currentRoster.resolve([confirmedTarget]));
     expect(await screen.findByTestId('pro.students.row.confirmed-target')).toBeOnTheScreen();
     expect(screen.queryByTestId('pro.students.loading')).toBeNull();
+
+    alert.mockRestore();
+    await rendered.unmount();
+  });
+
+  test('reports a bulk completion and clears the selection when the same coach refocused meanwhile', async () => {
+    const assignment = deferred<{ assignedCount: number }>();
+    readRoster.mockResolvedValue([existingActive]);
+    mockBulkAssign.mockReturnValueOnce(assignment.promise);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const rendered = await render(<ProfessionalStudentsScreen />);
+    expect(await screen.findByTestId('pro.students.row.existing-active')).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByTestId('pro.students.bulkAssignToggle'));
+    await fireEvent.press(screen.getByTestId('pro.students.bulk.planType.training'));
+    await fireEvent.press(screen.getByTestId('pro.students.row.existing-active'));
+    await fireEvent.press(screen.getByTestId('pro.students.bulk.assignSelected'));
+    await fireEvent.press(screen.getByTestId('pro.students.test.planSelect'));
+    await waitFor(() => expect(mockBulkAssign).toHaveBeenCalledTimes(1));
+
+    await act(() => mockFocusController.blur());
+    await act(() => mockFocusController.focus());
+    await waitFor(() => expect(readRoster).toHaveBeenCalledTimes(2));
+
+    await act(() => assignment.resolve({ assignedCount: 1 }));
+    expect(alert).toHaveBeenCalledWith(enUS['pro.plan.assign.success']);
+    // Selection mode ended, so the same students cannot be assigned again.
+    expect(screen.queryByTestId('pro.students.bulk.assignSelected')).toBeNull();
+    // The refocus already reloaded the roster; the completion does not repeat it.
+    expect(readRoster).toHaveBeenCalledTimes(2);
 
     alert.mockRestore();
     await rendered.unmount();

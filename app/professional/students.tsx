@@ -245,23 +245,22 @@ export default function ProfessionalStudentsScreen() {
     setIsAssigning(true);
     const result = await bulkAssign(planId, selectedStudentUids);
 
-    const isCurrentAssignment = () =>
-      isFocusedRef.current &&
-      focusGenerationRef.current === assignmentFocusGeneration &&
-      currentUserUidRef.current === assignmentUserUid;
-
-    if (!isCurrentAssignment()) return;
-
-    setIsAssigning(false);
+    // A result for an account that is no longer signed in is not reported.
+    if (currentUserUidRef.current !== assignmentUserUid) return;
+    // Refocusing meanwhile already cleared the spinner and reloaded the roster.
+    const isSameFocus =
+      isFocusedRef.current && focusGenerationRef.current === assignmentFocusGeneration;
+    if (isSameFocus) setIsAssigning(false);
 
     if ('error' in result) {
       Alert.alert(t('pro.plan.assign.error'));
-    } else {
-      Alert.alert(t('pro.plan.assign.success'));
-      setIsSelectionMode(false);
-      setSelectedStudentUids([]);
-      void loadRoster();
+      return;
     }
+    Alert.alert(t('pro.plan.assign.success'));
+    // Always clear the selection, so the same students cannot be assigned twice.
+    setIsSelectionMode(false);
+    setSelectedStudentUids([]);
+    if (isSameFocus) void loadRoster();
   };
 
   async function handleShareLink() {

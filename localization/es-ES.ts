@@ -203,6 +203,7 @@ export const esES: Record<TranslationKey, string> = {
   'pro.pending.bulk_deny.success': 'Solicitudes rechazadas correctamente.',
   'pro.pending.bulk_deny.error': 'No se pudieron rechazar algunas solicitudes. Inténtalo de nuevo.',
   'pro.pending.row.select': 'Seleccionar solicitud de {specialty}',
+  'pro.pending.row.select_named': 'Seleccionar la solicitud de {name}',
   'pro.pending.confirm.cta': 'Aceptar',
   'pro.pending.deny.cta': 'Rechazar',
   'pro.pending.empty': 'No hay solicitudes de conexión pendientes.',
