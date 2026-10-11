@@ -551,16 +551,19 @@ function QuickLogPanel({
   const overlayRef = useRef<View>(null);
   const keyboardOverlap = useDsKeyboardOverlap(overlayRef);
   // On short screens the panel shrinks to the space above the keyboard and
-  // scrolls; bring the grams field and what follows it (preview, actions) into view.
+  // scrolls; bring the grams field and what follows it (preview, actions) into
+  // view, again whenever the content grows while the keyboard is open (the
+  // preview appears only after typing).
   const scrollRef = useRef<ScrollView>(null);
   const gramsLabelYRef = useRef(0);
-  useEffect(() => {
-    if (keyboardOverlap <= 0) return;
-    const frame = requestAnimationFrame(() =>
+  const revealGrams = useCallback(() => {
+    requestAnimationFrame(() =>
       scrollRef.current?.scrollTo({ y: Math.max(0, gramsLabelYRef.current - 8), animated: true }),
     );
-    return () => cancelAnimationFrame(frame);
-  }, [keyboardOverlap]);
+  }, []);
+  useEffect(() => {
+    if (keyboardOverlap > 0) revealGrams();
+  }, [keyboardOverlap, revealGrams]);
   useWebDialogAccessibility({
     dialogTitleTestID: 'meal.library.quickLog.title',
     isVisible: true,
@@ -614,6 +617,9 @@ function QuickLogPanel({
           bounces={false}
           contentContainerStyle={styles.quickLogPanelContent}
           keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => {
+            if (keyboardOverlap > 0) revealGrams();
+          }}
           testID="meal.library.quickLog.scroll"
         >
           <Text
