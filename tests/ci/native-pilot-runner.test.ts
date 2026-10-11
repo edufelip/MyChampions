@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -32,6 +33,8 @@ import type { NativePilotSelection } from '../../scripts/testing/native-pilot-co
 
 const execute = promisify(execFile);
 const repository = path.resolve(__dirname, '../..');
+// Receipts record both repositories, so the real entry point needs the paired ../server checkout.
+const pairedServerCheckout = existsSync(path.join(repository, '../server'));
 
 async function createCommittedRepository(prefix: string): Promise<string> {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), prefix)));
@@ -951,242 +954,254 @@ void test('SIGINT/SIGTERM during actual preflight retain cancellation receipts w
   }
 });
 
-void test('real native entry point blocks before acquisition and writes redacted immutable schema-valid receipts', async () => {
-  const privateValue = 'synthetic-private-argument-value';
-  const defaults = [
-    '--platform',
-    'ios',
-    '--engine',
-    'maestro',
-    '--scenario',
-    'SCN-save-retry-ios',
-    '--mode',
-    'integration',
-  ];
-  const androidTraining = [
-    '--platform',
-    'android',
-    '--engine',
-    'maestro',
-    '--scenario',
-    'SCN-training-android',
-    '--mode',
-    'integration',
-  ];
-  const cases = [
-    { args: defaults, code: 'native-host-lock-required', env: {} },
-    ...(['ios', 'android'] as const).flatMap((platform) => {
-      const args = defaults.map((value) =>
-        value === 'ios'
-          ? platform
-          : value === 'SCN-save-retry-ios'
-            ? `SCN-connection-${platform}`
-            : value,
-      );
-      return [
-        { args, code: 'native-host-lock-required', env: {} },
-        {
-          args: args.map((value) => (value === 'maestro' ? 'detox' : value)),
-          code: 'invalid-cli-arguments',
-          env: {},
-        },
-        {
-          args,
-          code: 'invalid-environment',
-          env: { EXPO_PUBLIC_E2E_AUTH_SESSION: 'true' },
-        },
-      ];
-    }),
-    {
-      args: defaults.map((value) =>
-        value === 'ios'
-          ? 'android'
-          : value === 'SCN-save-retry-ios'
-            ? 'SCN-save-retry-android'
-            : value,
-      ),
-      code: 'native-host-lock-required',
-      env: {},
-    },
-    {
-      args: defaults.map((value) => (value === 'maestro' ? 'detox' : value)),
-      code: 'invalid-cli-arguments',
-      env: {},
-    },
-    {
-      args: defaults.map((value) => (value === 'integration' ? 'fixture' : value)),
-      code: 'missing-assertion-ledger',
-      env: {},
-    },
-    {
-      args: defaults.map((value) => (value === 'SCN-save-retry-ios' ? 'SCN-session-ios' : value)),
-      code: 'native-host-lock-required',
-      env: {},
-    },
-    {
-      args: defaults.map((value) =>
-        value === 'SCN-save-retry-ios' ? 'SCN-camera-denied-ios' : value,
-      ),
-      code: 'native-host-lock-required',
-      env: {},
-    },
-    {
-      args: [
-        '--platform=android',
-        '--engine=maestro',
-        '--scenario=SCN-session-android',
-        '--mode=fixture',
-      ],
-      code: 'missing-assertion-ledger',
-      env: {},
-    },
-    { args: [...defaults, '--secret', privateValue], code: 'invalid-cli-arguments', env: {} },
-    {
-      args: defaults.map((value) => (value === 'maestro' ? 'unknown' : value)),
-      code: 'invalid-cli-arguments',
-      env: {},
-    },
-    {
-      args: defaults.map((value) => (value === 'ios' ? 'android' : value)),
-      code: 'invalid-inventory',
-      env: {},
-    },
-    {
-      args: defaults.map((value) =>
-        value === 'SCN-save-retry-ios' ? `SCN-${privateValue}` : value,
-      ),
-      code: 'invalid-inventory',
-      env: {},
-    },
-    { args: defaults, code: 'invalid-environment', env: { EXPO_PUBLIC_E2E_AUTH_SESSION: 'true' } },
-    { args: defaults, code: 'invalid-environment', env: { APP_VARIANT: 'prod' } },
-    ...['SCN-training-ios', 'SCN-save-retry-ios', 'SCN-connection-ios'].flatMap((scenario) =>
-      ['', '1000.0', '180001', privateValue].map((deadline) => ({
-        args: defaults.map((value) => (value === 'SCN-save-retry-ios' ? scenario : value)),
-        code: 'invalid-environment',
-        env: { MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS: deadline },
-      })),
-    ),
-    ...['SCN-training-ios', 'SCN-save-retry-ios', 'SCN-connection-ios'].flatMap((scenario) =>
-      [
-        ['MYCHAMPIONS_NATIVE_BUILD_DEADLINE_MS', '900001'],
-        ['MYCHAMPIONS_NATIVE_STEP_DEADLINE_MS', '600001'],
-        ['MYCHAMPIONS_NATIVE_WHOLE_DEADLINE_MS', '2400001'],
-        ['MYCHAMPIONS_NATIVE_WHOLE_DEADLINE_MS', privateValue],
-      ].map(([name, value]) => ({
-        args: defaults.map((arg) => (arg === 'SCN-save-retry-ios' ? scenario : arg)),
-        code: 'invalid-environment',
-        env: { [name]: value },
-      })),
-    ),
-    ...['SCN-training-ios', 'SCN-save-retry-ios', 'SCN-connection-ios'].flatMap((scenario) =>
-      ['', '../escape', privateValue, '0'.repeat(24), '8e08d5cf2bd1f02eb274914c'].map((value) => ({
-        args: defaults.map((arg) => (arg === 'SCN-save-retry-ios' ? scenario : arg)),
-        code: 'invalid-build-reuse',
-        env: { MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID: value },
-      })),
-    ),
-    {
-      args: androidTraining,
-      code: 'invalid-environment',
-      env: { MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS: '1000' },
-    },
-    {
-      args: androidTraining,
-      code: 'invalid-environment',
-      env: { MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID: 'a'.repeat(24) },
-    },
-    {
-      args: androidTraining.map((value) => (value === 'maestro' ? 'detox' : value)),
-      code: 'invalid-cli-arguments',
-      env: {},
-    },
-  ];
-  const ids: string[] = [];
-  for (const item of cases) {
-    const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
-      (resolve, reject) => {
-        execFile(
-          process.execPath,
-          ['--import', 'tsx', 'scripts/testing/run-native-pilot.ts', ...item.args],
-          {
-            cwd: repository,
-            timeout: 30_000,
-            encoding: 'utf8',
-            env: {
-              PATH: process.env.PATH,
-              HOME: process.env.HOME,
-              TMPDIR: process.env.TMPDIR,
-              APP_VARIANT: 'dev',
-              NODE_ENV: 'test',
-              ...item.env,
-            },
-          },
-          (error, stdout, stderr) => {
-            if (error && (error.killed || typeof error.code !== 'number'))
-              reject(
-                new Error('Native preflight subprocess did not return an exit code', {
-                  cause: error,
-                }),
-              );
-            else
-              resolve({ code: typeof error?.code === 'number' ? error.code : 0, stdout, stderr });
-          },
+void test(
+  'real native entry point blocks before acquisition and writes redacted immutable schema-valid receipts',
+  { skip: !pairedServerCheckout && 'needs the paired ../server checkout' },
+  async () => {
+    const privateValue = 'synthetic-private-argument-value';
+    const defaults = [
+      '--platform',
+      'ios',
+      '--engine',
+      'maestro',
+      '--scenario',
+      'SCN-save-retry-ios',
+      '--mode',
+      'integration',
+    ];
+    const androidTraining = [
+      '--platform',
+      'android',
+      '--engine',
+      'maestro',
+      '--scenario',
+      'SCN-training-android',
+      '--mode',
+      'integration',
+    ];
+    const cases = [
+      { args: defaults, code: 'native-host-lock-required', env: {} },
+      ...(['ios', 'android'] as const).flatMap((platform) => {
+        const args = defaults.map((value) =>
+          value === 'ios'
+            ? platform
+            : value === 'SCN-save-retry-ios'
+              ? `SCN-connection-${platform}`
+              : value,
         );
+        return [
+          { args, code: 'native-host-lock-required', env: {} },
+          {
+            args: args.map((value) => (value === 'maestro' ? 'detox' : value)),
+            code: 'invalid-cli-arguments',
+            env: {},
+          },
+          {
+            args,
+            code: 'invalid-environment',
+            env: { EXPO_PUBLIC_E2E_AUTH_SESSION: 'true' },
+          },
+        ];
+      }),
+      {
+        args: defaults.map((value) =>
+          value === 'ios'
+            ? 'android'
+            : value === 'SCN-save-retry-ios'
+              ? 'SCN-save-retry-android'
+              : value,
+        ),
+        code: 'native-host-lock-required',
+        env: {},
       },
-    );
-    assert.equal(result.code, 2);
-    assert.equal(result.stderr, '');
-    assert.ok(!result.stdout.includes(privateValue));
-    const match = /receipt: (.+\/receipt\.json)\n$/.exec(result.stdout);
-    assert.ok(match);
-    const file = match[1];
-    const root = path.dirname(file);
-    assert.ok(
-      file.startsWith(path.join(repository, '.qa/artifacts/native-pilot-attempts') + path.sep),
-    );
-    assert.equal(await realpath(file), file);
-    assert.equal((await stat(root)).mode & 0o777, 0o700);
-    assert.equal((await stat(file)).mode & 0o777, 0o600);
-    const bytes = await readFile(file, 'utf8');
-    const receipt: unknown = JSON.parse(bytes);
-    assertPublicReceipt(receipt, root, [privateValue]);
-    const row = receipt as PreflightReceipt;
-    assert.equal(row.blocker.code, item.code);
-    assert.equal(row.result, 'harness-blocked');
-    assert.equal(row.exitCode, 2);
-    assert.equal(row.childExitCode, null);
-    assert.equal(row.cleanup.status, 'not-acquired');
-    assert.deepEqual(row.cleanup.ownedResourceIds, []);
-    assert.deepEqual(row.assertions, []);
-    assert.deepEqual(
-      row.artifacts,
-      item.code === 'native-host-lock-required'
-        ? ['attempt-identity.private.json', 'execution-deadlines.private.json']
-        : ['attempt-identity.private.json'],
-    );
-    for (const artifact of row.artifacts) {
-      await requirePreflightSidecar(root, artifact, row.runId);
+      {
+        args: defaults.map((value) => (value === 'maestro' ? 'detox' : value)),
+        code: 'invalid-cli-arguments',
+        env: {},
+      },
+      {
+        args: defaults.map((value) => (value === 'integration' ? 'fixture' : value)),
+        code: 'missing-assertion-ledger',
+        env: {},
+      },
+      {
+        args: defaults.map((value) => (value === 'SCN-save-retry-ios' ? 'SCN-session-ios' : value)),
+        code: 'native-host-lock-required',
+        env: {},
+      },
+      {
+        args: defaults.map((value) =>
+          value === 'SCN-save-retry-ios' ? 'SCN-camera-denied-ios' : value,
+        ),
+        code: 'native-host-lock-required',
+        env: {},
+      },
+      {
+        args: [
+          '--platform=android',
+          '--engine=maestro',
+          '--scenario=SCN-session-android',
+          '--mode=fixture',
+        ],
+        code: 'missing-assertion-ledger',
+        env: {},
+      },
+      { args: [...defaults, '--secret', privateValue], code: 'invalid-cli-arguments', env: {} },
+      {
+        args: defaults.map((value) => (value === 'maestro' ? 'unknown' : value)),
+        code: 'invalid-cli-arguments',
+        env: {},
+      },
+      {
+        args: defaults.map((value) => (value === 'ios' ? 'android' : value)),
+        code: 'invalid-inventory',
+        env: {},
+      },
+      {
+        args: defaults.map((value) =>
+          value === 'SCN-save-retry-ios' ? `SCN-${privateValue}` : value,
+        ),
+        code: 'invalid-inventory',
+        env: {},
+      },
+      {
+        args: defaults,
+        code: 'invalid-environment',
+        env: { EXPO_PUBLIC_E2E_AUTH_SESSION: 'true' },
+      },
+      { args: defaults, code: 'invalid-environment', env: { APP_VARIANT: 'prod' } },
+      ...['SCN-training-ios', 'SCN-save-retry-ios', 'SCN-connection-ios'].flatMap((scenario) =>
+        ['', '1000.0', '180001', privateValue].map((deadline) => ({
+          args: defaults.map((value) => (value === 'SCN-save-retry-ios' ? scenario : value)),
+          code: 'invalid-environment',
+          env: { MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS: deadline },
+        })),
+      ),
+      ...['SCN-training-ios', 'SCN-save-retry-ios', 'SCN-connection-ios'].flatMap((scenario) =>
+        [
+          ['MYCHAMPIONS_NATIVE_BUILD_DEADLINE_MS', '900001'],
+          ['MYCHAMPIONS_NATIVE_STEP_DEADLINE_MS', '600001'],
+          ['MYCHAMPIONS_NATIVE_WHOLE_DEADLINE_MS', '2400001'],
+          ['MYCHAMPIONS_NATIVE_WHOLE_DEADLINE_MS', privateValue],
+        ].map(([name, value]) => ({
+          args: defaults.map((arg) => (arg === 'SCN-save-retry-ios' ? scenario : arg)),
+          code: 'invalid-environment',
+          env: { [name]: value },
+        })),
+      ),
+      ...['SCN-training-ios', 'SCN-save-retry-ios', 'SCN-connection-ios'].flatMap((scenario) =>
+        ['', '../escape', privateValue, '0'.repeat(24), '8e08d5cf2bd1f02eb274914c'].map(
+          (value) => ({
+            args: defaults.map((arg) => (arg === 'SCN-save-retry-ios' ? scenario : arg)),
+            code: 'invalid-build-reuse',
+            env: { MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID: value },
+          }),
+        ),
+      ),
+      {
+        args: androidTraining,
+        code: 'invalid-environment',
+        env: { MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS: '1000' },
+      },
+      {
+        args: androidTraining,
+        code: 'invalid-environment',
+        env: { MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID: 'a'.repeat(24) },
+      },
+      {
+        args: androidTraining.map((value) => (value === 'maestro' ? 'detox' : value)),
+        code: 'invalid-cli-arguments',
+        env: {},
+      },
+    ];
+    const ids: string[] = [];
+    for (const item of cases) {
+      const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
+        (resolve, reject) => {
+          execFile(
+            process.execPath,
+            ['--import', 'tsx', 'scripts/testing/run-native-pilot.ts', ...item.args],
+            {
+              cwd: repository,
+              timeout: 30_000,
+              encoding: 'utf8',
+              env: {
+                PATH: process.env.PATH,
+                HOME: process.env.HOME,
+                TMPDIR: process.env.TMPDIR,
+                APP_VARIANT: 'dev',
+                NODE_ENV: 'test',
+                ...item.env,
+              },
+            },
+            (error, stdout, stderr) => {
+              if (error && (error.killed || typeof error.code !== 'number'))
+                reject(
+                  new Error('Native preflight subprocess did not return an exit code', {
+                    cause: error,
+                  }),
+                );
+              else
+                resolve({ code: typeof error?.code === 'number' ? error.code : 0, stdout, stderr });
+            },
+          );
+        },
+      );
+      assert.equal(result.code, 2);
+      assert.equal(result.stderr, '');
+      assert.ok(!result.stdout.includes(privateValue));
+      const match = /receipt: (.+\/receipt\.json)\n$/.exec(result.stdout);
+      assert.ok(match);
+      const file = match[1];
+      const root = path.dirname(file);
+      assert.ok(
+        file.startsWith(path.join(repository, '.qa/artifacts/native-pilot-attempts') + path.sep),
+      );
+      assert.equal(await realpath(file), file);
+      assert.equal((await stat(root)).mode & 0o777, 0o700);
+      assert.equal((await stat(file)).mode & 0o777, 0o600);
+      const bytes = await readFile(file, 'utf8');
+      const receipt: unknown = JSON.parse(bytes);
+      assertPublicReceipt(receipt, root, [privateValue]);
+      const row = receipt as PreflightReceipt;
+      assert.equal(row.blocker.code, item.code);
+      assert.equal(row.result, 'harness-blocked');
+      assert.equal(row.exitCode, 2);
+      assert.equal(row.childExitCode, null);
+      assert.equal(row.cleanup.status, 'not-acquired');
+      assert.deepEqual(row.cleanup.ownedResourceIds, []);
+      assert.deepEqual(row.assertions, []);
+      assert.deepEqual(
+        row.artifacts,
+        item.code === 'native-host-lock-required'
+          ? ['attempt-identity.private.json', 'execution-deadlines.private.json']
+          : ['attempt-identity.private.json'],
+      );
+      for (const artifact of row.artifacts) {
+        await requirePreflightSidecar(root, artifact, row.runId);
+      }
+      assert.deepEqual(
+        row.repositories.map((source) => source.name),
+        ['client', 'server'],
+      );
+      if (row.repositoryEvidence !== undefined)
+        assert.deepEqual(row.repositoryEvidence, { status: 'observed', missing: [], reason: null });
+      for (const source of row.repositories) {
+        assert.match(source.sha, /^[a-f0-9]{40}$/);
+        assert.match(source.workingTreeHash!, /^[a-f0-9]{64}$/);
+      }
+      if (item.code === 'invalid-selection' || item.code === 'invalid-inventory')
+        assert.equal(row.scenarioId, 'invalid-selection');
+      assert.ok(!bytes.includes(privateValue));
+      await assert.rejects(writeFile(file, 'must not overwrite', { flag: 'wx' }), {
+        code: 'EEXIST',
+      });
+      assert.equal(await readFile(file, 'utf8'), bytes);
+      ids.push(row.runId);
     }
-    assert.deepEqual(
-      row.repositories.map((source) => source.name),
-      ['client', 'server'],
-    );
-    if (row.repositoryEvidence !== undefined)
-      assert.deepEqual(row.repositoryEvidence, { status: 'observed', missing: [], reason: null });
-    for (const source of row.repositories) {
-      assert.match(source.sha, /^[a-f0-9]{40}$/);
-      assert.match(source.workingTreeHash!, /^[a-f0-9]{64}$/);
-    }
-    if (item.code === 'invalid-selection' || item.code === 'invalid-inventory')
-      assert.equal(row.scenarioId, 'invalid-selection');
-    assert.ok(!bytes.includes(privateValue));
-    await assert.rejects(writeFile(file, 'must not overwrite', { flag: 'wx' }), { code: 'EEXIST' });
-    assert.equal(await readFile(file, 'utf8'), bytes);
-    ids.push(row.runId);
-  }
-  assert.equal(new Set(ids).size, cases.length);
-});
+    assert.equal(new Set(ids).size, cases.length);
+  },
+);
 
 void test('shared repository identity detects dirty tracked/untracked bytes and deletion in a disposable Git fixture', async () => {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'mc-native-repo-identity-')));
