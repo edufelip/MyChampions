@@ -43280,7 +43280,7 @@
       "id": "TST-35601beb2e62",
       "repo": "client",
       "path": "tests/ci/native-android-session-adapter.test.ts",
-      "contentHash": "5602d9ccaf7a107a6063e9a54268afeeff261415bc87a2887321c70102267d54",
+      "contentHash": "3b21384b80f81b152d65f730922b6df7a6564b276af130d875c3b3ccdeafd858",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/android-session-charter.ts",
@@ -43344,52 +43344,56 @@
           "line": 696
         },
         {
-          "purpose": "Android restore and signed-out relaunch use exact transport windows",
+          "purpose": "An owned child that exits during the start census is reported, not awaited forever",
           "line": 745
         },
         {
+          "purpose": "Android restore and signed-out relaunch use exact transport windows",
+          "line": 802
+        },
+        {
           "purpose": "Android API lifetime binding uses one owned process identity across the window",
-          "line": 854
+          "line": 911
         },
         {
           "purpose": "Android session checkpoints require four distinct profile and domain source files",
-          "line": 889
+          "line": 946
         },
         {
           "purpose": "Android session charter requires six ordered assertions and one restoration",
-          "line": 974
+          "line": 1031
         },
         {
           "purpose": "Android session domain binding preserves unrelated rows and owned SQL receipts",
-          "line": 1007
+          "line": 1064
         },
         {
           "purpose": "Android cancel action requires strict confirmation absence before the account screen continues",
-          "line": 1086
+          "line": 1143
         },
         {
           "purpose": "Android cancel retains the observed coach cache identity and shape",
-          "line": 1095
+          "line": 1152
         },
         {
           "purpose": "Android local clear requires the cancel dialog to be absent and preserves server-revocation boundary",
-          "line": 1128
+          "line": 1185
         },
         {
           "purpose": "capture exit blocks unknown session evidence while preserving other charter success and cancellation",
-          "line": 1229
+          "line": 1286
         },
         {
           "purpose": "before-login storage accepts an absent database only with no database artifacts",
-          "line": 1283
+          "line": 1340
         },
         {
           "purpose": "database coherence accepts a TRUNCATE journal only when measured empty",
-          "line": 1315
+          "line": 1372
         },
         {
           "purpose": "SecureStore parser treats an emptied self-closing map as no session entry",
-          "line": 1332
+          "line": 1389
         }
       ],
       "assertions": [
@@ -43662,215 +43666,227 @@
           "expression": "assert.throws(() => process.kill(childPid as number, 0), /ESRCH/)"
         },
         {
-          "line": 762,
+          "line": 781,
+          "expression": "assert.rejects( startOwnedSession({ serverRoot: root, appOrigin: 'http://127.0.0.1:42401', bunExecutable: wrapper, deadlineMs: 2000, }), (error: unknown) => { assert(error instanceof OwnedSessionAcquisitionError); assert"
+        },
+        {
+          "line": 790,
+          "expression": "assert.equal(error.cleanup, 'failed-recovery-ledger-retained')"
+        },
+        {
+          "line": 791,
+          "expression": "assert.equal(error.childExitCode, 3)"
+        },
+        {
+          "line": 819,
           "expression": "assert.deepEqual(restore.hydrationRequestIds, [10])"
         },
         {
-          "line": 763,
+          "line": 820,
           "expression": "assert.equal(restore.rows[0]?.ordinal, 1)"
         },
         {
-          "line": 764,
+          "line": 821,
           "expression": "assert.throws( () => requireAndroidSessionTransportSlice({ observations: [observation(10, 'POST', hydrateHash, 201)], beforeRequestId: 9, afterRequestId: 10, phase: 'restore', targetOrigin: identity.targetOrigin, apiLife"
         },
         {
-          "line": 798,
+          "line": 855,
           "expression": "assert.deepEqual(signedOut.hydrationRequestIds, [])"
         },
         {
-          "line": 799,
+          "line": 856,
           "expression": "assert.throws( () => requireAndroidSessionTransportSlice({ observations: [ observation( 12, 'GET', createHash('sha256').update('/auth/sign-out').digest('hex'), 200, true, ), ], beforeRequestId: 11, afterRequestId: 12, ph"
         },
         {
-          "line": 822,
+          "line": 879,
           "expression": "assert.throws( () => requireAndroidSessionTransportSlice({ observations: [observation(10, 'POST', hydrateHash)], beforeRequestId: 9, afterRequestId: 10, phase: 'signed-out-relaunch', targetOrigin: identity.targetOrigin, "
         },
         {
-          "line": 837,
+          "line": 894,
           "expression": "assert.throws( () => requireAndroidSessionTransportSlice({ observations: [observation(12, 'POST', hydrateHash, 200)], beforeRequestId: 9, afterRequestId: 12, phase: 'restore', targetOrigin: identity.targetOrigin, apiLife"
         },
         {
-          "line": 855,
+          "line": 912,
           "expression": "assert.deepEqual( requireAndroidOwnedApiLifetimeBinding({ before: apiLifetime, after: { ...apiLifetime }, expectedRunId: apiLifetime.runId, expectedProxyRunId: apiLifetime.proxyRunId, expectedProxyOrigin: apiLifetime.pro"
         },
         {
-          "line": 865,
+          "line": 922,
           "expression": "assert.throws( () => requireAndroidOwnedApiLifetimeBinding({ before: apiLifetime, after: { ...apiLifetime, apiPid: 5678 }, expectedRunId: apiLifetime.runId, expectedProxyRunId: apiLifetime.proxyRunId, expectedProxyOrigin"
         },
         {
-          "line": 876,
+          "line": 933,
           "expression": "assert.throws( () => requireAndroidOwnedApiLifetimeBinding({ before: apiLifetime, after: apiLifetime, expectedRunId: apiLifetime.runId, expectedProxyRunId: apiLifetime.proxyRunId, expectedProxyOrigin: 'http://127.0.0.1:4"
         },
         {
-          "line": 922,
+          "line": 979,
           "expression": "assert.equal( requireAndroidSessionCheckpointSet({ checkpoints, expectedRunId: apiLifetime.runId, expectedScope: 'native-entry-android', expectedApiOrigin: apiLifetime.apiOrigin, expectedApiPid: apiLifetime.apiPid, expec"
         },
         {
-          "line": 940,
+          "line": 997,
           "expression": "assert.equal( requireAndroidSessionCheckpointSet({ checkpoints: unchangedDomain, expectedRunId: apiLifetime.runId, expectedScope: 'native-entry-android', expectedApiOrigin: apiLifetime.apiOrigin, expectedApiPid: apiLifet"
         },
         {
-          "line": 953,
+          "line": 1010,
           "expression": "assert.throws( () => requireAndroidSessionCheckpointSet({ checkpoints: [ checkpoints[0], checkpoints[1], { ...checkpoints[1], phase: 'after-restoration' }, checkpoints[3], ], expectedRunId: apiLifetime.runId, expectedSco"
         },
         {
-          "line": 982,
+          "line": 1039,
           "expression": "assert.equal( requireAndroidSessionCharter({ assertionReceipts: assertions, restorationCount: 1, }).status, 'verified', )"
         },
         {
-          "line": 989,
+          "line": 1046,
           "expression": "assert.throws( () => requireAndroidSessionCharter({ assertionReceipts: [assertions[1], ...assertions.slice(1)], restorationCount: 1, }), /order or status/, )"
         },
         {
-          "line": 997,
+          "line": 1054,
           "expression": "assert.throws( () => requireAndroidSessionCharter({ assertionReceipts: assertions, restorationCount: 2, }), /exactly one restoration/, )"
         },
         {
-          "line": 1016,
+          "line": 1073,
           "expression": "assert.equal(result.status, 'verified')"
         },
         {
-          "line": 1017,
+          "line": 1074,
           "expression": "assert.match(result.trainingPlans.sha256, /^[a-f0-9]{64}$/)"
         },
         {
-          "line": 1018,
+          "line": 1075,
           "expression": "assert.match(result.sql.before.database!.sha256, /^[a-f0-9]{64}$/)"
         },
         {
-          "line": 1025,
+          "line": 1082,
           "expression": "assert.equal(sidecarResult.sql.before.databaseSidecars.length, 1)"
         },
         {
-          "line": 1028,
+          "line": 1085,
           "expression": "assert.doesNotThrow(() => requireAndroidSessionDomainBinding({ before, after, beforeStorage: changedReceipt, afterStorage: checkpoint(), }), )"
         },
         {
-          "line": 1038,
+          "line": 1095,
           "expression": "assert.throws( () => requireAndroidSessionDomainBinding({ before, after, beforeStorage: malformedSidecar, afterStorage: checkpoint(), }), /receipt is malformed/, )"
         },
         {
-          "line": 1050,
+          "line": 1107,
           "expression": "assert.throws( () => requireAndroidSessionDomainBinding({ before, after, beforeStorage: untypedQuerySource, afterStorage: checkpoint(), }), /query source receipt is malformed or unbound/, )"
         },
         {
-          "line": 1062,
+          "line": 1119,
           "expression": "assert.throws( () => requireAndroidSessionDomainBinding({ before, after: changed, beforeStorage: checkpoint(), afterStorage: checkpoint(), }), /unrelated connections/, )"
         },
         {
-          "line": 1074,
+          "line": 1131,
           "expression": "assert.throws( () => requireAndroidSessionDomainBinding({ before, after, beforeStorage: missing, afterStorage: checkpoint(), }), /SQL file receipt is missing/, )"
         },
         {
-          "line": 1088,
+          "line": 1145,
           "expression": "assert.match(actions.cancel, /settings\\.account\\.signOutCancelCta/)"
         },
         {
-          "line": 1089,
+          "line": 1146,
           "expression": "assert.match(actions.cancel, /assertNotVisible/)"
         },
         {
-          "line": 1090,
+          "line": 1147,
           "expression": "assert.match(actions.cancel, /settings\\.account\\.signOutConfirm/)"
         },
         {
-          "line": 1091,
+          "line": 1148,
           "expression": "assert.match(actions.cancel, /settings\\.account\\.signOutConfirmCta/)"
         },
         {
-          "line": 1092,
+          "line": 1149,
           "expression": "assert.equal((actions.confirm.match(/tapOn/g) ?? []).length, 1)"
         },
         {
-          "line": 1099,
+          "line": 1156,
           "expression": "assert.equal( requireAndroidRetainedNativeSessionIdentity({ before, after, expectedAuthUidHash, }).status, 'verified', )"
         },
         {
-          "line": 1108,
+          "line": 1165,
           "expression": "assert.throws( () => requireAndroidRetainedNativeSessionIdentity({ before, after, expectedAuthUidHash, }), /wrong|changed/, )"
         },
         {
-          "line": 1117,
+          "line": 1174,
           "expression": "assert.throws( () => requireAndroidRetainedNativeSessionIdentity({ before, after: absent(), expectedAuthUidHash, }), /cleared/, )"
         },
         {
-          "line": 1147,
+          "line": 1204,
           "expression": "assert.throws( () => requireAndroidCancelledConfirmationAbsent({ hierarchyObserved: false, hierarchyPath: 'auth-signout-cancelled-hierarchy.json', screenshotPath: 'auth-signout-cancelled.png', hierarchySourcePath: 'auth-"
         },
         {
-          "line": 1169,
+          "line": 1226,
           "expression": "assert.throws( () => requireAndroidCancelledConfirmationAbsent({ hierarchyObserved: true, hierarchyPath: 'auth-signout-cancelled-hierarchy.json', screenshotPath: 'auth-signout-cancelled.png', hierarchySourcePath: 'auth-s"
         },
         {
-          "line": 1191,
+          "line": 1248,
           "expression": "assert.deepEqual( requireAndroidLocalSessionClear({ beforeRelaunch: present(), afterRestore: present(), afterSignOut: absent(), afterSignedOutRelaunch: absent(), cancelledSessionIdentity: { status: 'verified', profileAut"
         },
         {
-          "line": 1209,
+          "line": 1266,
           "expression": "assert.throws( () => requireAndroidLocalSessionClear({ beforeRelaunch: present(), afterRestore: present(), afterSignOut: absent(), afterSignedOutRelaunch: absent(), cancelledSessionIdentity: { status: 'verified', profile"
         },
         {
-          "line": 1243,
+          "line": 1300,
           "expression": "assert.equal(androidNativeCaptureExitCode({ ...base, sessionQualification }), 2)"
         },
         {
-          "line": 1245,
+          "line": 1302,
           "expression": "assert.equal( androidNativeCaptureExitCode({ ...base, sessionQualification: { status: 'verified' } }), 0, )"
         },
         {
-          "line": 1249,
+          "line": 1306,
           "expression": "assert.equal( androidNativeCaptureExitCode({ ...base, isAuthSessionFlow: false, sessionQualification: undefined, }), 0, )"
         },
         {
-          "line": 1257,
+          "line": 1314,
           "expression": "assert.equal( androidNativeCaptureExitCode({ ...base, cleanup: 'failed-recovery-retained', sessionQualification: { status: 'verified' }, }), 2, )"
         },
         {
-          "line": 1265,
+          "line": 1322,
           "expression": "assert.equal( androidNativeCaptureExitCode({ ...base, cancellation: 'SIGINT', sessionQualification: undefined, }), 130, )"
         },
         {
-          "line": 1273,
+          "line": 1330,
           "expression": "assert.equal( androidNativeCaptureExitCode({ ...base, cancellation: 'SIGTERM', sessionQualification: undefined, }), 143, )"
         },
         {
-          "line": 1303,
+          "line": 1360,
           "expression": "assert.equal(accepted.database, null)"
         },
         {
-          "line": 1304,
+          "line": 1361,
           "expression": "assert.equal(accepted.query, null)"
         },
         {
-          "line": 1305,
+          "line": 1362,
           "expression": "assert.equal(accepted.databaseListing.path, 'auth-before-login-app-directory.stdout')"
         },
         {
-          "line": 1312,
+          "line": 1369,
           "expression": "assert.throws(() => requireAndroidStorageReceiptSet(invalid, 'Before'), /absent|bound|missing/)"
         },
         {
-          "line": 1317,
+          "line": 1374,
           "expression": "assert.throws(() => requireCoherentAndroidDatabaseListing(names), /rollback journal/)"
         },
         {
-          "line": 1318,
+          "line": 1375,
           "expression": "assert.deepEqual( requireCoherentAndroidDatabaseListing(names, { rollbackJournalVerifiedEmpty: true }) .rollbackJournals, [], )"
         },
         {
-          "line": 1323,
+          "line": 1380,
           "expression": "assert.throws( () => requireCoherentAndroidDatabaseListing(['RKStorage', 'RKStorage-mj01'], { rollbackJournalVerifiedEmpty: true, }), /rollback journal/, )"
         },
         {
-          "line": 1340,
+          "line": 1397,
           "expression": "assert.equal(observation.status, 'session-absent')"
         },
         {
-          "line": 1341,
+          "line": 1398,
           "expression": "assert.equal(observation.secureStore.sessionEntryPresent, false)"
         },
         {
-          "line": 1342,
+          "line": 1399,
           "expression": "assert.throws( () => parseAndroidSessionStorageObservation({ database: 'present', sqliteJson: '[]', securePreferences: 'present', secureStoreXml: '<map', sessionKeyHash: 'a'.repeat(64), }), /malformed/, )"
         }
       ]
@@ -73403,7 +73419,7 @@
       "id": "TST-27b4bf9c4fb2",
       "repo": "server",
       "path": "tests/auth-account.test.ts",
-      "contentHash": "a462ef0686a37f090bfd0dd6f542974c62a64f199d1cfc8c34d5bd83a90a0d25",
+      "contentHash": "3ad5bed9ec8079eeeb1ebe660db6b81eb3f18f090d8335930387a61f8fcb913b",
       "command": "bun run test:unit",
       "ownerPaths": [
         "src/app.ts",
@@ -73470,6 +73486,10 @@
         {
           "purpose": "delegates to an injected atomic completion service and revokes the returned account sessions",
           "line": 396
+        },
+        {
+          "purpose": "reports a committed reset as reset when the post-commit revoke fails",
+          "line": 428
         }
       ],
       "assertions": [
@@ -73628,6 +73648,46 @@
         {
           "line": 425,
           "expression": "expect(revokedAuthUids).toEqual(['local_email_user_1'])"
+        },
+        {
+          "line": 453,
+          "expression": "expect(retried.status).toBe(200)"
+        },
+        {
+          "line": 454,
+          "expression": "expect(retried.json()).resolves.toEqual({ status: 'reset' })"
+        },
+        {
+          "line": 455,
+          "expression": "expect(attempts).toBe(2)"
+        },
+        {
+          "line": 456,
+          "expression": "expect(errorSpy).not.toHaveBeenCalled()"
+        },
+        {
+          "line": 462,
+          "expression": "expect(failed.status).toBe(200)"
+        },
+        {
+          "line": 463,
+          "expression": "expect(failed.json()).resolves.toEqual({ status: 'reset' })"
+        },
+        {
+          "line": 464,
+          "expression": "expect(errorSpy).toHaveBeenCalledTimes(1)"
+        },
+        {
+          "line": 466,
+          "expression": "expect(logged).toContain('password_reset_post_commit_revoke_failed')"
+        },
+        {
+          "line": 467,
+          "expression": "expect(logged).not.toContain('user@example.test')"
+        },
+        {
+          "line": 468,
+          "expression": "expect(logged).not.toContain('good-token')"
         }
       ]
     },
