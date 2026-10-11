@@ -58753,7 +58753,7 @@
       "id": "TST-aede79536368",
       "repo": "client",
       "path": "tests/ci/owned-maestro-mcp-stdio.test.ts",
-      "contentHash": "f7900cba1d04f300174e63fb0771bc871939de5212dd58fa3e8152a954a96034",
+      "contentHash": "9af13406f22bb09b54c0af698c0e11d87db8767fe2ffb8b8d3e51d00beb14d6d",
       "command": "yarn test:unit",
       "ownerPaths": [
         "scripts/testing/owned-maestro-mcp-stdio.ts",
@@ -58777,872 +58777,872 @@
       "assertionPurposes": [
         {
           "purpose": "direct stdio handshake and call retain exact raw envelopes, IDs, tool args, times, and identity",
-          "line": 353
+          "line": 354
         },
         {
           "purpose": "socket absence is not claimed when the explicit inspector is unavailable",
-          "line": 415
+          "line": 416
         },
         {
           "purpose": "close captures owned PIDs and inspects sockets before a fast clean child exits on stdin EOF",
-          "line": 453
+          "line": 454
         },
         {
           "purpose": "close rejects a replaced or foreign leader before any socket claim",
-          "line": 483
+          "line": 484
         },
         {
           "purpose": "JSON-RPC tool errors remain visible as errors instead of becoming successful null results",
-          "line": 540
+          "line": 541
         },
         {
           "purpose": "non-finite protocol and startup deadlines are rejected before launch",
-          "line": 560
+          "line": 561
         },
         {
           "purpose": "runtime schema drift is blocked before tools can be called",
-          "line": 591
+          "line": 592
         },
         {
           "purpose": "an ID-bearing JSON-RPC message without result or error is retained as protocol failure",
-          "line": 610
+          "line": 611
         },
         {
           "purpose": "oversized rejected input stays bounded and exposes incomplete raw evidence",
-          "line": 627
+          "line": 628
         },
         {
           "purpose": "EOF-partial JSON-RPC input is retained as complete observed raw evidence",
-          "line": 647
+          "line": 648
         },
         {
           "purpose": "malformed and unexpected JSON-RPC responses retain failure provenance and clean the owned group",
-          "line": 665
+          "line": 666
         },
         {
           "purpose": "AbortSignal cancellation does not synthesize a response and verified cleanup remains required",
-          "line": 696
+          "line": 697
         },
         {
           "purpose": "request cancellation is not blocked by a stalled stdin write callback",
-          "line": 720
+          "line": 721
         },
         {
           "purpose": "startup cancellation reaches the initialized notification write",
-          "line": 750
+          "line": 751
         },
         {
           "purpose": "abort settlement removes its signal listener exactly once",
-          "line": 772
+          "line": 773
         },
         {
           "purpose": "deadline cancellation rejects a held call without declaring execution success",
-          "line": 806
+          "line": 807
         },
         {
           "purpose": "startup deadline is scoped to handshake while later calls use fresh request deadlines under the owner budget",
-          "line": 829
+          "line": 830
         },
         {
           "purpose": "fatal protocol input closes the callable state and retains the rejected line",
-          "line": 852
+          "line": 853
         },
         {
           "purpose": "identity refresh is bounded before a hanging controller read can block startup",
-          "line": 876
+          "line": 877
         },
         {
           "purpose": "late process ownership is fenced and stopped after startup cancellation",
-          "line": 910
+          "line": 911
         },
         {
           "purpose": "socket absence stays unknown when the full owned PID census fails",
-          "line": 945
+          "line": 946
         },
         {
           "purpose": "an empty terminal PID census does not claim socket absence without an owned identity",
-          "line": 992
+          "line": 993
         },
         {
           "purpose": "close fails closed when cancellation or an expired recovery deadline preempts the census",
-          "line": 1036
+          "line": 1037
         },
         {
           "purpose": "a response that races local cancellation is retained as a late raw envelope",
-          "line": 1084
+          "line": 1085
         },
         {
           "purpose": "late response identity remains retired when evidence publication fails",
-          "line": 1121
+          "line": 1122
         },
         {
           "purpose": "identity refresh cancellation race rechecks retirement and retains the response as late",
-          "line": 1181
+          "line": 1182
         },
         {
           "purpose": "close drains a queued response parser before publishing the terminal receipt",
-          "line": 1243
+          "line": 1244
         },
         {
           "purpose": "stdout chunks may contain multiple bounded protocol lines",
-          "line": 1297
+          "line": 1298
         },
         {
           "purpose": "ID-less JSON-RPC notifications cannot smuggle result or error members",
-          "line": 1327
+          "line": 1328
         },
         {
           "purpose": "transcript envelope count is bounded before publication",
-          "line": 1357
+          "line": 1358
         },
         {
           "purpose": "transcript bytes are bounded before any oversized line is written",
-          "line": 1384
+          "line": 1385
         },
         {
           "purpose": "a stalled spool worker is quarantined at the I/O deadline without a fake synchronous timeout",
-          "line": 1421
+          "line": 1422
         },
         {
           "purpose": "elapsed and invalid spool deadlines are rejected before worker creation or I/O",
-          "line": 1447
+          "line": 1448
         },
         {
           "purpose": "spool worker cancellation terminates the worker and does not publish a late write",
-          "line": 1478
+          "line": 1479
         },
         {
           "purpose": "default spool worker keeps its CommonJS contract under an actual ESM parent",
-          "line": 1500
+          "line": 1501
         },
         {
           "purpose": "spool worker rejects a pre-existing symlink before writing the target",
-          "line": 1545
+          "line": 1546
         },
         {
           "purpose": "session spool timeout preserves bounded raw failure evidence and blocks publication",
-          "line": 1565
+          "line": 1566
         },
         {
           "purpose": "concurrent raw spool appends serialize offsets and commit the exact aggregate bytes",
-          "line": 1588
+          "line": 1589
         },
         {
           "purpose": "concurrent raw spool reservations reject the append that would cross the disk cap",
-          "line": 1646
+          "line": 1647
         },
         {
           "purpose": "a queued raw spool append honors cancellation before it reaches worker I/O",
-          "line": 1701
+          "line": 1702
         },
         {
           "purpose": "runtime raw envelopes stay within memory and preserve complete bytes in a private spool",
-          "line": 1750
+          "line": 1751
         },
         {
           "purpose": "runtime raw spool close rejects a same-length disk mutation before receipt publication",
-          "line": 1822
+          "line": 1823
         },
         {
           "purpose": "oversized outbound JSON-RPC lines are rejected before stdin write",
-          "line": 1876
+          "line": 1877
         }
       ],
       "assertions": [
         {
-          "line": 362,
+          "line": 363,
           "expression": "assert.equal(call.isError, false)"
-        },
-        {
-          "line": 364,
-          "expression": "assert.deepEqual(receipt.toolNames, MAESTRO_261_TOOL_NAMES)"
         },
         {
           "line": 365,
+          "expression": "assert.deepEqual(receipt.toolNames, MAESTRO_261_TOOL_NAMES)"
+        },
+        {
+          "line": 366,
           "expression": "assert.deepEqual( receipt.outputSchemasAdvertised, Array(MAESTRO_261_TOOL_NAMES.length).fill(null), )"
         },
         {
-          "line": 369,
+          "line": 370,
           "expression": "assert.deepEqual( receipt.envelopes.map((envelope) => [envelope.kind, envelope.id, envelope.method]), [ ['request', 1, 'initialize'], ['response', 1, 'initialize'], ['notification', null, 'notifications/initialized'], ['"
         },
         {
-          "line": 383,
+          "line": 384,
           "expression": "assert.equal( Buffer.from(request.rawBytes).toString('utf8'), '{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"list_devices\",\"arguments\":{}}}\\n', )"
         },
         {
-          "line": 387,
+          "line": 388,
           "expression": "assert.equal(response.requestSequence, request.sequence)"
         },
         {
-          "line": 388,
+          "line": 389,
           "expression": "assert.ok(response.receivedAtMonotonicMs !== null && request.sentAtMonotonicMs !== null)"
         },
         {
-          "line": 389,
+          "line": 390,
           "expression": "assert.ok(response.receivedAtMonotonicMs >= request.sentAtMonotonicMs)"
         },
         {
-          "line": 390,
+          "line": 391,
           "expression": "assert.equal(response.sessionId, request.sessionId)"
         },
         {
-          "line": 391,
+          "line": 392,
           "expression": "assert.equal(response.childIdentity.pid, request.childIdentity.pid)"
         },
         {
-          "line": 392,
+          "line": 393,
           "expression": "assert.equal(response.childIdentity.pgid, request.childIdentity.pgid)"
         },
         {
-          "line": 393,
+          "line": 394,
           "expression": "assert.equal(response.childIdentity.started, request.childIdentity.started)"
         },
         {
-          "line": 394,
+          "line": 395,
           "expression": "assert.rejects( () => session.callTool('take_screenshot', { device_id: 'owned-device', accessToken: 'never-written', }), /outside the source schema/, )"
         },
         {
-          "line": 405,
+          "line": 406,
           "expression": "assert.equal((await readFile(transcript.path, 'utf8')).split('\\n').filter(Boolean).length, 7)"
         },
         {
-          "line": 407,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
-        },
-        {
           "line": 408,
-          "expression": "assert.equal(cleanup.socketResourcesAbsent, true)"
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
           "line": 409,
+          "expression": "assert.equal(cleanup.socketResourcesAbsent, true)"
+        },
+        {
+          "line": 410,
           "expression": "assert.ok(cleanup.status === 'cleaned' || cleanup.status === 'exited')"
         },
         {
-          "line": 446,
+          "line": 447,
           "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
         },
         {
-          "line": 447,
+          "line": 448,
           "expression": "assert.match(cleanup.cleanupError ?? '', /socket inspector unavailable/)"
         },
         {
-          "line": 462,
+          "line": 463,
           "expression": "assert.ok(pids.length > 0)"
         },
         {
-          "line": 471,
+          "line": 472,
           "expression": "assert.deepEqual(stdinDestroyedAtInspection, [false, true])"
         },
         {
-          "line": 472,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
-        },
-        {
           "line": 473,
-          "expression": "assert.equal(cleanup.socketBefore.length, 0)"
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
           "line": 474,
-          "expression": "assert.equal(cleanup.socketAfter.length, 0)"
+          "expression": "assert.equal(cleanup.socketBefore.length, 0)"
         },
         {
           "line": 475,
-          "expression": "assert.equal(cleanup.socketResourcesAbsent, true)"
+          "expression": "assert.equal(cleanup.socketAfter.length, 0)"
         },
         {
           "line": 476,
-          "expression": "assert.equal(cleanup.cleanupError, null)"
-        },
-        {
-          "line": 527,
-          "expression": "assert.equal(socketCalls, 0)"
-        },
-        {
-          "line": 528,
-          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
-        },
-        {
-          "line": 529,
-          "expression": "assert.match( cleanup.cleanupError ?? '', mode === 'replaced-start' ? /identity changed/ : /absent from the strict process census/, )"
-        },
-        {
-          "line": 533,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
-        },
-        {
-          "line": 549,
-          "expression": "assert.equal(call.isError, true)"
-        },
-        {
-          "line": 550,
-          "expression": "assert.equal(call.result, null)"
-        },
-        {
-          "line": 551,
-          "expression": "assert.deepEqual(call.error, { code: -32001, message: 'fixture tool failure' })"
-        },
-        {
-          "line": 552,
-          "expression": "assert.equal(call.response.value.error && typeof call.response.value.error, 'object')"
-        },
-        {
-          "line": 554,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
-        },
-        {
-          "line": 565,
-          "expression": "assert.throws( () => new TrackedOwnedMaestroMcpStdioSession({ ...sessionOptions(fixture, directory, controller), protocolDeadlineMs: Infinity, }), /finite safe integer/, )"
-        },
-        {
-          "line": 573,
-          "expression": "assert.throws( () => new TrackedOwnedMaestroMcpStdioSession({ ...sessionOptions(fixture, directory, controller), ownerDeadlineMs: Infinity, }), /finite safe integer/, )"
-        },
-        {
-          "line": 584,
-          "expression": "assert.rejects(() => session.start({ deadlineMs: Infinity }), /finite safe integer/)"
-        },
-        {
-          "line": 585,
-          "expression": "assert.equal(session.receipt().state, 'idle')"
-        },
-        {
-          "line": 598,
-          "expression": "assert.rejects(() => session.start(), /input schema differs from pinned Maestro source/)"
-        },
-        {
-          "line": 600,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
-        },
-        {
-          "line": 601,
-          "expression": "assert.equal( session.receipt().envelopes.some((envelope) => envelope.method === 'tools/call'), false, )"
-        },
-        {
-          "line": 617,
-          "expression": "assert.rejects(() => session.start(), /exactly one result or error/)"
-        },
-        {
-          "line": 619,
-          "expression": "assert.equal(failure?.kind, 'protocol-failure')"
-        },
-        {
-          "line": 620,
-          "expression": "assert.match(Buffer.from(failure?.rawBytes ?? []).toString('utf8'), /\"id\":2/)"
-        },
-        {
-          "line": 621,
-          "expression": "assert.equal(session.receipt().rejectedRawEvidence.length, 0)"
-        },
-        {
-          "line": 634,
-          "expression": "assert.rejects(() => session.start(), /stdout line exceeds/)"
-        },
-        {
-          "line": 637,
-          "expression": "assert.equal(evidence?.reason, 'oversized')"
-        },
-        {
-          "line": 638,
-          "expression": "assert.equal(evidence?.complete, false)"
-        },
-        {
-          "line": 639,
-          "expression": "assert.equal(evidence?.bytesObserved, MAX_JSON_LINE_BYTES + 1)"
-        },
-        {
-          "line": 640,
-          "expression": "assert.equal(evidence?.rawBytes.byteLength, MAX_JSON_LINE_BYTES)"
-        },
-        {
-          "line": 641,
-          "expression": "assert.ok(receipt.rejectedRawDroppedCount >= 1)"
-        },
-        {
-          "line": 654,
-          "expression": "assert.rejects( () => session.start(), /cancelled or deadline reached|runtime spool I\\/O deadline reached/, )"
-        },
-        {
-          "line": 659,
-          "expression": "assert.equal(Buffer.from(partial?.rawBytes ?? []).toString('utf8'), '{\"jsonrpc\":\"2.0\",\"id\":2')"
-        },
-        {
-          "line": 673,
-          "expression": "assert.rejects( () => session.start(), behavior === 'malformed' ? /Malformed JSON-RPC line/ : /unexpected response id/, )"
-        },
-        {
-          "line": 678,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
-        },
-        {
-          "line": 679,
-          "expression": "assert.match( session.receipt().protocolFailure ?? '', behavior === 'malformed' ? /Malformed JSON-RPC line/ : /unexpected response id/, )"
-        },
-        {
-          "line": 684,
-          "expression": "assert.equal(failureEnvelope?.kind, 'protocol-failure')"
-        },
-        {
-          "line": 685,
-          "expression": "assert.equal(failureEnvelope?.id, null)"
-        },
-        {
-          "line": 686,
-          "expression": "assert.equal(failureEnvelope?.method, null)"
-        },
-        {
-          "line": 688,
-          "expression": "assert.equal(rawFailure, 'not-json\\n')"
-        },
-        {
-          "line": 689,
-          "expression": "assert.match(rawFailure, /^\\{\"jsonrpc\":\"2\\.0\",\"id\":102,\"result\":\\{\"tools\":/)"
-        },
-        {
-          "line": 707,
-          "expression": "assert.rejects(call, OwnedMcpAbortError)"
-        },
-        {
-          "line": 708,
-          "expression": "assert.equal( session.receipt().envelopes.filter((envelope) => envelope.kind === 'response').length, 2, )"
-        },
-        {
-          "line": 713,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
-        },
-        {
-          "line": 714,
           "expression": "assert.equal(cleanup.socketResourcesAbsent, true)"
         },
         {
-          "line": 739,
-          "expression": "assert.rejects(call, OwnedMcpAbortError)"
+          "line": 477,
+          "expression": "assert.equal(cleanup.cleanupError, null)"
         },
         {
-          "line": 740,
-          "expression": "assert.ok(performance.now() - startedAt < 500)"
+          "line": 528,
+          "expression": "assert.equal(socketCalls, 0)"
         },
         {
-          "line": 741,
-          "expression": "assert.equal(session.receipt().retiredRequestCount, 1)"
+          "line": 529,
+          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
         },
         {
-          "line": 743,
+          "line": 530,
+          "expression": "assert.match( cleanup.cleanupError ?? '', mode === 'replaced-start' ? /identity changed/ : /absent from the strict process census/, )"
+        },
+        {
+          "line": 534,
           "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 763,
-          "expression": "assert.rejects(() => session!.start({ signal: controller.signal }), OwnedMcpAbortError)"
+          "line": 550,
+          "expression": "assert.equal(call.isError, true)"
         },
         {
-          "line": 765,
-          "expression": "assert.ok(performance.now() - startedAt < 1_000)"
+          "line": 551,
+          "expression": "assert.equal(call.result, null)"
         },
         {
-          "line": 796,
-          "expression": "assert.rejects(call, OwnedMcpAbortError)"
+          "line": 552,
+          "expression": "assert.deepEqual(call.error, { code: -32001, message: 'fixture tool failure' })"
         },
         {
-          "line": 797,
-          "expression": "assert.equal(added, 1)"
+          "line": 553,
+          "expression": "assert.equal(call.response.value.error && typeof call.response.value.error, 'object')"
         },
         {
-          "line": 798,
-          "expression": "assert.equal(removed, 1)"
-        },
-        {
-          "line": 800,
+          "line": 555,
           "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 814,
-          "expression": "assert.rejects( () => session.callTool('list_devices', {}), /cancelled or deadline reached/, )"
+          "line": 566,
+          "expression": "assert.throws( () => new TrackedOwnedMaestroMcpStdioSession({ ...sessionOptions(fixture, directory, controller), protocolDeadlineMs: Infinity, }), /finite safe integer/, )"
         },
         {
-          "line": 821,
-          "expression": "assert.equal(responseCount, 2)"
+          "line": 574,
+          "expression": "assert.throws( () => new TrackedOwnedMaestroMcpStdioSession({ ...sessionOptions(fixture, directory, controller), ownerDeadlineMs: Infinity, }), /finite safe integer/, )"
         },
         {
-          "line": 823,
+          "line": 585,
+          "expression": "assert.rejects(() => session.start({ deadlineMs: Infinity }), /finite safe integer/)"
+        },
+        {
+          "line": 586,
+          "expression": "assert.equal(session.receipt().state, 'idle')"
+        },
+        {
+          "line": 599,
+          "expression": "assert.rejects(() => session.start(), /input schema differs from pinned Maestro source/)"
+        },
+        {
+          "line": 601,
           "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 843,
-          "expression": "assert.equal(call.isError, false)"
+          "line": 602,
+          "expression": "assert.equal( session.receipt().envelopes.some((envelope) => envelope.method === 'tools/call'), false, )"
         },
         {
-          "line": 844,
-          "expression": "assert.equal(session.receipt().protocolFailure, null)"
+          "line": 618,
+          "expression": "assert.rejects(() => session.start(), /exactly one result or error/)"
         },
         {
-          "line": 846,
+          "line": 620,
+          "expression": "assert.equal(failure?.kind, 'protocol-failure')"
+        },
+        {
+          "line": 621,
+          "expression": "assert.match(Buffer.from(failure?.rawBytes ?? []).toString('utf8'), /\"id\":2/)"
+        },
+        {
+          "line": 622,
+          "expression": "assert.equal(session.receipt().rejectedRawEvidence.length, 0)"
+        },
+        {
+          "line": 635,
+          "expression": "assert.rejects(() => session.start(), /stdout line exceeds/)"
+        },
+        {
+          "line": 638,
+          "expression": "assert.equal(evidence?.reason, 'oversized')"
+        },
+        {
+          "line": 639,
+          "expression": "assert.equal(evidence?.complete, false)"
+        },
+        {
+          "line": 640,
+          "expression": "assert.equal(evidence?.bytesObserved, MAX_JSON_LINE_BYTES + 1)"
+        },
+        {
+          "line": 641,
+          "expression": "assert.equal(evidence?.rawBytes.byteLength, MAX_JSON_LINE_BYTES)"
+        },
+        {
+          "line": 642,
+          "expression": "assert.ok(receipt.rejectedRawDroppedCount >= 1)"
+        },
+        {
+          "line": 655,
+          "expression": "assert.rejects( () => session.start(), /cancelled or deadline reached|runtime spool I\\/O deadline reached/, )"
+        },
+        {
+          "line": 660,
+          "expression": "assert.equal(Buffer.from(partial?.rawBytes ?? []).toString('utf8'), '{\"jsonrpc\":\"2.0\",\"id\":2')"
+        },
+        {
+          "line": 674,
+          "expression": "assert.rejects( () => session.start(), behavior === 'malformed' ? /Malformed JSON-RPC line/ : /unexpected response id/, )"
+        },
+        {
+          "line": 679,
           "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 860,
-          "expression": "assert.rejects(() => session.callTool('list_devices', {}), /Malformed JSON-RPC line/)"
+          "line": 680,
+          "expression": "assert.match( session.receipt().protocolFailure ?? '', behavior === 'malformed' ? /Malformed JSON-RPC line/ : /unexpected response id/, )"
         },
         {
-          "line": 861,
-          "expression": "assert.equal(session.receipt().state, 'closing')"
-        },
-        {
-          "line": 862,
-          "expression": "assert.rejects( () => session.callTool('list_devices', {}), /MCP tool call before handshake/, )"
-        },
-        {
-          "line": 867,
+          "line": 685,
           "expression": "assert.equal(failureEnvelope?.kind, 'protocol-failure')"
         },
         {
-          "line": 868,
-          "expression": "assert.equal(Buffer.from(failureEnvelope?.rawBytes ?? []).toString('utf8'), 'not-json\\n')"
+          "line": 686,
+          "expression": "assert.equal(failureEnvelope?.id, null)"
         },
         {
-          "line": 870,
-          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
+          "line": 687,
+          "expression": "assert.equal(failureEnvelope?.method, null)"
         },
         {
-          "line": 901,
-          "expression": "assert.rejects(() => session.start(), /cancelled or deadline reached/)"
+          "line": 689,
+          "expression": "assert.equal(rawFailure, 'not-json\\n')"
         },
         {
-          "line": 902,
-          "expression": "assert.equal(stopCalled, true)"
+          "line": 690,
+          "expression": "assert.match(rawFailure, /^\\{\"jsonrpc\":\"2\\.0\",\"id\":102,\"result\":\\{\"tools\":/)"
         },
         {
-          "line": 903,
-          "expression": "assert.ok(captureCalls >= 2)"
-        },
-        {
-          "line": 904,
-          "expression": "assert.equal(session.receipt().state, 'closed')"
-        },
-        {
-          "line": 936,
-          "expression": "assert.rejects(() => session.start(), /cancelled or deadline reached/)"
-        },
-        {
-          "line": 937,
-          "expression": "assert.equal(stopCalled, true)"
-        },
-        {
-          "line": 939,
-          "expression": "assert.equal(receipt.cleanup?.ownedProcessGroupAbsent, true)"
-        },
-        {
-          "line": 984,
-          "expression": "assert.equal(socketCalls, 0)"
-        },
-        {
-          "line": 985,
-          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
-        },
-        {
-          "line": 986,
-          "expression": "assert.match(cleanup.cleanupError ?? '', /strict census unavailable/)"
-        },
-        {
-          "line": 1028,
-          "expression": "assert.equal(socketCalls, 0)"
-        },
-        {
-          "line": 1029,
-          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
-        },
-        {
-          "line": 1030,
-          "expression": "assert.match(cleanup.cleanupError ?? '', /empty before socket inspection/)"
-        },
-        {
-          "line": 1073,
-          "expression": "assert.equal(socketCalls, 0)"
-        },
-        {
-          "line": 1074,
-          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
-        },
-        {
-          "line": 1075,
-          "expression": "assert.equal(cleanup.status, 'failed')"
-        },
-        {
-          "line": 1076,
-          "expression": "assert.match(cleanup.cleanupError ?? '', /aborted|deadline|cancelled/i)"
-        },
-        {
-          "line": 1105,
+          "line": 708,
           "expression": "assert.rejects(call, OwnedMcpAbortError)"
         },
         {
-          "line": 1108,
-          "expression": "assert.equal(receipt.lateResponseCount, 1)"
+          "line": 709,
+          "expression": "assert.equal( session.receipt().envelopes.filter((envelope) => envelope.kind === 'response').length, 2, )"
         },
         {
-          "line": 1110,
-          "expression": "assert.equal(lateResponse?.lateResponse, true)"
+          "line": 714,
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 1114,
-          "expression": "assert.equal(request?.method, 'tools/call')"
+          "line": 715,
+          "expression": "assert.equal(cleanup.socketResourcesAbsent, true)"
         },
         {
-          "line": 1163,
-          "expression": "assert.rejects( () => internals.recordLateResponse( { jsonrpc: '2.0', id: 7, result: { late: true } }, Buffer.from('{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"late\":true}}\\n'), 4, retired, ), /injected spool failure/, )"
+          "line": 740,
+          "expression": "assert.rejects(call, OwnedMcpAbortError)"
         },
         {
-          "line": 1173,
+          "line": 741,
+          "expression": "assert.ok(performance.now() - startedAt < 500)"
+        },
+        {
+          "line": 742,
           "expression": "assert.equal(session.receipt().retiredRequestCount, 1)"
         },
         {
-          "line": 1174,
-          "expression": "assert.equal(session.receipt().rejectedRawEvidence.at(-1)?.reason, 'spool-failure')"
-        },
-        {
-          "line": 1226,
-          "expression": "assert.rejects(call, OwnedMcpAbortError)"
-        },
-        {
-          "line": 1230,
-          "expression": "assert.equal(session.receipt().lateResponseCount, 1)"
-        },
-        {
-          "line": 1231,
-          "expression": "assert.equal(session.receipt().envelopes.at(-1)?.lateResponse, true)"
-        },
-        {
-          "line": 1235,
+          "line": 744,
           "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 1282,
-          "expression": "assert.ok(releaseCapture)"
+          "line": 764,
+          "expression": "assert.rejects(() => session!.start({ signal: controller.signal }), OwnedMcpAbortError)"
         },
         {
-          "line": 1283,
+          "line": 766,
+          "expression": "assert.ok(performance.now() - startedAt < 1_000)"
+        },
+        {
+          "line": 797,
           "expression": "assert.rejects(call, OwnedMcpAbortError)"
         },
         {
-          "line": 1286,
+          "line": 798,
+          "expression": "assert.equal(added, 1)"
+        },
+        {
+          "line": 799,
+          "expression": "assert.equal(removed, 1)"
+        },
+        {
+          "line": 801,
           "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 1288,
-          "expression": "assert.equal(session.receipt().envelopes.at(-1)?.method, 'tools/call')"
+          "line": 815,
+          "expression": "assert.rejects( () => session.callTool('list_devices', {}), /cancelled or deadline reached/, )"
         },
         {
-          "line": 1290,
-          "expression": "assert.equal(JSON.stringify(session.receipt()), terminal)"
+          "line": 822,
+          "expression": "assert.equal(responseCount, 2)"
         },
         {
-          "line": 1313,
-          "expression": "assert.deepEqual( session .receipt() .envelopes.slice(-2) .map((envelope) => envelope.method), ['notifications/progress', 'notifications/log'], )"
+          "line": 824,
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 1346,
-          "expression": "assert.rejects( () => consumeStdout(Buffer.from(`${line}\\n`)), /notification must not contain response members/, )"
+          "line": 844,
+          "expression": "assert.equal(call.isError, false)"
         },
         {
-          "line": 1374,
-          "expression": "assert.rejects( () => session.writePrivateTranscript(path.join(directory, 'too-many.jsonl')), /envelope count exceeds/, )"
+          "line": 845,
+          "expression": "assert.equal(session.receipt().protocolFailure, null)"
         },
         {
-          "line": 1410,
-          "expression": "assert.rejects( () => session.writePrivateTranscript(transcriptPath), /transcript exceeds the private byte limit/, )"
+          "line": 847,
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 1414,
-          "expression": "assert.rejects(() => readFile(transcriptPath), { code: 'ENOENT' })"
+          "line": 861,
+          "expression": "assert.rejects(() => session.callTool('list_devices', {}), /Malformed JSON-RPC line/)"
         },
         {
-          "line": 1429,
-          "expression": "assert.rejects( () => writer.append(Buffer.from('bounded raw bytes'), { deadlineAtMonotonicMs: 20, }), /runtime spool I\\/O deadline reached/, )"
+          "line": 862,
+          "expression": "assert.equal(session.receipt().state, 'closing')"
         },
         {
-          "line": 1436,
-          "expression": "assert.equal(worker.terminated, true)"
+          "line": 863,
+          "expression": "assert.rejects( () => session.callTool('list_devices', {}), /MCP tool call before handshake/, )"
         },
         {
-          "line": 1437,
-          "expression": "assert.rejects( () => writer.append(Buffer.from('late bytes'), { deadlineAtMonotonicMs: 20 }), /runtime spool writer is unavailable/, )"
+          "line": 868,
+          "expression": "assert.equal(failureEnvelope?.kind, 'protocol-failure')"
         },
         {
-          "line": 1441,
-          "expression": "assert.rejects(() => writer.close(), /runtime spool I\\/O deadline reached/)"
+          "line": 869,
+          "expression": "assert.equal(Buffer.from(failureEnvelope?.rawBytes ?? []).toString('utf8'), 'not-json\\n')"
         },
         {
-          "line": 1466,
-          "expression": "assert.rejects( () => writer.append(Buffer.from('must not reach worker'), { deadlineAtMonotonicMs }), expected, )"
+          "line": 871,
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 1470,
-          "expression": "assert.equal(factoryCalls, 0)"
+          "line": 902,
+          "expression": "assert.rejects(() => session.start(), /cancelled or deadline reached/)"
         },
         {
-          "line": 1471,
-          "expression": "assert.equal(worker.appendCount, 0)"
+          "line": 903,
+          "expression": "assert.equal(stopCalled, true)"
         },
         {
-          "line": 1492,
-          "expression": "assert.rejects(append, /runtime spool I\\/O cancelled/)"
+          "line": 904,
+          "expression": "assert.ok(captureCalls >= 2)"
         },
         {
-          "line": 1493,
-          "expression": "assert.equal(worker.terminated, true)"
+          "line": 905,
+          "expression": "assert.equal(session.receipt().state, 'closed')"
         },
         {
-          "line": 1494,
-          "expression": "assert.rejects(() => lstat(path.join(directory, 'spool.private.bin')))"
+          "line": 937,
+          "expression": "assert.rejects(() => session.start(), /cancelled or deadline reached/)"
         },
         {
-          "line": 1538,
-          "expression": "assert.equal(result.code, 0, stderr || `child exited by ${result.signal ?? 'unknown signal'}`)"
+          "line": 938,
+          "expression": "assert.equal(stopCalled, true)"
         },
         {
-          "line": 1539,
-          "expression": "assert.equal(stdout, 'ok')"
+          "line": 940,
+          "expression": "assert.equal(receipt.cleanup?.ownedProcessGroupAbsent, true)"
         },
         {
-          "line": 1554,
-          "expression": "assert.rejects( () => writer.append(Buffer.from('must not follow'), { deadlineAtMonotonicMs }), /EEXIST|symlink|runtime spool worker failed|opening|regular-file/, )"
+          "line": 985,
+          "expression": "assert.equal(socketCalls, 0)"
         },
         {
-          "line": 1558,
-          "expression": "assert.equal(await readFile(victim, 'utf8'), 'unchanged')"
+          "line": 986,
+          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
         },
         {
-          "line": 1559,
-          "expression": "assert.rejects(() => writer.close())"
+          "line": 987,
+          "expression": "assert.match(cleanup.cleanupError ?? '', /strict census unavailable/)"
         },
         {
-          "line": 1576,
-          "expression": "assert.rejects(() => session!.start(), /runtime spool I\\/O deadline reached/)"
+          "line": 1029,
+          "expression": "assert.equal(socketCalls, 0)"
         },
         {
-          "line": 1577,
-          "expression": "assert.equal(worker.terminated, true)"
+          "line": 1030,
+          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
         },
         {
-          "line": 1579,
-          "expression": "assert.equal(receipt.envelopes.length, 0)"
+          "line": 1031,
+          "expression": "assert.match(cleanup.cleanupError ?? '', /empty before socket inspection/)"
         },
         {
-          "line": 1580,
-          "expression": "assert.equal(receipt.rejectedRawEvidence[0]?.reason, 'spool-failure')"
+          "line": 1074,
+          "expression": "assert.equal(socketCalls, 0)"
         },
         {
-          "line": 1581,
-          "expression": "assert.ok((receipt.rejectedRawEvidence[0]?.rawBytes.byteLength ?? 0) > 0)"
+          "line": 1075,
+          "expression": "assert.equal(cleanup.socketResourcesAbsent, false)"
         },
         {
-          "line": 1627,
-          "expression": "assert.equal(releases.length, 1)"
-        },
-        {
-          "line": 1630,
-          "expression": "assert.equal(releases.length, 1)"
-        },
-        {
-          "line": 1633,
-          "expression": "assert.deepEqual( references.map((reference) => [reference.offset, reference.bytes]), [ [0, 1], [1, 2], ], )"
-        },
-        {
-          "line": 1640,
-          "expression": "assert.equal(session.receipt().runtimeRawSpoolBytes, 3)"
-        },
-        {
-          "line": 1688,
-          "expression": "assert.equal(appendCalls, 1)"
-        },
-        {
-          "line": 1689,
-          "expression": "assert.equal(outcomes.filter((outcome) => outcome.status === 'fulfilled').length, 1)"
-        },
-        {
-          "line": 1690,
-          "expression": "assert.equal(outcomes.filter((outcome) => outcome.status === 'rejected').length, 1)"
-        },
-        {
-          "line": 1691,
-          "expression": "assert.match( String(outcomes.find((outcome) => outcome.status === 'rejected')?.reason), /MCP runtime raw spool exceeds the private byte limit/, )"
-        },
-        {
-          "line": 1695,
-          "expression": "assert.equal(session.receipt().runtimeRawSpoolBytes, MAX_RUNTIME_RAW_ENVELOPE_SPOOL_BYTES)"
-        },
-        {
-          "line": 1741,
-          "expression": "assert.rejects(second, /runtime spool I\\/O cancelled/)"
-        },
-        {
-          "line": 1742,
-          "expression": "assert.equal(releases.length, 1)"
-        },
-        {
-          "line": 1781,
-          "expression": "assert.ok(receipt.runtimeRawEnvelopeBytes <= MAX_RUNTIME_RAW_ENVELOPE_MEMORY_BYTES)"
-        },
-        {
-          "line": 1782,
-          "expression": "assert.ok( receipt.envelopes.some( (envelope) => envelope.rawBytes.byteLength === 0 && envelope.rawSpool !== null, ), )"
-        },
-        {
-          "line": 1787,
-          "expression": "assert.equal( receipt.runtimeRawEnvelopeBytes, receipt.envelopes.reduce((total, envelope) => total + envelope.rawBytes.byteLength, 0), )"
-        },
-        {
-          "line": 1791,
-          "expression": "assert.equal( receipt.runtimeRawSpoolBytes, receipt.envelopes.reduce((total, envelope) => total + envelope.rawByteLength, 0), )"
-        },
-        {
-          "line": 1797,
-          "expression": "assert.deepEqual(internals.readOwnedProtocolEnvelopeRawBytes(spooled), raw)"
-        },
-        {
-          "line": 1800,
-          "expression": "assert.equal(spoolInfo.isFile(), true)"
-        },
-        {
-          "line": 1801,
-          "expression": "assert.equal(spoolInfo.mode & 0o777, 0o600)"
-        },
-        {
-          "line": 1803,
-          "expression": "assert.equal( createHash('sha256').update(spoolBytes).digest('hex'), receipt.runtimeRawSpoolSha256, )"
-        },
-        {
-          "line": 1812,
-          "expression": "assert.throws( () => internals.readOwnedProtocolEnvelopeRawBytes(spooled), /spool reference is truncated/, )"
-        },
-        {
-          "line": 1859,
-          "expression": "assert.equal(mutated.byteLength, spoolBytes.byteLength)"
-        },
-        {
-          "line": 1860,
-          "expression": "assert.notEqual( createHash('sha256').update(mutated).digest('hex'), beforeClose.runtimeRawSpoolSha256, )"
-        },
-        {
-          "line": 1867,
+          "line": 1076,
           "expression": "assert.equal(cleanup.status, 'failed')"
         },
         {
+          "line": 1077,
+          "expression": "assert.match(cleanup.cleanupError ?? '', /aborted|deadline|cancelled/i)"
+        },
+        {
+          "line": 1106,
+          "expression": "assert.rejects(call, OwnedMcpAbortError)"
+        },
+        {
+          "line": 1109,
+          "expression": "assert.equal(receipt.lateResponseCount, 1)"
+        },
+        {
+          "line": 1111,
+          "expression": "assert.equal(lateResponse?.lateResponse, true)"
+        },
+        {
+          "line": 1115,
+          "expression": "assert.equal(request?.method, 'tools/call')"
+        },
+        {
+          "line": 1164,
+          "expression": "assert.rejects( () => internals.recordLateResponse( { jsonrpc: '2.0', id: 7, result: { late: true } }, Buffer.from('{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"late\":true}}\\n'), 4, retired, ), /injected spool failure/, )"
+        },
+        {
+          "line": 1174,
+          "expression": "assert.equal(session.receipt().retiredRequestCount, 1)"
+        },
+        {
+          "line": 1175,
+          "expression": "assert.equal(session.receipt().rejectedRawEvidence.at(-1)?.reason, 'spool-failure')"
+        },
+        {
+          "line": 1227,
+          "expression": "assert.rejects(call, OwnedMcpAbortError)"
+        },
+        {
+          "line": 1231,
+          "expression": "assert.equal(session.receipt().lateResponseCount, 1)"
+        },
+        {
+          "line": 1232,
+          "expression": "assert.equal(session.receipt().envelopes.at(-1)?.lateResponse, true)"
+        },
+        {
+          "line": 1236,
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
+        },
+        {
+          "line": 1283,
+          "expression": "assert.ok(releaseCapture)"
+        },
+        {
+          "line": 1284,
+          "expression": "assert.rejects(call, OwnedMcpAbortError)"
+        },
+        {
+          "line": 1287,
+          "expression": "assert.equal(cleanup.ownedProcessGroupAbsent, true)"
+        },
+        {
+          "line": 1289,
+          "expression": "assert.equal(session.receipt().envelopes.at(-1)?.method, 'tools/call')"
+        },
+        {
+          "line": 1291,
+          "expression": "assert.equal(JSON.stringify(session.receipt()), terminal)"
+        },
+        {
+          "line": 1314,
+          "expression": "assert.deepEqual( session .receipt() .envelopes.slice(-2) .map((envelope) => envelope.method), ['notifications/progress', 'notifications/log'], )"
+        },
+        {
+          "line": 1347,
+          "expression": "assert.rejects( () => consumeStdout(Buffer.from(`${line}\\n`)), /notification must not contain response members/, )"
+        },
+        {
+          "line": 1375,
+          "expression": "assert.rejects( () => session.writePrivateTranscript(path.join(directory, 'too-many.jsonl')), /envelope count exceeds/, )"
+        },
+        {
+          "line": 1411,
+          "expression": "assert.rejects( () => session.writePrivateTranscript(transcriptPath), /transcript exceeds the private byte limit/, )"
+        },
+        {
+          "line": 1415,
+          "expression": "assert.rejects(() => readFile(transcriptPath), { code: 'ENOENT' })"
+        },
+        {
+          "line": 1430,
+          "expression": "assert.rejects( () => writer.append(Buffer.from('bounded raw bytes'), { deadlineAtMonotonicMs: 20, }), /runtime spool I\\/O deadline reached/, )"
+        },
+        {
+          "line": 1437,
+          "expression": "assert.equal(worker.terminated, true)"
+        },
+        {
+          "line": 1438,
+          "expression": "assert.rejects( () => writer.append(Buffer.from('late bytes'), { deadlineAtMonotonicMs: 20 }), /runtime spool writer is unavailable/, )"
+        },
+        {
+          "line": 1442,
+          "expression": "assert.rejects(() => writer.close(), /runtime spool I\\/O deadline reached/)"
+        },
+        {
+          "line": 1467,
+          "expression": "assert.rejects( () => writer.append(Buffer.from('must not reach worker'), { deadlineAtMonotonicMs }), expected, )"
+        },
+        {
+          "line": 1471,
+          "expression": "assert.equal(factoryCalls, 0)"
+        },
+        {
+          "line": 1472,
+          "expression": "assert.equal(worker.appendCount, 0)"
+        },
+        {
+          "line": 1493,
+          "expression": "assert.rejects(append, /runtime spool I\\/O cancelled/)"
+        },
+        {
+          "line": 1494,
+          "expression": "assert.equal(worker.terminated, true)"
+        },
+        {
+          "line": 1495,
+          "expression": "assert.rejects(() => lstat(path.join(directory, 'spool.private.bin')))"
+        },
+        {
+          "line": 1539,
+          "expression": "assert.equal(result.code, 0, stderr || `child exited by ${result.signal ?? 'unknown signal'}`)"
+        },
+        {
+          "line": 1540,
+          "expression": "assert.equal(stdout, 'ok')"
+        },
+        {
+          "line": 1555,
+          "expression": "assert.rejects( () => writer.append(Buffer.from('must not follow'), { deadlineAtMonotonicMs }), /EEXIST|symlink|runtime spool worker failed|opening|regular-file/, )"
+        },
+        {
+          "line": 1559,
+          "expression": "assert.equal(await readFile(victim, 'utf8'), 'unchanged')"
+        },
+        {
+          "line": 1560,
+          "expression": "assert.rejects(() => writer.close())"
+        },
+        {
+          "line": 1577,
+          "expression": "assert.rejects(() => session!.start(), /runtime spool I\\/O deadline reached/)"
+        },
+        {
+          "line": 1578,
+          "expression": "assert.equal(worker.terminated, true)"
+        },
+        {
+          "line": 1580,
+          "expression": "assert.equal(receipt.envelopes.length, 0)"
+        },
+        {
+          "line": 1581,
+          "expression": "assert.equal(receipt.rejectedRawEvidence[0]?.reason, 'spool-failure')"
+        },
+        {
+          "line": 1582,
+          "expression": "assert.ok((receipt.rejectedRawEvidence[0]?.rawBytes.byteLength ?? 0) > 0)"
+        },
+        {
+          "line": 1628,
+          "expression": "assert.equal(releases.length, 1)"
+        },
+        {
+          "line": 1631,
+          "expression": "assert.equal(releases.length, 1)"
+        },
+        {
+          "line": 1634,
+          "expression": "assert.deepEqual( references.map((reference) => [reference.offset, reference.bytes]), [ [0, 1], [1, 2], ], )"
+        },
+        {
+          "line": 1641,
+          "expression": "assert.equal(session.receipt().runtimeRawSpoolBytes, 3)"
+        },
+        {
+          "line": 1689,
+          "expression": "assert.equal(appendCalls, 1)"
+        },
+        {
+          "line": 1690,
+          "expression": "assert.equal(outcomes.filter((outcome) => outcome.status === 'fulfilled').length, 1)"
+        },
+        {
+          "line": 1691,
+          "expression": "assert.equal(outcomes.filter((outcome) => outcome.status === 'rejected').length, 1)"
+        },
+        {
+          "line": 1692,
+          "expression": "assert.match( String(outcomes.find((outcome) => outcome.status === 'rejected')?.reason), /MCP runtime raw spool exceeds the private byte limit/, )"
+        },
+        {
+          "line": 1696,
+          "expression": "assert.equal(session.receipt().runtimeRawSpoolBytes, MAX_RUNTIME_RAW_ENVELOPE_SPOOL_BYTES)"
+        },
+        {
+          "line": 1742,
+          "expression": "assert.rejects(second, /runtime spool I\\/O cancelled/)"
+        },
+        {
+          "line": 1743,
+          "expression": "assert.equal(releases.length, 1)"
+        },
+        {
+          "line": 1782,
+          "expression": "assert.ok(receipt.runtimeRawEnvelopeBytes <= MAX_RUNTIME_RAW_ENVELOPE_MEMORY_BYTES)"
+        },
+        {
+          "line": 1783,
+          "expression": "assert.ok( receipt.envelopes.some( (envelope) => envelope.rawBytes.byteLength === 0 && envelope.rawSpool !== null, ), )"
+        },
+        {
+          "line": 1788,
+          "expression": "assert.equal( receipt.runtimeRawEnvelopeBytes, receipt.envelopes.reduce((total, envelope) => total + envelope.rawBytes.byteLength, 0), )"
+        },
+        {
+          "line": 1792,
+          "expression": "assert.equal( receipt.runtimeRawSpoolBytes, receipt.envelopes.reduce((total, envelope) => total + envelope.rawByteLength, 0), )"
+        },
+        {
+          "line": 1798,
+          "expression": "assert.deepEqual(internals.readOwnedProtocolEnvelopeRawBytes(spooled), raw)"
+        },
+        {
+          "line": 1801,
+          "expression": "assert.equal(spoolInfo.isFile(), true)"
+        },
+        {
+          "line": 1802,
+          "expression": "assert.equal(spoolInfo.mode & 0o777, 0o600)"
+        },
+        {
+          "line": 1804,
+          "expression": "assert.equal( createHash('sha256').update(spoolBytes).digest('hex'), receipt.runtimeRawSpoolSha256, )"
+        },
+        {
+          "line": 1813,
+          "expression": "assert.throws( () => internals.readOwnedProtocolEnvelopeRawBytes(spooled), /spool reference is truncated/, )"
+        },
+        {
+          "line": 1860,
+          "expression": "assert.equal(mutated.byteLength, spoolBytes.byteLength)"
+        },
+        {
+          "line": 1861,
+          "expression": "assert.notEqual( createHash('sha256').update(mutated).digest('hex'), beforeClose.runtimeRawSpoolSha256, )"
+        },
+        {
           "line": 1868,
-          "expression": "assert.match(cleanup.cleanupError ?? '', /runtime raw spool aggregate hash changed/)"
+          "expression": "assert.equal(cleanup.status, 'failed')"
         },
         {
           "line": 1869,
-          "expression": "assert.match(cleanup.cleanupError ?? '', /expected [0-9a-f]{64}, actual [0-9a-f]{64}/)"
+          "expression": "assert.match(cleanup.cleanupError ?? '', /runtime raw spool aggregate hash changed/)"
         },
         {
           "line": 1870,
+          "expression": "assert.match(cleanup.cleanupError ?? '', /expected [0-9a-f]{64}, actual [0-9a-f]{64}/)"
+        },
+        {
+          "line": 1871,
           "expression": "assert.equal(session.receipt().cleanup?.cleanupError, cleanup.cleanupError)"
         },
         {
-          "line": 1884,
+          "line": 1885,
           "expression": "assert.rejects( () => session.callTool('take_screenshot', { device_id: 'x'.repeat(MAX_JSON_LINE_BYTES) }), /outbound JSON-RPC line exceeds/, )"
         },
         {
-          "line": 1888,
+          "line": 1889,
           "expression": "assert.equal( session.receipt().envelopes.some((envelope) => envelope.method === 'tools/call'), false, )"
         }
       ]
