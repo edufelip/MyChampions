@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { chmod, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { projectIosConnectionT16BTerminal } from '../../scripts/testing/run-ios-connection-attempt';
@@ -36,7 +36,9 @@ function cleanupReceipt(overrides: Record<string, unknown> = {}): Record<string,
 }
 
 async function artifactRoot(): Promise<string> {
-  const root = await mkdtemp(path.join(process.cwd(), '.qa', 'artifacts', 't16b-outer-binding-'));
+  const parent = path.join(process.cwd(), '.qa', 'artifacts');
+  await mkdir(parent, { recursive: true, mode: 0o700 });
+  const root = await mkdtemp(path.join(parent, 't16b-outer-binding-'));
   await chmod(root, 0o700);
   return root;
 }

@@ -22,7 +22,9 @@ function privateEvidencePath(root: string, name = 'context.private.json'): strin
 }
 
 async function temporaryRoot(): Promise<string> {
-  return mkdtemp(path.join(repositoryRoot, '.qa/artifacts/prepare-exploration-test-'));
+  const artifacts = path.join(repositoryRoot, '.qa/artifacts');
+  await mkdir(artifacts, { recursive: true, mode: 0o700 });
+  return mkdtemp(path.join(artifacts, 'prepare-exploration-test-'));
 }
 
 function contextFor(

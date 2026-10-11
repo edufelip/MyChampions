@@ -119,7 +119,9 @@ async function fixture(): Promise<{
   root: string;
   selectionEvidence: FixtureSelectionEvidence;
 }> {
-  const parent = await mkdtemp(path.join(process.cwd(), '.qa', 'artifacts', 't16b-v3-'));
+  const artifacts = path.join(process.cwd(), '.qa', 'artifacts');
+  await mkdir(artifacts, { recursive: true, mode: 0o700 });
+  const parent = await mkdtemp(path.join(artifacts, 't16b-v3-'));
   await chmod(parent, 0o700);
   const root = path.join(parent, runId);
   await mkdir(root, { mode: 0o700 });

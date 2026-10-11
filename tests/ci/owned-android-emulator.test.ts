@@ -583,44 +583,79 @@ void test('local Android SDK and Maestro share only run-owned debug keys without
   );
 });
 
-void test('Android preflight failure records exact acquisition root without creating target resources', async () => {
-  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'mc-android-preflight-')));
-  const runtimeParent = path.join(root, 'runtime'),
-    artifactRoot = path.join(root, 'a'.repeat(24));
-  await mkdir(runtimeParent, { mode: 0o700 });
-  await mkdir(artifactRoot, { mode: 0o700 });
-  try {
-    await assert.rejects(
-      acquireOwnedAndroidEmulator({
-        runtimeParent,
-        artifactRoot,
-        sdkRoot: '/no-sdk-is-read',
-        systemImage: 'invalid',
-      }),
-      /Unsafe or unsupported/,
-    );
-    assert.deepEqual(await readdir(runtimeParent), []);
-    const read = async (name: string) =>
-      JSON.parse(await readFile(path.join(artifactRoot, name), 'utf8')) as Record<string, unknown>;
-    const intent = await read('android-acquisition-owner.private.json'),
-      failure = await read('android-preflight-failure.private.json');
-    assert.equal(intent.captureRunId, path.basename(artifactRoot));
-    assert.equal(intent.runtimeParent, runtimeParent);
-    assert.equal(
-      intent.runtimeRoot,
-      path.join(runtimeParent, `mychampions-pilot-${String(intent.runId)}`),
-    );
-    assert.equal(
-      failure.kind,
-      'original Android preflight failure before target resource creation',
-    );
-    assert.equal(failure.runId, intent.runId);
-    assert.equal(failure.runtimeRoot, intent.runtimeRoot);
-    assert.deepEqual((await readdir(artifactRoot)).sort(), [
-      'android-acquisition-owner.private.json',
-      'android-preflight-failure.private.json',
-    ]);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+void test(
+  'Android acquisition refuses a non-macOS host before writing anything',
+  { skip: process.platform === 'darwin' && 'covered by the macOS preflight test below' },
+  async () => {
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'mc-android-host-')));
+    const runtimeParent = path.join(root, 'runtime'),
+      artifactRoot = path.join(root, 'a'.repeat(24));
+    await mkdir(runtimeParent, { mode: 0o700 });
+    await mkdir(artifactRoot, { mode: 0o700 });
+    try {
+      await assert.rejects(
+        acquireOwnedAndroidEmulator({
+          runtimeParent,
+          artifactRoot,
+          sdkRoot: '/no-sdk-is-read',
+          systemImage: 'invalid',
+        }),
+        /requires macOS\/HVF/,
+      );
+      assert.deepEqual(await readdir(runtimeParent), []);
+      assert.deepEqual(await readdir(artifactRoot), []);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
+
+// The local Android pilot runs only on macOS (HVF), so its preflight is reachable only there.
+void test(
+  'Android preflight failure records exact acquisition root without creating target resources',
+  { skip: process.platform !== 'darwin' && 'the local Android pilot is macOS-only' },
+  async () => {
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'mc-android-preflight-')));
+    const runtimeParent = path.join(root, 'runtime'),
+      artifactRoot = path.join(root, 'a'.repeat(24));
+    await mkdir(runtimeParent, { mode: 0o700 });
+    await mkdir(artifactRoot, { mode: 0o700 });
+    try {
+      await assert.rejects(
+        acquireOwnedAndroidEmulator({
+          runtimeParent,
+          artifactRoot,
+          sdkRoot: '/no-sdk-is-read',
+          systemImage: 'invalid',
+        }),
+        /Unsafe or unsupported/,
+      );
+      assert.deepEqual(await readdir(runtimeParent), []);
+      const read = async (name: string) =>
+        JSON.parse(await readFile(path.join(artifactRoot, name), 'utf8')) as Record<
+          string,
+          unknown
+        >;
+      const intent = await read('android-acquisition-owner.private.json'),
+        failure = await read('android-preflight-failure.private.json');
+      assert.equal(intent.captureRunId, path.basename(artifactRoot));
+      assert.equal(intent.runtimeParent, runtimeParent);
+      assert.equal(
+        intent.runtimeRoot,
+        path.join(runtimeParent, `mychampions-pilot-${String(intent.runId)}`),
+      );
+      assert.equal(
+        failure.kind,
+        'original Android preflight failure before target resource creation',
+      );
+      assert.equal(failure.runId, intent.runId);
+      assert.equal(failure.runtimeRoot, intent.runtimeRoot);
+      assert.deepEqual((await readdir(artifactRoot)).sort(), [
+        'android-acquisition-owner.private.json',
+        'android-preflight-failure.private.json',
+      ]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);

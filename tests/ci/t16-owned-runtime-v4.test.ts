@@ -2,6 +2,7 @@ import { strict as assert } from 'node:assert';
 import { createHash } from 'node:crypto';
 import {
   chmod,
+  mkdir,
   mkdtemp,
   readFile,
   realpath,
@@ -111,6 +112,7 @@ void test('qa:explore chooser only returns a declared reversible assertion', asy
 
 void test('cold-reset validation binds the original receipt bytes and rejects later mutation', async () => {
   const parent = path.join(repositoryRoot, '.qa', 'artifacts');
+  await mkdir(parent, { recursive: true, mode: 0o700 });
   await chmod(parent, 0o700);
   const artifactRoot = await mkdtemp(path.join(parent, 't16-v4-reset-'));
   await chmod(artifactRoot, 0o700);
