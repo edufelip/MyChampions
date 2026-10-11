@@ -33,6 +33,8 @@ tags: [nutrition]
 - assertVisible:
     id: pro.plan.metadata.name
     text: E2E Builder Nutrition Plan
+# On short phones the open keyboard covers the next field; close it first.
+- runFlow: ../common/hide-keyboard.yaml
 - tapOn:
     id: pro.plan.metadata.hydrationGoalMl
 - inputText: "2200"
