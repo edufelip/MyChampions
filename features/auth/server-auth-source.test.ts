@@ -303,7 +303,47 @@ describe('server-auth-source', () => {
 
     // Cookies go while the session is still current, so no request sent after
     // the bearer is dropped can carry the old access cookie.
-    assert.deepEqual(calls, ['cookies:server-token-1', 'storage:none']);
+    // A second, unawaited clear after the bearer is dropped catches cookies
+    // re-set by a response that was already in flight.
+    assert.deepEqual(calls, ['cookies:server-token-1', 'storage:none', 'cookies:none']);
+  });
+
+  it('finishes native sign-out when the cookie store never answers', async () => {
+    clearServerAuthSession();
+    const storage = createMemoryStorage();
+    await startLocalServerSession(
+      { email: 'user@example.test', displayName: 'User One' },
+      {
+        fetch: async () =>
+          response({
+            accessToken: 'server-token-1',
+            tokenType: 'Bearer',
+            profile: {
+              authUid: 'local_user',
+              displayName: 'User One',
+              emailNormalized: 'user@example.test',
+              lockedRole: null,
+              acceptedTermsVersion: null,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            },
+            expiresAt: '2999-01-01T00:00:00.000Z',
+          }),
+        getServerBaseUrl: () => 'http://server.test',
+        storage,
+      },
+    );
+    assert.equal(getCurrentServerAccessToken(), 'server-token-1');
+
+    // Android never calls back when the WebView cookie manager is unavailable.
+    await clearPersistedServerAuthSession({
+      storage,
+      clearCookies: () => new Promise<void>(() => {}),
+      cookieClearTimeoutMs: 10,
+    });
+
+    assert.equal(getCurrentServerAccessToken(), null);
+    assert.equal(await storage.getItem('auth.server.session'), null);
   });
 
   it('finishes native sign-out when the cookie store cannot be cleared', async () => {
