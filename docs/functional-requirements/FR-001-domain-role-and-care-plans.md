@@ -306,3 +306,10 @@ Define the target functional scope for a subscription-based student wellness app
 ## Clarifications Pending
 
 - None currently.
+
+## ET-229 Exercise Suggestion Extension
+
+- `FR-275`: SC-208 ordinary exercise search shall remain available without TypeSafe and shall never call a semantic provider. A separately configured, disabled-by-default opt-in action may request one suggestion for the current query through the MyChampions server.
+- `FR-276`: The semantic action shall require explicit localized disclosure and a literal consent request; it shall never run on modal open, typing, ordinary retry, or locale change. Only IDs returned in the same deterministic result set may be highlighted, and selection/Confirm/Save behavior shall remain unchanged.
+- `FR-277`: The client shall invalidate ordinary and suggestion requests on every query transition, clear, close, and unmount, and shall ignore a response for any prior query. Provider/configuration failures shall preserve ordinary search usability.
+- `FR-278`: TypeSafe credentials, prompt details, confidence/probability data, and provider calls shall remain server-only. The app shall ship all suggestion copy in `en-US`, `pt-BR`, and `es-ES` bundles.

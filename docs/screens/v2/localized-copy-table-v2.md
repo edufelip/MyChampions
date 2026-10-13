@@ -590,6 +590,12 @@ Provide a single translation-ready source for user-facing strings in V2 screen s
 | `pro.plan.item.search.error` | SC-208 | Exercise search error | Error searching for exercises. | Erro ao buscar exercícios. | Error al buscar ejercicios. | |
 | `pro.plan.item.search.retry` | SC-208 | Exercise search retry CTA | Try again | Tentar novamente | Intentar de nuevo | |
 | `pro.plan.item.search.back` | SC-208 | Exercise detail back link | Back to search | Voltar para a busca | Volver a la búsqueda | |
+| `pro.plan.item.search.semantic.cta` | SC-208 / ET-229 | Opt-in semantic suggestion CTA | Get a suggested match | Sugerir uma correspondência | Sugerir una coincidencia | Disabled unless the app flag is enabled |
+| `pro.plan.item.search.semantic.disclosure` | SC-208 / ET-229 | Semantic suggestion disclosure | Sends this search text to TypeSafe to suggest a catalog match. You choose what to add. | Envia este texto de busca à TypeSafe para sugerir um exercício do catálogo. Você escolhe o que adicionar. | Envía este texto de búsqueda a TypeSafe para sugerir un ejercicio del catálogo. Tú eliges qué añadir. | |
+| `pro.plan.item.search.semantic.loading` | SC-208 / ET-229 | Semantic suggestion loading | Finding a suggested match… | Buscando uma sugestão… | Buscando una sugerencia… | |
+| `pro.plan.item.search.semantic.badge` | SC-208 / ET-229 | Suggested result badge | Suggested match | Correspondência sugerida | Coincidencia sugerida | |
+| `pro.plan.item.search.semantic.none` | SC-208 / ET-229 | No semantic match | No clear match. Try a more specific exercise name. | Nenhuma correspondência clara. Tente um nome de exercício mais específico. | No hay una coincidencia clara. Prueba un nombre de ejercicio más específico. | |
+| `pro.plan.item.search.semantic.unavailable` | SC-208 / ET-229 | Semantic provider unavailable | Suggestions are unavailable. You can still use the search results. | As sugestões estão indisponíveis. Você ainda pode usar os resultados da busca. | Las sugerencias no están disponibles. Puedes seguir usando los resultados de búsqueda. | |
 | `pro.plan.item.detail.description` | SC-208 | Exercise detail section title | Description | Descrição | Descripción | |
 | `pro.plan.item.detail.instructions` | SC-208 | Exercise detail section title | Instructions | Instruções | Instrucciones | |
 | `pro.plan.item.detail.important_points` | SC-208 | Exercise detail section title | Important Points | Pontos Importantes | Puntos Importantes | |

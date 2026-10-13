@@ -55,6 +55,22 @@ export type ExerciseSearchResult = {
   requestId?: string;
 };
 
+export type ExerciseSuggestionStatus =
+  'suggested' | 'no_match' | 'unsupported_query' | 'disabled' | 'unavailable';
+
+export type ExerciseSuggestionResult = {
+  schemaVersion: 'exercise-suggestion.v1';
+  query: string;
+  lang: string;
+  page: 1;
+  pageSize: number;
+  total: number;
+  exercises: ExerciseItem[];
+  suggestionId: string | null;
+  status: ExerciseSuggestionStatus;
+  requestId?: string;
+};
+
 type CatalogSearchRequestBody = {
   lang: string;
   query: string;
@@ -62,7 +78,7 @@ type CatalogSearchRequestBody = {
   pageSize: number;
 };
 
-type ExerciseServiceDeps = {
+export type ExerciseServiceDeps = {
   getServerBaseUrl: () => string | undefined;
   getCurrentAccessToken: () => Promise<string | null>;
   getLocale: () => Promise<string>;
@@ -198,6 +214,27 @@ function getE2EExerciseSearchFixture(query: string): ExerciseSearchResult | null
   };
 }
 
+function getE2EExerciseSuggestionFixture(
+  query: string,
+  pageSize: number,
+): ExerciseSuggestionResult | null {
+  const searchFixture = getE2EExerciseSearchFixture(query);
+  if (!searchFixture) return null;
+
+  return {
+    schemaVersion: 'exercise-suggestion.v1',
+    query: query.trim(),
+    lang: 'en-US',
+    page: 1,
+    pageSize,
+    total: searchFixture.total,
+    exercises: searchFixture.exercises,
+    suggestionId: searchFixture.exercises[0]?.id ?? null,
+    status: searchFixture.exercises.length > 0 ? 'suggested' : 'no_match',
+    requestId: 'e2e-exercise-suggestion-fixture',
+  };
+}
+
 function parseExerciseFromUnknown(payload: unknown): ExerciseItem | null {
   if (!payload || typeof payload !== 'object') return null;
 
@@ -241,8 +278,8 @@ async function resolveServerConnection(
 }
 
 async function catalogPost<T>(
-  path: string,
-  body: CatalogSearchRequestBody,
+  route: 'search' | 'suggest',
+  body: CatalogSearchRequestBody | (CatalogSearchRequestBody & { consent: true }),
   deps: ExerciseServiceDeps,
 ): Promise<{ payload: T; requestId?: string; status: number }> {
   const serverConnection = await resolveServerConnection(deps);
@@ -250,7 +287,7 @@ async function catalogPost<T>(
   const locale = await deps.getLocale();
   const lang = normalizeLocaleForService(locale);
   const requestId = deps.createRequestId();
-  const endpoint = `${serverConnection.baseUrl}/integrations/exercise/search`;
+  const endpoint = `${serverConnection.baseUrl}/integrations/exercise/${route}`;
   const requestBody = { ...body, lang };
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -260,7 +297,7 @@ async function catalogPost<T>(
   };
 
   logNetworkDebug('exerciseService.catalogPost', 'Dispatching catalog request.', {
-    path,
+    path: route,
     lang,
     requestId,
   });
@@ -277,7 +314,7 @@ async function catalogPost<T>(
     });
   } catch (error) {
     console.error('[exerciseService.catalogPost] Network request failed:', {
-      path,
+      path: route,
       requestId,
       error: (error as Error)?.message ?? String(error),
     });
@@ -303,7 +340,7 @@ async function catalogPost<T>(
       responseBody = '';
     }
     console.error('[exerciseService.catalogPost] Service returned non-OK status:', {
-      path,
+      path: route,
       requestId: responseRequestId,
       status: response.status,
       body: responseBody,
@@ -321,7 +358,7 @@ async function catalogPost<T>(
     payload = (await response.json()) as T;
   } catch {
     console.error('[exerciseService.catalogPost] Response JSON parse failed:', {
-      path,
+      path: route,
       requestId: responseRequestId,
       status: response.status,
     });
@@ -333,7 +370,7 @@ async function catalogPost<T>(
   }
 
   logNetworkDebug('exerciseService.catalogPost', 'Request completed successfully.', {
-    path,
+    path: route,
     requestId: responseRequestId,
     status: response.status,
   });
@@ -432,7 +469,7 @@ export async function searchExerciseLibrary(
       pageSize?: number;
       total?: number;
     };
-  }>('/catalog/search', { query: query.trim(), lang: '', page: 1, pageSize }, deps);
+  }>('search', { query: query.trim(), lang: '', page: 1, pageSize }, deps);
 
   const rawExercises = Array.isArray(payload.results)
     ? payload.results
@@ -478,6 +515,110 @@ export async function searchExerciseLibrary(
     pageSize: resolvedPageSize,
     total,
     exercises,
+    requestId,
+  };
+}
+
+function isExerciseSuggestionStatus(value: unknown): value is ExerciseSuggestionStatus {
+  return (
+    value === 'suggested' ||
+    value === 'no_match' ||
+    value === 'unsupported_query' ||
+    value === 'disabled' ||
+    value === 'unavailable'
+  );
+}
+
+/**
+ * Sends the current query only after the caller's explicit suggestion action.
+ * The server owns provider credentials and validates the candidate membership.
+ */
+export async function suggestExerciseLibrary(
+  query: string,
+  pageSize = 20,
+  deps: ExerciseServiceDeps = defaultDeps,
+): Promise<ExerciseSuggestionResult> {
+  const trimmedQuery = query.trim();
+  const fixture = getE2EExerciseSuggestionFixture(trimmedQuery, pageSize);
+  if (fixture) {
+    // Keep the fixture asynchronous so the opt-in loading state is observable
+    // during browser review without contacting a provider or local server.
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return fixture;
+  }
+
+  const { payload, requestId } = await catalogPost<{
+    schemaVersion?: unknown;
+    query?: unknown;
+    lang?: unknown;
+    page?: unknown;
+    pageSize?: unknown;
+    total?: unknown;
+    results?: unknown[];
+    suggestion?: unknown;
+    status?: unknown;
+  }>('suggest', { query: trimmedQuery, lang: '', page: 1, pageSize, consent: true }, deps);
+
+  if (
+    payload.schemaVersion !== 'exercise-suggestion.v1' ||
+    !isExerciseSuggestionStatus(payload.status)
+  ) {
+    throw new ExerciseServiceSourceError(
+      'invalid_response',
+      'Exercise suggestion response was malformed.',
+      {
+        requestId,
+      },
+    );
+  }
+  const rawResults = Array.isArray(payload.results) ? payload.results : [];
+  const exercises = rawResults.filter((item): item is ExerciseItem => isExerciseItem(item));
+  const candidateIds = new Set(exercises.map((exercise) => exercise.id));
+  const rawSuggestion = payload.suggestion;
+  const suggestionId =
+    rawSuggestion &&
+    typeof rawSuggestion === 'object' &&
+    typeof (rawSuggestion as { exerciseId?: unknown }).exerciseId === 'string'
+      ? (rawSuggestion as { exerciseId: string }).exerciseId
+      : null;
+  if (suggestionId && !candidateIds.has(suggestionId)) {
+    throw new ExerciseServiceSourceError(
+      'invalid_response',
+      'Exercise suggestion selected an unknown catalog item.',
+      {
+        requestId,
+      },
+    );
+  }
+  if (payload.status === 'suggested' && !suggestionId) {
+    throw new ExerciseServiceSourceError(
+      'invalid_response',
+      'Suggested exercise response omitted its catalog item.',
+      {
+        requestId,
+      },
+    );
+  }
+  if (payload.status !== 'suggested' && suggestionId) {
+    throw new ExerciseServiceSourceError(
+      'invalid_response',
+      'Non-suggested response included a catalog item.',
+      {
+        requestId,
+      },
+    );
+  }
+
+  return {
+    schemaVersion: 'exercise-suggestion.v1',
+    query: typeof payload.query === 'string' ? payload.query : trimmedQuery,
+    lang: typeof payload.lang === 'string' ? payload.lang : 'en-US',
+    page: 1,
+    pageSize: typeof payload.pageSize === 'number' ? payload.pageSize : pageSize,
+    total: typeof payload.total === 'number' ? payload.total : exercises.length,
+    exercises,
+    suggestionId,
+    status: payload.status,
     requestId,
   };
 }

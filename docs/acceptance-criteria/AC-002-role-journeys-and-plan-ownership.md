@@ -451,6 +451,28 @@ Feature: Role-based onboarding and care assignments
   Scenario: Password reset — OAuth account informational alert
     Given a Google or Apple OAuth account user is on the account settings screen
     When the user taps "Change password"
-    Then an informational alert is shown naming the provider
+      Then an informational alert is shown naming the provider
     And no password reset request is submitted
+
+  Scenario: ET-229 ordinary exercise search remains provider-independent
+    Given a professional opens exercise search on SC-208
+    When the professional performs an ordinary search
+    Then the request uses `POST /integrations/exercise/search`
+    And the server makes zero TypeSafe calls
+    And missing or disabled provider configuration does not take ordinary search down
+
+  Scenario: ET-229 semantic suggestion requires explicit consent and same-query response
+    Given the semantic app/server flags are explicitly enabled for an approved development run
+    And the professional has typed a non-empty query
+    When the professional presses the localized suggestion CTA beside its disclosure
+    Then the app sends `consent: true` to `POST /integrations/exercise/suggest`
+    And a response for the current query may badge only an exercise in its returned results
+    And changing the query before completion discards the prior response
+    And the existing exercise Confirm and plan Save actions remain the only draft/persistence mutations
+
+  Scenario: ET-229 unsupported constraints abstain safely
+    Given the professional enters contradictory or unsupported equipment negation
+    When the professional requests a semantic suggestion
+    Then the server returns an abstention status without calling TypeSafe
+    And ordinary lexical results remain available
 ```

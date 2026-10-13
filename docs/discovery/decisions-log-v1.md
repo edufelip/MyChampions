@@ -992,6 +992,15 @@
 - Rationale: UI in-flight state and a process-local server counter can be bypassed by direct requests, concurrent workers, restarts, and blue/green deploys. The database is the shared source of truth, while trusted ingress provides only a coarse pre-application backstop.
 - Constraints: Observability contains outcome labels only, never support text, account identifiers, or idempotency keys. No production deployment or controlled live-429 probe occurs without explicit approval.
 
+### D-221: Exercise semantic suggestions require explicit consent and server ownership
+
+- Date: 2026-09-26
+- Status: Accepted for implementation; activation remains Pending.
+- Scope: ET-229, SC-208 exercise search, MyChampions server `/integrations/exercise/suggest`, and the app's semantic CTA.
+- Decision: Keep ordinary search deterministic and provider-independent. Add a separate suggestion endpoint that requires `consent: true`, sends only bounded eligible catalog candidates to the server-owned TypeSafe adapter, and can return only a returned catalog ID or `none`. The app keeps the CTA/disclosure disabled by default, preserves ordinary rows on all fallback paths, and discards stale responses by query/generation.
+- Rationale: Server ownership protects credentials, candidate membership, hard constraints, rate limits, privacy, and rollback. Explicit user action prevents hidden processing of every keystroke and keeps plan persistence under existing Confirm/Save controls.
+- Constraints: Unsupported/contradictory negation and unknown equipment metadata abstain. Development fixture/browser results are not held-out provider validation. Enablement requires the frozen multilingual evaluation, spend controls, and single-process limiter review described in the ET-229 design documents.
+
 ## Pending Decisions
 
 - See `docs/discovery/open-questions-v1.md`.

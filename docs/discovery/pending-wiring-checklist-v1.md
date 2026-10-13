@@ -545,6 +545,14 @@ Track intentionally deferred implementation wiring so it is completed before rel
 
 ## Testing Strategy Evidence Wiring (2026-08-08)
 
+## ET-229 Exercise Suggestion Wiring (2026-09-26)
+
+- `Done`: Server deterministic query parsing/ranking, separate authenticated suggestion contract, bounded TypeSafe adapter, candidate membership validation, explicit consent validation, ordinary-search zero-provider path, limiter/circuit guards, and focused fake-adapter route tests are implemented in the ET-229 server branch with flags disabled by default.
+- `Done`: App source parsing, explicit CTA/disclosure/badge/status UI, all three locale bundles, independent stale-response guards, debounce cancellation, and dev-only semantic fixture browser coverage are implemented in the ET-229 app branch.
+- `In progress`: Local Postgres gateway parity and representative query-plan timing must be run against the approved localhost exercise catalog database. No production database or provider call is permitted for this evidence.
+- `Pending`: Build and freeze the multilingual held-out labeled set (at least 180 queries, at least 60 per locale), report candidate recall and semantic precision with confidence intervals, and review hard-constraint violations. Current synthetic rows are development acceptance evidence only.
+- `Pending`: Owner approval, provider spend controls, a single-process deployment confirmation, exact-head hosted CI, deployment, and any live TypeSafe activation. Neither feature flag is enabled by this change.
+
 - `Done`: Selective CI status publication includes exact-head `push` results;
   local workflow-contract coverage proves the event split and publisher
   authorization. A hosted rerun of the corrected main revision remains

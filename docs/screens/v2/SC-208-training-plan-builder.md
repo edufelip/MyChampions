@@ -59,6 +59,10 @@ Exercise items are added via the `ExerciseSearchModal` component, which:
 
 On web, the search sheet does not use the native slide-in animation: it is viewport-bounded as soon as it opens so the title, Back action, and focused search field are usable on compact mobile emulation. The results region owns its scroll so long result sets do not push the modal outside the viewport.
 
+When `EXPO_PUBLIC_EXERCISE_SUGGESTIONS_ENABLED=true` is explicitly enabled for an approved pilot build, a non-empty query also shows the localized `pro.plan.item.search.semantic.cta` and persistent disclosure. Pressing the CTA is the only semantic-consent action; it sends the current trimmed search text to `POST /integrations/exercise/suggest` and never runs automatically during typing or ordinary search. The suggestion response may replace the visible rows for that same query and badge one returned row. It cannot add an item, open detail, edit quantity/notes, or save the plan. The disclosure and CTA are absent by default.
+
+The client keeps ordinary and suggestion request state independent, invalidates both generations immediately on every query transition (including empty text, clear, close, and locale changes), cancels the pending 400 ms ordinary debounce when the CTA is pressed, and ignores a response whose query no longer equals the current input. A stale row cannot be selected. No-match/unsupported and unavailable/rate-limited outcomes retain ordinary catalog usability and use localized guidance with an explicit retry where available. The server remains the TypeSafe authorization and privacy boundary; no provider key or model metadata is bundled in the app.
+
 ### Catalog Service Contract
 - Base URL: `EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL`
 - Search endpoint: `POST /integrations/exercise/search`
@@ -88,6 +92,8 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | Saving | `savePlan`, `createPlan` (for a new draft on explicit save), delete plan in flight | Existing builder content stays visible; relevant write CTAs are disabled and a blocking loading scrim with centered spinner is shown |
 | Ready | Plan loaded or created successfully | Full form with sessions/items list, CTAs |
 | Error | Initial `loadPlan` fetch failed | Replaces the form entirely with a `DsCard` error state (`role="alert"`, `accessibilityLiveRegion="polite"`): message, Retry (re-invokes `loadPlan`), and Back to library. No plan-name field, add-session, or Save controls are mounted while in this state. |
+| Semantic suggestion pending | Professional presses the explicit suggestion CTA | Keeps input and ordinary rows available, shows localized `exerciseSearch.semantic.loading`, disables duplicate taps, and does not mutate the draft. |
+| Semantic suggestion unavailable or unsupported | Provider/config/limit failure or conservative query abstention | Keeps deterministic search rows available; shows localized status and only an explicit retry. |
 
 ## Validation Rules
 - Plan name is required and must be at least 2 characters (BR-293).
@@ -129,6 +135,7 @@ Upstream pre-signed CDN URLs (video, HLS, thumbnail) **expire after 48 hours**.
 | `ExerciseItem` | Full exercise model used by SC-208 (title, muscleGroup, equipment, difficulty, exerciseType[], instructions[], videos, pre-signed URLs) |
 | `ExerciseVideo` | Single video variant (white-background or gym-shot, with tag/orientation/isPrimary) |
 | `ExerciseSearchResult` | Proxy search response (`page`, `pageSize`, `total`, `exercises[]`) plus response `x-request-id` metadata |
+| `ExerciseSuggestionResult` | Explicit-consent response (`schemaVersion: exercise-suggestion.v1`, deterministic `results[]`, `suggestionId`, and status union) |
 
 ### Source Operations
 | Operation | Description |
@@ -192,6 +199,12 @@ Plan library reads, predefined assignment/draft operations, and builder mutation
 | `pro.plan.item.search.error` | Search error state |
 | `pro.plan.item.search.retry` | Retry search CTA in the error state |
 | `pro.plan.item.search.back` | "Back to search" link in exercise detail form |
+| `pro.plan.item.search.semantic.cta` | Explicit semantic suggestion consent CTA |
+| `pro.plan.item.search.semantic.disclosure` | Provider-processing disclosure shown beside the CTA |
+| `pro.plan.item.search.semantic.loading` | Semantic suggestion loading announcement |
+| `pro.plan.item.search.semantic.badge` | Accessible and visible suggested-row badge |
+| `pro.plan.item.search.semantic.none` | No clear semantic match guidance |
+| `pro.plan.item.search.semantic.unavailable` | Provider unavailable/rate-limited guidance |
 | `exercise.muscle_group.chest` | Muscle group label: Chest |
 | `exercise.muscle_group.back` | Muscle group label: Back |
 | `exercise.muscle_group.shoulders` | Muscle group label: Shoulders |
@@ -219,8 +232,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/plans/plan-builder.logic.test.ts` | Unit tests (included in 301-test suite) |
 | `features/plans/plan-builder-source.ts` | Server source ops: `createTrainingPlan`, `updateTrainingPlan`, `getTrainingPlanDetail`, session/item mutations, starter templates, and food search |
 | `features/plans/use-plan-builder.ts` | React hook `useTrainingPlanBuilder` with state machine: `idle/loading/ready/saving/error` |
-| `features/plans/exercise-service-source.ts` | MyChampions server exercise catalog client: `searchExerciseLibrary`, `getExerciseById`; types: `ExerciseItem`, `ExerciseVideo`, `ExerciseSearchResult` |
-| `features/plans/use-exercise-search.ts` | Hook `useExerciseSearch` — state machine: `idle/loading/error/done` |
+| `features/plans/exercise-service-source.ts` | MyChampions server exercise catalog client: `searchExerciseLibrary`, explicit-consent `suggestExerciseLibrary`, `getExerciseById`; validates suggestion IDs and statuses |
+| `features/plans/use-exercise-search.ts` | Hook `useExerciseSearch` — independent ordinary/suggestion state machines with query-generation guards |
 | `features/plans/use-exercise-thumbnail.ts` | Hook `useExerciseThumbnail(exerciseId)` — fetches fresh thumbnail URL on demand; never caches |
 | `components/ds/patterns/ExerciseSearchModal.tsx` | Two-phase modal: search results list → exercise detail/confirm form |
 | `features/plans/components/SessionCard.tsx` | Renders session items; `SessionItemRow` sub-component calls `useExerciseThumbnail` per item |

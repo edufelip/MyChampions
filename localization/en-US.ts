@@ -885,6 +885,14 @@ export const enUS = {
   'pro.plan.item.search.error': 'Error searching for exercises.',
   'pro.plan.item.search.retry': 'Try again',
   'pro.plan.item.search.back': 'Back to search',
+  'pro.plan.item.search.semantic.cta': 'Get a suggested match',
+  'pro.plan.item.search.semantic.disclosure':
+    'Sends this search text to TypeSafe to suggest a catalog match. You choose what to add.',
+  'pro.plan.item.search.semantic.loading': 'Finding a suggested match…',
+  'pro.plan.item.search.semantic.badge': 'Suggested match',
+  'pro.plan.item.search.semantic.none': 'No clear match. Try a more specific exercise name.',
+  'pro.plan.item.search.semantic.unavailable':
+    'Suggestions are unavailable. You can still use the search results.',
   'pro.plan.item.detail.dialog_title': 'Exercise details',
   'pro.plan.item.detail.description': 'Description',
   'pro.plan.item.detail.instructions': 'Instructions',

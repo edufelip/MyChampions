@@ -1,74 +1,172 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-import { searchExerciseLibrary, type ExerciseItem } from './exercise-service-source';
+import {
+  searchExerciseLibrary,
+  suggestExerciseLibrary,
+  type ExerciseItem,
+  type ExerciseSuggestionStatus,
+} from './exercise-service-source';
 import { logNetworkDebug } from '../debug/logging';
 
 export type ExerciseSearchState =
   | { kind: 'idle' }
   | { kind: 'loading'; query: string }
   | { kind: 'error'; message: string; query: string }
+  | { kind: 'done'; results: ExerciseItem[]; query: string };
+
+export type ExerciseSuggestionState =
+  | { kind: 'idle' }
+  | { kind: 'loading'; query: string }
   | {
       kind: 'done';
-      results: ExerciseItem[];
       query: string;
-    };
+      results: ExerciseItem[];
+      suggestionId: string | null;
+      status: ExerciseSuggestionStatus;
+    }
+  | { kind: 'error'; query: string; message: string };
+
+const suggestionsEnabled = process.env.EXPO_PUBLIC_EXERCISE_SUGGESTIONS_ENABLED === 'true';
 
 export function useExerciseSearch() {
   const [state, setState] = useState<ExerciseSearchState>({ kind: 'idle' });
+  const [suggestionState, setSuggestionState] = useState<ExerciseSuggestionState>({ kind: 'idle' });
   const isMounted = useRef(true);
-  // Monotonically increasing counter used to detect out-of-order responses.
-  // `latestRequestId` handles race conditions between concurrent search calls
-  // (slower earlier request resolves after a faster later one — discard it).
-  // `isMounted` separately guards against setState after component unmount.
-  const latestRequestId = useRef(0);
+  const latestSearchGeneration = useRef(0);
+  const latestSuggestionGeneration = useRef(0);
+  const activeQuery = useRef('');
+  const suggestionQuery = useRef('');
 
   useEffect(() => {
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
   }, []);
 
+  const invalidateQuery = useCallback((query: string) => {
+    const trimmedQuery = query.trim();
+    activeQuery.current = trimmedQuery;
+    latestSearchGeneration.current += 1;
+    latestSuggestionGeneration.current += 1;
+    suggestionQuery.current = trimmedQuery;
+
+    if (isMounted.current) {
+      setSuggestionState({ kind: 'idle' });
+    }
+  }, []);
+
   const search = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      if (isMounted.current) setState({ kind: 'idle' });
+    const trimmedQuery = query.trim();
+    const generation = ++latestSearchGeneration.current;
+    activeQuery.current = trimmedQuery;
+
+    if (!trimmedQuery) {
+      if (isMounted.current) {
+        setState({ kind: 'idle' });
+        setSuggestionState({ kind: 'idle' });
+      }
       return;
     }
 
-    // Claim this request's ID before any await.
-    const requestId = ++latestRequestId.current;
-    logNetworkDebug('useExerciseSearch', 'Search started.', { query, requestId });
-
-    if (isMounted.current) setState({ kind: 'loading', query });
+    logNetworkDebug('useExerciseSearch', 'Search started.', { query: trimmedQuery, generation });
+    if (isMounted.current) {
+      setState({ kind: 'loading', query: trimmedQuery });
+      if (suggestionQuery.current !== trimmedQuery) {
+        suggestionQuery.current = trimmedQuery;
+        setSuggestionState({ kind: 'idle' });
+      }
+    }
 
     try {
-      const { exercises } = await searchExerciseLibrary(query);
-      // Discard if a newer search has already been dispatched.
-      if (isMounted.current && requestId === latestRequestId.current) {
+      const { exercises } = await searchExerciseLibrary(trimmedQuery);
+      if (
+        isMounted.current &&
+        generation === latestSearchGeneration.current &&
+        activeQuery.current === trimmedQuery
+      ) {
         logNetworkDebug('useExerciseSearch', 'Search completed.', {
-          query,
-          requestId,
+          query: trimmedQuery,
+          generation,
           resultsCount: exercises.length,
         });
-        setState({ kind: 'done', results: exercises, query });
+        setState({ kind: 'done', results: exercises, query: trimmedQuery });
       }
     } catch (err: unknown) {
-      if (isMounted.current && requestId === latestRequestId.current) {
+      if (
+        isMounted.current &&
+        generation === latestSearchGeneration.current &&
+        activeQuery.current === trimmedQuery
+      ) {
         const message = err instanceof Error ? err.message : 'Unknown search error';
-        console.error('[useExerciseSearch] Search failed:', { query, requestId, message });
-        setState({ kind: 'error', message, query });
+        console.error('[useExerciseSearch] Search failed:', {
+          query: trimmedQuery,
+          generation,
+          message,
+        });
+        setState({ kind: 'error', message, query: trimmedQuery });
+      }
+    }
+  }, []);
+
+  const suggest = useCallback(async (query: string) => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+
+    // Keep ordinary search and semantic suggestion generations independent:
+    // a normal response that resolves while the opt-in request is pending
+    // must still settle the ordinary search state.
+    if (activeQuery.current !== trimmedQuery) {
+      latestSearchGeneration.current += 1;
+      activeQuery.current = trimmedQuery;
+    }
+    const generation = ++latestSuggestionGeneration.current;
+    activeQuery.current = trimmedQuery;
+    suggestionQuery.current = trimmedQuery;
+    if (isMounted.current) setSuggestionState({ kind: 'loading', query: trimmedQuery });
+
+    try {
+      const result = await suggestExerciseLibrary(trimmedQuery);
+      if (
+        isMounted.current &&
+        generation === latestSuggestionGeneration.current &&
+        suggestionQuery.current === trimmedQuery &&
+        result.query.trim() === trimmedQuery
+      ) {
+        setSuggestionState({
+          kind: 'done',
+          query: trimmedQuery,
+          results: result.exercises,
+          suggestionId: result.suggestionId,
+          status: result.status,
+        });
+      }
+    } catch (err: unknown) {
+      if (
+        isMounted.current &&
+        generation === latestSuggestionGeneration.current &&
+        suggestionQuery.current === trimmedQuery
+      ) {
+        const message = err instanceof Error ? err.message : 'Unknown suggestion error';
+        console.error('[useExerciseSearch] Suggestion failed:', {
+          query: trimmedQuery,
+          generation,
+          message,
+        });
+        setSuggestionState({ kind: 'error', query: trimmedQuery, message });
       }
     }
   }, []);
 
   const clear = useCallback(() => {
-    // Invalidate any in-flight request so its result is discarded.
-    latestRequestId.current++;
-    if (isMounted.current) setState({ kind: 'idle' });
+    latestSearchGeneration.current += 1;
+    latestSuggestionGeneration.current += 1;
+    activeQuery.current = '';
+    suggestionQuery.current = '';
+    if (isMounted.current) {
+      setState({ kind: 'idle' });
+      setSuggestionState({ kind: 'idle' });
+    }
   }, []);
 
-  return {
-    state,
-    search,
-    clear,
-  };
+  return { state, suggestionState, suggestionsEnabled, search, suggest, invalidateQuery, clear };
 }

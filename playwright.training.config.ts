@@ -10,6 +10,7 @@ const webPort = parseWebPort(
   process.env.PLAYWRIGHT_TRAINING_WEB_PORT,
   8081,
 );
+const exerciseSuggestionsEnabled = process.env.EXPO_PUBLIC_EXERCISE_SUGGESTIONS_ENABLED ?? 'false';
 
 export default defineConfig({
   testDir: './e2e/web',
@@ -29,7 +30,7 @@ export default defineConfig({
     trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
   },
   webServer: {
-    command: `CI=1 EXPO_OFFLINE=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=true EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE=basic EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE=assigned EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE=basic EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT=2 EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=http://127.0.0.1:${webPort} yarn web:dev --port ${webPort} --clear`,
+    command: `CI=1 EXPO_OFFLINE=1 APP_VARIANT=dev EXPO_PUBLIC_E2E_AUTH_SESSION=true EXPO_PUBLIC_E2E_PRO_PLANS_FIXTURE=basic EXPO_PUBLIC_E2E_STUDENT_TRAINING_FIXTURE=assigned EXPO_PUBLIC_E2E_EXERCISE_SEARCH_FIXTURE=basic EXPO_PUBLIC_EXERCISE_SUGGESTIONS_ENABLED=${exerciseSuggestionsEnabled} EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS=active EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT=2 EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=http://127.0.0.1:${webPort} yarn web:dev --port ${webPort} --clear`,
     url: `http://127.0.0.1:${webPort}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
