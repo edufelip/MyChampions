@@ -394,21 +394,21 @@ test('nutrition profile isolates scenario-specific native fixtures', () => {
   );
 });
 
-test('subscription profile expands the existing seven deterministic scenarios', () => {
+test('subscription profile expands the deterministic outcome scenarios', () => {
   const plan = createSelectiveExecutionPlan(manifest, 'ios', ['detox:subscription'], {
     skipNativeBuild: true,
   });
 
-  assert.equal(plan.invocations.length, 7);
+  assert.equal(plan.invocations.length, 8);
   assert.deepEqual(
     plan.invocations.map((invocation) => invocation.env.E2E_SUBSCRIPTION_SCENARIO),
-    ['actions', 'actions', 'actions', 'actions', 'warning', 'locked', 'unknown'],
+    ['actions', 'actions', 'actions', 'actions', 'actions', 'warning', 'locked', 'unknown'],
   );
   assert.equal(
     plan.invocations.filter((invocation) =>
       invocation.args.includes('e2e/professional-subscription-actions.e2e.test.js'),
     ).length,
-    4,
+    5,
   );
   assert.equal(
     plan.invocations.filter((invocation) =>

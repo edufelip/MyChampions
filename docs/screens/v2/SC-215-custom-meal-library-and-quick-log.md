@@ -53,6 +53,7 @@
 - Empty: no saved meals yet (successful zero-meal response) — renders the illustrated empty state and `meal.library.empty.cta` Create meal CTA, distinct from the error state below.
 - Error (ET-103, TC-401): a recoverable library read failure renders `meal.library.error` with localized copy, a Retry action (`meal.library.error.retry`, calls `useCustomMeals().reload()` and re-runs the load) and a safe fallback Create meal action (`meal.library.error.cta.create`, opens `/nutrition/custom-meals/new`). No stale meal rows remain mounted or interactive behind the error card, and the bottom tab navigation stays reachable. Retry transitions through the existing loading state (`meal.library.loading`) before settling into `ready` or back into `error`. The Create meal fallback is gated by the same write-lock used elsewhere on this screen (`isWriteLocked`, derived from the offline banner) and is disabled while offline, consistent with the empty-state Create CTA; Retry itself is a read action and is never lock-gated.
 - Log save failure: quick-log panel shows an inline field error (`meal.library.quickLog.error`) without leaving the panel.
+- Subscription payment pending: the quick-log AI row shows localized `subscription.error.payment_pending` with polite live-region semantics; the current entitlement gate and entered grams remain unchanged, with no automatic retry or polling.
 - Success: log saved and daily nutrition totals updated.
 
 ## Validation Rules

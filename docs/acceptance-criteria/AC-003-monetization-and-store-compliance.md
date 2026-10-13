@@ -21,6 +21,8 @@ Professional-only subscription tier and store-policy readiness for release.
 - `AC-315`: A valid RevenueCat webhook reconciles `professional_pro` and `student_pro` from the canonical subscriber record, preserves the unrelated entitlement, and returns non-2xx when provider reconciliation cannot complete.
 - `AC-316`: A RevenueCat transfer reconciles every source and destination App User ID before acknowledgement so privileges do not remain attached to the wrong MyChampions account.
 - `AC-317`: Professional expiry warning appears only for an active entitlement with an authoritative expiration timestamp and explicit non-renewal, unsubscribe, or billing-issue risk; cancellation and provider failures do not grant access.
+- `AC-318`: RevenueCat provider codes are mapped through the installed SDK contract, with unknown present codes failing closed, `PAYMENT_PENDING_ERROR` distinct from cancellation, and no classification side effect mutating entitlement or auth/session state.
+- `AC-319`: A payment-pending purchase/restore result clears loading, preserves the current entitlement status, renders the three-locale neutral pending copy in SC-212 and SC-219 consumers, and performs no automatic retry or polling.
 
 ## Gherkin Scenarios
 ```gherkin

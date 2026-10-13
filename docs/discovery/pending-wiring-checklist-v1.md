@@ -530,6 +530,31 @@ Track intentionally deferred implementation wiring so it is completed before rel
 - `Done`: Read-only dashboard re-verification completed on 2026-07-23 (D-189). The production webhook URL, Authorization, HMAC, all-app/all-event scope, and production+sandbox scope are present; provider catalog gaps are recorded above.
 - `Pending (provider approval/permission)`: Add production Android products and the missing development Android app/products; create the first server-only secret API key; restrict sandbox entitlement access after live verification; deploy the canonical reconciler and send a signed test event; rerun device/Test Store smoke evidence for the updated student layout and the new professional Test Store paywall. The current dashboard reports that this account cannot add app configurations, so the Android dev app may require an owner/billing-plan permission change.
 
+## Typed Error Contracts (ET-230, D-219, D-220)
+
+- `Done`: Meal-photo source and pure normalizer use explicit wire codes and
+  HTTP precedence for current flat and nested server envelopes. Message text,
+  malformed objects, and unknown present codes cannot change classification;
+  manual meal entry remains available. Server contract tests retain current
+  `401/422/429/503` response shapes and request-validation behavior.
+- `Done`: Email sign-up normalizes only exact typed aliases and preserves the
+  existing `CreateAccountFailure` and `requires_sign_in` source branch. Broad
+  message parsing, duplicate-account inference, session sequencing, and
+  enumeration-sensitive UI behavior remain absent.
+- `Done`: RevenueCat mapping is pinned by an executable test to the installed
+  `react-native-purchases@9.15.2` / internal declaration `17.55.1` enum. All
+  numeric values and readable aliases are covered; unknown/provider-hostile
+  values fail closed. `PAYMENT_PENDING_ERROR` is distinct from cancellation.
+- `Done`: `payment_pending` is handled in SC-212 and both SC-219 consumers
+  (SC-214 and SC-215) with three-locale neutral copy. The hook clears loading,
+  preserves the current entitlement state, and performs no automatic retry or
+  polling.
+- `Pending (provider/store validation)`: A real RevenueCat receipt,
+  platform-restore, and live catalog/pending-payment run remains under the
+  existing provider validation gate. ET-230 uses no purchase, provider secret,
+  production mutation, or entitlement-policy change; local contracts and
+  fixture evidence are independently complete.
+
 ## Validation Gate Before Release
 
 - Every item in this checklist must be either `Done` or explicitly deferred in a release decision note.

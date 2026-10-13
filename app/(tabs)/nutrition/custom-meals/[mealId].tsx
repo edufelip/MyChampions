@@ -71,6 +71,8 @@ import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.l
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { shareAdapter } from '@/features/platform/share-adapter';
 import { useSubscription } from '@/features/subscription/use-subscription';
+import { getSubscriptionErrorMessageKey } from '@/features/subscription/subscription-error-copy';
+import type { SubscriptionErrorReason } from '@/features/subscription/revenuecat-error';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslation } from '@/localization';
 import type { PhotoAnalysisErrorReason } from '@/features/nutrition/meal-photo-analysis.logic';
@@ -124,7 +126,9 @@ export default function CustomMealBuilderScreen() {
   const {
     hasAiAccess,
     isLoading: isSubscriptionLoading,
+    error: subscriptionError,
     openAiUpgradePaywall,
+    refresh: refreshSubscription,
   } = useSubscription(currentUser?.uid ?? null);
 
   // ── AI photo analysis ──────────────────────────────────────────────────────
@@ -398,7 +402,9 @@ export default function CustomMealBuilderScreen() {
             onToggleAttach={() => setAttachPhoto((v) => !v)}
             hasAiAccess={hasAiAccess}
             isSubscriptionLoading={isSubscriptionLoading}
+            subscriptionError={subscriptionError}
             onOpenPaywall={() => openAiUpgradePaywall(lockedRole)}
+            onRefreshSubscription={() => void refreshSubscription()}
             palette={palette}
             t={t}
           />
@@ -576,7 +582,9 @@ function MealPhotoAnalysisSection({
   onToggleAttach,
   hasAiAccess,
   isSubscriptionLoading,
+  subscriptionError,
   onOpenPaywall,
+  onRefreshSubscription,
   palette,
   t,
 }: {
@@ -589,8 +597,11 @@ function MealPhotoAnalysisSection({
   hasAiAccess: boolean;
   /** True while entitlement status is being fetched from RevenueCat. */
   isSubscriptionLoading: boolean;
+  subscriptionError: SubscriptionErrorReason | null;
   /** Opens the RevenueCat native paywall for the AI features offering. */
   onOpenPaywall: () => void;
+  /** Refreshes entitlement state without retrying purchase or starting polling. */
+  onRefreshSubscription: () => void;
   palette: Palette;
   t: TFn;
 }) {
@@ -610,6 +621,25 @@ function MealPhotoAnalysisSection({
       style={[styles.analysisSection, { borderColor: palette.tint + '44' }]}
       testID="meal.photoAnalysis.section"
     >
+      {subscriptionError === 'payment_pending' ? (
+        <View accessibilityLiveRegion="polite" testID="meal.photoAnalysis.paymentPending">
+          <Text style={[styles.analysisMeta, { color: palette.text }]}>
+            {t(getSubscriptionErrorMessageKey(subscriptionError))}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('pro.subscription.cta_refresh')}
+            onPress={onRefreshSubscription}
+            style={[styles.outlineButton, { borderColor: palette.tint, marginTop: 8 }]}
+            testID="meal.photoAnalysis.paymentPending.refresh"
+          >
+            <Text style={[styles.outlineButtonText, { color: palette.tint }]}>
+              {t('pro.subscription.cta_refresh')}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {/* Paywall gate (D-132): show locked banner when user has no active AI entitlement */}
       {!hasAiAccess && analysisState.kind === 'idle' ? (
         isSubscriptionLoading ? (

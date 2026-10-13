@@ -68,6 +68,14 @@ describeWithE2EAuthSession('Professional Subscription Actions', () => {
       );
       return;
     }
+    if (actionOutcome === 'pending') {
+      await expect(element(by.id('pro.subscription.statusValue'))).toHaveLabel(
+        'Subscription: Inactive',
+      );
+      await expect(element(by.id('pro.subscription.paymentPending'))).toBeVisible();
+      await expect(element(by.id('pro.subscription.loading'))).not.toBeVisible();
+      return;
+    }
     if (actionOutcome === 'network' || actionOutcome === 'store_problem') {
       await waitFor(element(by.id('pro.subscription.statusValue')))
         .toHaveLabel('Subscription: Status unavailable')

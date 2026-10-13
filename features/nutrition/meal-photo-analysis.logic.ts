@@ -6,6 +6,13 @@
  */
 
 import type { CustomMealInput } from './custom-meal.logic';
+import { normalizePhotoAnalysisError, type PhotoAnalysisErrorReason } from './photo-analysis-error';
+
+export {
+  mapPhotoAnalysisWireCode,
+  normalizePhotoAnalysisError,
+  type PhotoAnalysisErrorReason,
+} from './photo-analysis-error';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -19,17 +26,6 @@ export type MacroEstimate = {
   totalGrams: number;
   confidence: MacroEstimateConfidence;
 };
-
-export type PhotoAnalysisErrorReason =
-  | 'permission_denied'
-  | 'file_too_large'
-  | 'unrecognizable_image'
-  | 'quota_exceeded'
-  | 'network'
-  | 'invalid_response'
-  | 'configuration'
-  | 'unauthenticated'
-  | 'unknown';
 
 // Raw shape returned by the server analyzer endpoint; may be untrusted/malformed.
 export type RawAnalysisResponse = {
@@ -72,15 +68,18 @@ export function isValidMacroEstimate(estimate: MacroEstimate): boolean {
  * Returns null if the response shape is invalid or contains sentinel error field.
  * Rounds all macro values to 1 decimal place for clean form display.
  */
-export function parseMacroEstimateFromResponse(raw: RawAnalysisResponse): MacroEstimate | null {
-  if (raw.error !== undefined) return null;
+export function parseMacroEstimateFromResponse(raw: unknown): MacroEstimate | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+  if (Object.prototype.hasOwnProperty.call(raw, 'error')) return null;
 
-  const calories = toNonNegativeNumber(raw.calories);
-  const carbs = toNonNegativeNumber(raw.carbs);
-  const proteins = toNonNegativeNumber(raw.proteins);
-  const fats = toNonNegativeNumber(raw.fats);
-  const totalGrams = toStrictPositiveNumber(raw.totalGrams);
-  const confidence = parseConfidence(raw.confidence);
+  const response = raw as RawAnalysisResponse;
+
+  const calories = toNonNegativeNumber(response.calories);
+  const carbs = toNonNegativeNumber(response.carbs);
+  const proteins = toNonNegativeNumber(response.proteins);
+  const fats = toNonNegativeNumber(response.fats);
+  const totalGrams = toStrictPositiveNumber(response.totalGrams);
+  const confidence = parseConfidence(response.confidence);
 
   if (
     calories === null ||
@@ -138,73 +137,4 @@ export function mapMacroEstimateToMealInput(estimate: MacroEstimate): Partial<Cu
     proteins: String(estimate.proteins),
     fats: String(estimate.fats),
   };
-}
-
-// ─── Error normalization ──────────────────────────────────────────────────────
-
-/**
- * Maps any thrown error or raw response error field to a PhotoAnalysisErrorReason.
- * Used by the source layer to produce typed errors for the hook.
- */
-export function normalizePhotoAnalysisError(error: unknown): PhotoAnalysisErrorReason {
-  if (error && typeof error === 'object') {
-    const code = 'code' in error ? String((error as { code: unknown }).code) : null;
-    const msg =
-      'message' in error ? String((error as { message: unknown }).message).toLowerCase() : null;
-
-    if (code === 'photo_permission_denied' || msg?.includes('photo permission denied')) {
-      return 'permission_denied';
-    }
-    if (code === 'file_too_large' || msg?.includes('exceeds 1.5 mb')) {
-      return 'file_too_large';
-    }
-    if (
-      code === 'unrecognizable_image' ||
-      msg?.includes('unrecognizable') ||
-      msg?.includes('not a meal') ||
-      msg?.includes('no meal')
-    ) {
-      return 'unrecognizable_image';
-    }
-    if (
-      code === 'quota_exceeded' ||
-      msg?.includes('quota') ||
-      msg?.includes('rate limit') ||
-      msg?.includes('too many')
-    ) {
-      return 'quota_exceeded';
-    }
-    if (
-      code === 'invalid_response' ||
-      msg?.includes('invalid response') ||
-      msg?.includes('parse')
-    ) {
-      return 'invalid_response';
-    }
-    if (
-      code === 'unauthenticated' ||
-      msg?.includes('unauthenticated') ||
-      msg?.includes('unauthorized') ||
-      msg?.includes('access token')
-    ) {
-      return 'unauthenticated';
-    }
-    if (
-      code === 'configuration' ||
-      msg?.includes('endpoint') ||
-      msg?.includes('config') ||
-      msg?.includes('not configured')
-    ) {
-      return 'configuration';
-    }
-    if (
-      msg?.includes('network') ||
-      msg?.includes('fetch') ||
-      msg?.includes('timeout') ||
-      msg?.includes('connect')
-    ) {
-      return 'network';
-    }
-  }
-  return 'unknown';
 }

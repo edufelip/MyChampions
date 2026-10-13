@@ -39,6 +39,8 @@
 - Duplicate email account creation is blocked.
 - Social login with existing email must link to existing account.
 - Known sign-up failures must show reason-specific actionable copy.
+- Sign-up classification accepts only the exact structured source aliases for `network`, `provider_conflict`, and `configuration`; diagnostic message wording and duplicate-account hints never change the reason.
+- `requires_sign_in` remains available only from the explicit post-acknowledgement session-establishment branch; no screen or analytics path reveals whether an email already exists.
 - Accessibility baseline applies for text scaling, contrast, focus order, and control labels.
 
 ## Browser Behavior
@@ -89,6 +91,7 @@
   - Confirmation changes are mirrored synchronously for CTA submission, while Done/Return submission also supplies the native field snapshot; validation and the server request consume one immutable submission input.
   - Email/password and provider actions share one ref-backed submission gate so rapid Return, CTA, or provider activation cannot create overlapping requests.
   - Contextual submit error mapping is implemented for `requires_sign_in`, `network`, `provider_conflict`, and `configuration`.
+  - `normalizeCreateAccountReason` ignores message prose, duplicate-account wording, and near-match aliases; typed source errors and exact codes remain the only machine contract.
   - Email/password sign-up is wired to the MyChampions server auth boundary for native and browser runtimes. As of ET-75, the server's `create-account` route responds identically (`202 { status: 'accepted' }`, no session) whether the submitted email was new or already registered, to close a user-enumeration gap. The client establishes the session by immediately signing in with the just-submitted credentials; if that sign-in fails (expected for a duplicate email with a different password), the generic `requires_sign_in` message is shown instead of a duplicate-email-specific one.
   - Session-less HTTP 202 create-account acknowledgements are completed by a follow-up email/password sign-in before the authenticated terms gate; any other session-less success response fails closed without a second auth request.
   - Google social auth shows the approved E2E fixture path in test mode, then uses `@react-native-google-signin/google-signin` to capture a native Google ID token and posts it to the MyChampions server `POST /auth/social/sign-in` boundary. The server directly verifies configured issuer and audience claims; explicit provider-token configuration gaps fall back to deterministic local MyChampions server sessions with provider-neutral `google` IDs only when the app variant is unset, blank, or `dev`.

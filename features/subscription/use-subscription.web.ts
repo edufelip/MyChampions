@@ -192,6 +192,12 @@ export function useSubscription(
   }, [activeAuthUid, loadProfessionalActiveStudentCount, resolvedActiveStudentCountOverride]);
 
   const openHandoff = useCallback(async () => {
+    const configuredOutcome = process.env.EXPO_PUBLIC_E2E_PRO_ACTION_OUTCOME?.trim().toLowerCase();
+    if (configuredOutcome === 'pending' && getE2ESubscriptionOverride()) {
+      setError('payment_pending');
+      return;
+    }
+
     try {
       await subscriptionRuntime.openSubscriptionHandoff();
       setError(null);

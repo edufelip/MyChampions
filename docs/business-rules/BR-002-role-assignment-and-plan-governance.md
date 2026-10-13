@@ -234,6 +234,16 @@
   private broker, JIT, or ephemeral-runner architecture replaces this
   operational boundary.
 
+- `BR-345`: Structured provider/wire codes and trusted transport context are
+  the only machine contract for the ET-230 meal-photo, sign-up, and RevenueCat
+  boundaries. Messages, localization text, and user-controlled object
+  coercion cannot classify errors; unknown or malformed present codes fail
+  closed and do not mutate auth/session or entitlement state.
+- `BR-346`: RevenueCat `PAYMENT_PENDING_ERROR` maps to `payment_pending`, which
+  is neither cancellation nor success. Pending clears loading, preserves the
+  current auth-scoped entitlement state, uses localized neutral copy in every
+  affected consumer, and never starts automatic purchase retry or polling.
+
 ## Constraints
 
 - Any change to role model or assignment rules requires updates to FR, UC, AC, TC, and diagrams.

@@ -76,7 +76,7 @@ export const SELECTIVE_FIXTURE_ENV_KEYS = [
 ] as const;
 
 const actionScenario = (
-  id: 'success' | 'cancelled' | 'network' | 'store_problem',
+  id: 'success' | 'cancelled' | 'pending' | 'network' | 'store_problem',
 ): DetoxFixturePhase => ({
   id: `actions-${id}`,
   specs: ['e2e/professional-subscription-actions.e2e.test.js'],
@@ -400,6 +400,7 @@ export const DETOX_FIXTURE_PROFILES = {
     phases: [
       actionScenario('success'),
       actionScenario('cancelled'),
+      actionScenario('pending'),
       actionScenario('network'),
       actionScenario('store_problem'),
       capScenario('warning', 'active', '10', 'true'),

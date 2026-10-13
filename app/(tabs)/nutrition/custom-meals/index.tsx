@@ -61,6 +61,8 @@ import { resolveLatestSyncTimestamp } from '@/features/offline/sync-timestamps.l
 import { useNetworkStatus } from '@/features/offline/use-network-status';
 import { shareAdapter } from '@/features/platform/share-adapter';
 import { useSubscription } from '@/features/subscription/use-subscription';
+import { getSubscriptionErrorMessageKey } from '@/features/subscription/subscription-error-copy';
+import type { SubscriptionErrorReason } from '@/features/subscription/revenuecat-error';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useWebDialogAccessibility } from '@/hooks/use-web-dialog-accessibility';
 import { useTranslation } from '@/localization';
@@ -130,7 +132,9 @@ export default function CustomMealLibraryScreen({
   const {
     hasAiAccess,
     isLoading: isSubscriptionLoading,
+    error: subscriptionError,
     openAiUpgradePaywall,
+    refresh: refreshSubscription,
   } = useSubscription(currentUser?.uid ?? null);
 
   // ── AI photo analysis (BL-108) ─────────────────────────────────────────────
@@ -320,7 +324,9 @@ export default function CustomMealLibraryScreen({
           onResetAnalysis={analysis.reset}
           hasAiAccess={hasAiAccess}
           isSubscriptionLoading={isSubscriptionLoading}
+          subscriptionError={subscriptionError}
           onOpenPaywall={() => openAiUpgradePaywall(lockedRole)}
+          onRefreshSubscription={() => void refreshSubscription()}
           palette={palette}
           t={t}
           onChangeGrams={handleGramsChange}
@@ -517,7 +523,9 @@ function QuickLogPanel({
   onResetAnalysis,
   hasAiAccess,
   isSubscriptionLoading,
+  subscriptionError,
   onOpenPaywall,
+  onRefreshSubscription,
   palette,
   t,
   onChangeGrams,
@@ -535,7 +543,9 @@ function QuickLogPanel({
   onResetAnalysis: () => void;
   hasAiAccess: boolean;
   isSubscriptionLoading: boolean;
+  subscriptionError: SubscriptionErrorReason | null;
   onOpenPaywall: () => void;
+  onRefreshSubscription: () => void;
   palette: Palette;
   t: TFn;
   onChangeGrams: (v: string) => void;
@@ -646,7 +656,9 @@ function QuickLogPanel({
           onResetAnalysis={onResetAnalysis}
           hasAiAccess={hasAiAccess}
           isSubscriptionLoading={isSubscriptionLoading}
+          subscriptionError={subscriptionError}
           onOpenPaywall={onOpenPaywall}
+          onRefreshSubscription={onRefreshSubscription}
           palette={palette}
           t={t}
         />
@@ -718,7 +730,9 @@ function QuickLogAnalysisRow({
   onResetAnalysis,
   hasAiAccess,
   isSubscriptionLoading,
+  subscriptionError,
   onOpenPaywall,
+  onRefreshSubscription,
   palette,
   t,
 }: {
@@ -727,7 +741,9 @@ function QuickLogAnalysisRow({
   onResetAnalysis: () => void;
   hasAiAccess: boolean;
   isSubscriptionLoading: boolean;
+  subscriptionError: SubscriptionErrorReason | null;
   onOpenPaywall: () => void;
+  onRefreshSubscription: () => void;
   palette: Palette;
   t: TFn;
 }) {
@@ -738,6 +754,28 @@ function QuickLogAnalysisRow({
 
   return (
     <View testID="meal.library.quickLog.analysis">
+      {subscriptionError === 'payment_pending' ? (
+        <View
+          accessibilityLiveRegion="polite"
+          testID="meal.library.quickLog.analysis.paymentPending"
+        >
+          <Text style={[styles.analysisMeta, { color: palette.text }]}>
+            {t(getSubscriptionErrorMessageKey(subscriptionError))}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('pro.subscription.cta_refresh')}
+            onPress={onRefreshSubscription}
+            style={[styles.analysisCtaButton, { borderColor: palette.tint, marginTop: 6 }]}
+            testID="meal.library.quickLog.analysis.paymentPending.refresh"
+          >
+            <Text style={[styles.analysisCtaText, { color: palette.tint }]}>
+              {t('pro.subscription.cta_refresh')}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {/* Paywall gate (D-132) */}
       {!hasAiAccess && analysisState.kind === 'idle' ? (
         isSubscriptionLoading ? (

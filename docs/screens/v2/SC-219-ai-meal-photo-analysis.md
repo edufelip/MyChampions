@@ -42,6 +42,7 @@ After native RevenueCat customer info is read, the subscription hook best-effort
 |---|---|---|
 | `paywall_locked` | `hasAiAccess === false` while `analysisState.kind === 'idle'` | Locked banner (`meal.photo_analysis.paywall.locked`) + "Upgrade to unlock" CTA; no analysis interaction available |
 | `paywall_loading` | `isSubscriptionLoading === true` and `hasAiAccess === false` | `ActivityIndicator` with `meal.photo_analysis.paywall.loading` label |
+| `subscription_payment_pending` | RevenueCat purchase/restore reports `PAYMENT_PENDING_ERROR` | Neutral localized `subscription.error.payment_pending` notice with polite live-region semantics; current entitlement state and AI gate remain unchanged |
 | `idle` | `hasAiAccess === true` + initial / after reset | "Analyze with AI" CTA visible |
 | `capturing` | `startCapture()` called | Native camera/picker open via `expo-image-picker` |
 | `compressing` | Capture complete | Brief loading indicator; `expo-image-manipulator` resizes + compresses JPEG |
@@ -62,6 +63,10 @@ After native RevenueCat customer info is read, the subscription hook best-effort
 | `unknown` | Any other failure | `meal.photo_analysis.error.generic` |
 
 All errors are recoverable — user can dismiss and fill fields manually (D-110).
+
+Subscription purchase/restore pending is rendered separately from the analysis
+error reasons above. It does not open a paywall, retry the store operation, or
+change the current entitlement/AI-access decision.
 
 ## Validation Rules
 - MacroEstimate is considered valid only when all fields are finite non-negative numbers and `totalGrams > 0` (BR-286).
@@ -116,6 +121,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Paywall locked banner: `accessibilityRole="alert"` (informs screen reader that the feature is locked).
 - Paywall upgrade CTA: `accessibilityLabel` = `meal.photo_analysis.paywall.cta_upgrade`.
 - Paywall loading `ActivityIndicator`: `accessibilityLabel` = `meal.photo_analysis.paywall.loading`.
+- Subscription pending notice: localized `subscription.error.payment_pending`,
+  `accessibilityLiveRegion="polite"`, and no focus-stealing alert behavior.
 
 ## Implementation Files
 | File | Purpose |
@@ -128,6 +135,8 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 | `features/nutrition/use-meal-photo-analysis.ts` | React hook `useMealPhotoAnalysis` — full pipeline: `startCapture` (expo-image-picker action sheet -> expo-image-manipulator compress -> MyChampions server), `analyze` (direct injection), `reset`, `preFillMealInput` |
 | `features/subscription/subscription.logic.ts` | Pure entitlement logic — `AI_ENTITLEMENT_ID = 'student_pro'`, `hasAiAnalysisAccess()` (D-132) |
 | `features/subscription/subscription-source.ts` | RevenueCat source layer — `AI_FEATURES_ENTITLEMENT_ID`, `mapCustomerInfoToAiEntitlementStatus`, `presentAiPaywall` (D-132) |
+| `features/subscription/revenuecat-error.ts` | Explicit installed RevenueCat code/readable-alias mapping, including distinct `payment_pending` |
+| `features/subscription/subscription-error-copy.ts` | Exhaustive three-locale domain-reason to localization-key mapping |
 | `features/subscription/use-subscription.ts` | React hook — exposes `aiEntitlementStatus`, `hasAiAccess`, and role-aware `openAiUpgradePaywall(role)`; single `getCustomerInfo()` call maps both entitlements (D-132, BR-341) |
 | `features/subscription/subscription-server-source.ts` | MyChampions server sync source for RevenueCat-derived entitlement snapshots |
 | `app/(tabs)/nutrition/custom-meals/[mealId].tsx` | SC-214 entry point — camera CTA gated by `hasAiAccess`; paywall banner + loading indicator; result pre-fill, attach-photo toggle |
@@ -142,6 +151,7 @@ All keys are present in `en-US`, `pt-BR`, and `es-ES` locale bundles.
 - Browser compression verifies the encoded JPEG byte size, then reduces quality and dimensions through a bounded retry sequence; output still above 1.5 MB fails with `file_too_large` before upload or analysis.
 - In SC-214: photo attachment after analysis is optional and independent of the analysis result (D-109).
 - Paywall dismissed without purchase: entitlement status is refreshed after `presentPaywall` resolves regardless of outcome; if user is still not entitled, paywall banner re-displays (D-132).
+- Payment pending: the current entitlement state is preserved, loading is cleared, and the neutral pending notice is shown in SC-214 and SC-215. No purchase retry or polling is started; the existing Refresh/Check status action remains available.
 - Paywall not presented: RevenueCat `NOT_PRESENTED` is surfaced as a recoverable configuration failure after the entitlement refresh for both student and professional role routes; the gate stays locked and retry remains available.
 - Professional route isolation: a professional can never initiate a new student-plan purchase from either AI gate; the professional offering is presented instead.
 - Missing role isolation: no RevenueCat paywall is presented until a locked account role is available.

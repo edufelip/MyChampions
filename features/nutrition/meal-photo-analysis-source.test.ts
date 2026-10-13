@@ -245,7 +245,7 @@ describe('analyzeMealPhoto — invalid_response errors', () => {
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'invalid_response');
-        assert.ok(err.message.includes('macro estimate shape'));
+        assert.equal(err.message, 'Meal photo analysis returned an invalid response.');
         return true;
       },
     );
@@ -278,6 +278,86 @@ describe('analyzeMealPhoto — domain errors', () => {
         assert.equal(err.code, 'unrecognizable_image');
         return true;
       },
+    );
+  });
+
+  it('maps nested error.code and preserves a blank or foreign message', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(200, {
+          error: { code: 'unrecognizable_image', message: '日本語の診断' },
+        }),
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => err.code === 'unrecognizable_image',
+    );
+  });
+
+  it('maps 413 before reading a non-JSON body', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        ({
+          status: 413,
+          json: async () => {
+            throw new SyntaxError('html');
+          },
+        }) as unknown as Response,
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => err.code === 'file_too_large',
+    );
+  });
+
+  it('rejects conflicting nested and flat error codes as invalid_response', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(400, {
+          error: { code: 'quota_exceeded' },
+          code: 'configuration',
+        }),
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => err.code === 'invalid_response',
+    );
+  });
+
+  it('does not rescue an unknown present code with a message', async () => {
+    const deps = makeDeps({
+      fetchFn: async () =>
+        makeResponse(400, { error: { code: 'future_code', message: 'network timeout' } }),
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => err.code === 'unknown',
+    );
+  });
+
+  it('never treats a 400 macro-shaped body as a successful estimate', async () => {
+    const deps = makeDeps({
+      fetchFn: async () => makeResponse(400, validBody),
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => err.code === 'unknown',
+    );
+  });
+
+  it('rejects primitive JSON bodies as invalid_response', async () => {
+    const deps = makeDeps({
+      fetchFn: async () => makeResponse(200, 'not an object'),
+    });
+
+    await assert.rejects(
+      () => analyzeMealPhoto(fakeUser, 'base64data', deps),
+      (err: PhotoAnalysisSourceError) => err.code === 'invalid_response',
     );
   });
 
@@ -315,7 +395,7 @@ describe('analyzeMealPhoto — domain errors', () => {
       () => analyzeMealPhoto(fakeUser, 'base64data', deps),
       (err: PhotoAnalysisSourceError) => {
         assert.equal(err.code, 'unknown');
-        assert.ok(err.message.includes('internal_error'));
+        assert.equal(err.message, 'Meal photo analysis failed.');
         return true;
       },
     );

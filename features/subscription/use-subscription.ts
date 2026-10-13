@@ -47,6 +47,7 @@ import {
 } from './subscription-server-source';
 import { runPaywallPresentation } from './subscription-paywall-outcome';
 import type { SubscriptionPurchaseCapability } from './subscription-runtime';
+import { isSafeInstanceOf } from '@/features/errors/read-error-fields';
 
 // ─── SDK identity coordinator ─────────────────────────────────────────────────
 
@@ -260,6 +261,13 @@ export function useSubscription(
       setIsLoading(false);
       return true;
     }
+    if (configuredOutcome === 'pending') {
+      // A pending store transaction is not a grant or a revoke. Preserve the
+      // fixture's current entitlement and expose only the recoverable notice.
+      setError('payment_pending');
+      setIsLoading(false);
+      return true;
+    }
 
     setActiveStudentCount(e2eSubscriptionOverride.activeStudentCount);
     setIsActiveStudentCountKnown(true);
@@ -417,7 +425,7 @@ export function useSubscription(
 
       if (currentAuthUidRef.current !== activeAuthUid) return;
 
-      if (err instanceof SubscriptionSourceError) {
+      if (isSafeInstanceOf(err, SubscriptionSourceError)) {
         setError(err.code);
       } else {
         setError('unknown');
@@ -453,7 +461,7 @@ export function useSubscription(
         await fetchStatus();
       } catch (err: unknown) {
         if (currentAuthUidRef.current !== activeAuthUid) return;
-        const reason = err instanceof SubscriptionSourceError ? err.code : 'unknown';
+        const reason = isSafeInstanceOf(err, SubscriptionSourceError) ? err.code : 'unknown';
         setError(reason as SubscriptionErrorReason);
       } finally {
         if (currentAuthUidRef.current === activeAuthUid) {
@@ -479,7 +487,7 @@ export function useSubscription(
       await fetchStatus();
     } catch (err: unknown) {
       if (currentAuthUidRef.current !== activeAuthUid) return;
-      const reason = err instanceof SubscriptionSourceError ? err.code : 'unknown';
+      const reason = isSafeInstanceOf(err, SubscriptionSourceError) ? err.code : 'unknown';
       setError(reason as SubscriptionErrorReason);
     } finally {
       if (currentAuthUidRef.current === activeAuthUid) {
@@ -519,7 +527,7 @@ export function useSubscription(
     try {
       professionalOfferingId = resolveProfessionalOfferingId(getRevenueCatExtra());
     } catch (err: unknown) {
-      const reason = err instanceof SubscriptionSourceError ? err.code : 'configuration';
+      const reason = isSafeInstanceOf(err, SubscriptionSourceError) ? err.code : 'configuration';
       setError(reason);
       return;
     }
@@ -540,7 +548,7 @@ export function useSubscription(
           resolveStudentOfferingId(getRevenueCatExtra()),
         );
       } catch (err: unknown) {
-        const reason = err instanceof SubscriptionSourceError ? err.code : 'configuration';
+        const reason = isSafeInstanceOf(err, SubscriptionSourceError) ? err.code : 'configuration';
         setError(reason);
         return;
       }

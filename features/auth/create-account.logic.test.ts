@@ -114,10 +114,10 @@ test('normalizeCreateAccountReason does not infer duplicate-email from backend h
   assert.equal(reason, 'unknown');
 });
 
-test('normalizeCreateAccountReason maps network hints', () => {
-  const reason = normalizeCreateAccountReason({ code: 'NETWORK_ERROR', message: 'Fetch failed' });
-
-  assert.equal(reason, 'network');
+test('normalizeCreateAccountReason maps exact ASCII case-normalized aliases', () => {
+  for (const code of ['network', 'network_error', 'timeout', 'NETWORK_ERROR']) {
+    assert.equal(normalizeCreateAccountReason({ code, message: 'diagnostic prose' }), 'network');
+  }
 });
 
 test('normalizeCreateAccountReason maps provider conflict', () => {
@@ -128,18 +128,34 @@ test('normalizeCreateAccountReason maps provider conflict', () => {
   assert.equal(reason, 'provider_conflict');
 });
 
-test('normalizeCreateAccountReason maps missing config to configuration', () => {
-  const reason = normalizeCreateAccountReason({
-    message: 'MyChampions server URL is not configured.',
-  });
+test('normalizeCreateAccountReason maps explicit configuration aliases', () => {
+  for (const code of ['configuration', 'missing_config', 'server_not_configured']) {
+    assert.equal(normalizeCreateAccountReason({ code }), 'configuration');
+  }
+});
 
-  assert.equal(reason, 'configuration');
+test('normalizeCreateAccountReason ignores prose and arbitrary backend codes', () => {
+  for (const error of [
+    { message: 'MyChampions server URL is not configured.' },
+    { code: 'USER_ALREADY_EXISTS', message: 'email already in use' },
+    { code: 'provider_conflict_hint', message: 'different provider' },
+    { code: 'network_timeout_hint', message: 'fetch failed' },
+    { code: 'requires_sign_in', message: 'please sign in' },
+  ]) {
+    assert.equal(normalizeCreateAccountReason(error), 'unknown');
+  }
 });
 
 test('normalizeCreateAccountReason falls back to unknown', () => {
   const reason = normalizeCreateAccountReason({ code: 'SOMETHING_ELSE' });
 
   assert.equal(reason, 'unknown');
+});
+
+test('normalizeCreateAccountReason survives a revoked proxy', () => {
+  const revoked = Proxy.revocable({}, {});
+  revoked.revoke();
+  assert.equal(normalizeCreateAccountReason(revoked.proxy), 'unknown');
 });
 
 test('mapCreateAccountReasonToMessageKey returns contextual key', () => {
