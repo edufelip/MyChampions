@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+project_root="$(cd "${script_directory}/.." && pwd)"
+server_root="${MYCHAMPIONS_SERVER_ROOT:-${project_root}/../server}"
+server_evidence_runner="${server_root}/infra/scripts/verify-revenuecat-live-evidence.sh"
+
+if [[ "${REVENUECAT_LIVE_E2E:-false}" != "true" ]]; then
+  echo "Refusing to run live RevenueCat tests without REVENUECAT_LIVE_E2E=true." >&2
+  exit 2
+fi
+
+test_store_key="${EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE:-}"
+if [[ "$test_store_key" != test_* ]]; then
+  echo "EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE must contain a RevenueCat test_* SDK key." >&2
+  exit 2
+fi
+
+run_uid="${REVENUECAT_TEST_APP_USER_ID:-}"
+if [[ -z "$run_uid" ]]; then
+  run_uid="rc-live-$(date -u +%Y%m%d%H%M%S)-${RANDOM}"
+fi
+
+if [[ ${#run_uid} -gt 88 || ! "$run_uid" =~ ^[A-Za-z0-9][A-Za-z0-9._:-]*$ ]]; then
+  echo "REVENUECAT_TEST_APP_USER_ID must be 1-88 safe RevenueCat ID characters." >&2
+  exit 2
+fi
+
+live_scenario="${REVENUECAT_LIVE_SCENARIO:-all}"
+alternate_uid="${REVENUECAT_TEST_ALT_APP_USER_ID:-${run_uid}-google}"
+
+if [[ ${#alternate_uid} -gt 88 || ! "$alternate_uid" =~ ^[A-Za-z0-9][A-Za-z0-9._:-]*$ ]]; then
+  echo "REVENUECAT_TEST_ALT_APP_USER_ID must be 1-88 safe RevenueCat ID characters." >&2
+  exit 2
+fi
+if [[ "$alternate_uid" == "$run_uid" ]]; then
+  echo "REVENUECAT_TEST_ALT_APP_USER_ID must differ from REVENUECAT_TEST_APP_USER_ID." >&2
+  exit 2
+fi
+
+cd "$project_root"
+
+export APP_VARIANT=dev
+export EXPO_PUBLIC_ENV=dev
+export EXPO_PUBLIC_REVENUECAT_TEST_STORE_ENABLED=true
+export EXPO_PUBLIC_REVENUECAT_STUDENT_OFFERING_ID=test_student
+export EXPO_PUBLIC_REVENUECAT_PROFESSIONAL_OFFERING_ID=test_professional
+export EXPO_PUBLIC_E2E_AUTH_SESSION=true
+export EXPO_PUBLIC_E2E_EMAIL_PASSWORD_SIGN_IN=true
+export EXPO_PUBLIC_E2E_CREATE_ACCOUNT=true
+export EXPO_PUBLIC_E2E_SOCIAL_AUTH=true
+export EXPO_PUBLIC_E2E_AUTH_UID="$run_uid"
+export EXPO_PUBLIC_E2E_AUTH_GOOGLE_UID="$alternate_uid"
+export EXPO_PUBLIC_E2E_PRO_ROSTER_FIXTURE=basic
+# Same as the CI fixture phases: no LogBox overlay over the flows' taps.
+export EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX=true
+
+REVENUECAT_TEST_APP_USER_ID="$run_uid" \
+  REVENUECAT_TEST_ALT_APP_USER_ID="$alternate_uid" \
+  bash scripts/verify-revenuecat-test-store-preflight.sh
+
+# A live run must resolve privileges from RevenueCat, never the deterministic
+# subscription scenarios used by the regular Maestro suite.
+unset EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_STATUS
+unset EXPO_PUBLIC_E2E_AI_ENTITLEMENT_STATUS
+unset EXPO_PUBLIC_E2E_PRO_ACTIVE_STUDENT_COUNT
+unset EXPO_PUBLIC_E2E_PRO_ENTITLEMENT_RENEWAL_RISK
+unset EXPO_PUBLIC_E2E_PRO_ACTION_OUTCOME
+
+echo "RevenueCat Test Store App User ID: ${run_uid}"
+echo "RevenueCat Test Store alternate App User ID: ${alternate_uid}"
+echo "RevenueCat live scenario: ${live_scenario}"
+echo "This run uses the dev-only Test Store configuration; the SDK key is not printed."
+
+if [[ "${NATIVE_SKIP_BUILD:-false}" != "true" ]]; then
+  yarn test:e2e:build:ios:debug
+fi
+
+# The live scenarios share Test Store customer state; the suite's config.yaml
+# runs them in order. The expiration monitor waits out real renewal time, so
+# it runs only when explicitly requested.
+monitor="${REVENUECAT_LIVE_MONITOR_EXPIRATION:-false}"
+tag_args=()
+if [[ "$live_scenario" == "all" ]]; then
+  [[ "$monitor" == "true" ]] || tag_args=(--exclude-tags expiration-monitor)
+elif [[ "$live_scenario" == "professional-regression" && "$monitor" == "true" ]]; then
+  tag_args=(--include-tags "professional-regression,expiration-monitor")
+else
+  tag_args=(--include-tags "$live_scenario")
+fi
+
+maestro_bin="$(bash scripts/testing/install-maestro.sh)"
+bash scripts/testing/maestro-device.sh --platform ios
+device="$(bash scripts/testing/maestro-device.sh --platform ios --resolve-only)"
+output_dir="${project_root}/.artifacts/ci-diagnostics/revenuecat/${live_scenario}-${run_uid}"
+mkdir -p "$output_dir"
+# tag_args is empty for scenario=all with the monitor on; macOS bash 3.2 treats
+# a plain "${tag_args[@]}" of an empty array as unbound under set -u.
+MAESTRO_CLI_NO_ANALYTICS=1 node --import tsx scripts/testing/run-with-fresh-metro.ts --platform ios -- \
+  "$maestro_bin" --device "$device" test ${tag_args[@]+"${tag_args[@]}"} \
+  --format junit --output "$output_dir/report.xml" --test-output-dir "$output_dir" \
+  .maestro/suite/revenuecat-test-store
+
+if [[ "${REVENUECAT_VERIFY_SERVER_EVIDENCE:-false}" == "true" ]]; then
+  if [[ ! -f "$server_evidence_runner" ]]; then
+    echo "Server RevenueCat evidence verifier is unavailable: ${server_evidence_runner}" >&2
+    exit 1
+  fi
+
+  if [[ "${REVENUECAT_LIVE_MONITOR_EXPIRATION:-false}" == "true" ]]; then
+    primary_professional_status=lapsed
+    created_ai_status=lapsed
+  else
+    primary_professional_status=active
+    created_ai_status=active
+  fi
+
+  REVENUECAT_TEST_APP_USER_ID="$run_uid" \
+    EXPECTED_PROFESSIONAL_STATUS="$primary_professional_status" \
+    EXPECTED_AI_STATUS=lapsed \
+    bash "$server_evidence_runner" --verify
+
+  REVENUECAT_TEST_APP_USER_ID="${run_uid}-created" \
+    EXPECTED_PROFESSIONAL_STATUS=lapsed \
+    EXPECTED_AI_STATUS="$created_ai_status" \
+    bash "$server_evidence_runner" --verify
+fi

@@ -1,0 +1,18 @@
+appId: com.edufelip.mychampions.dev
+name: Student home - shows dashboard summary cards after student role selection
+tags: [student-empty-state]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-student-role.yaml
+- extendedWaitUntil:
+    visible:
+      id: student.home.hydrationCard
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: student.home.training.emptyCta
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: student.home.nutrition.emptyCta
+    direction: DOWN

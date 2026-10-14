@@ -1,0 +1,53 @@
+appId: com.edufelip.mychampions.dev
+name: Support request - validates and submits an in-app support request
+tags: [support]
+---
+- runFlow: ../common/student-account.yaml
+- tapOn:
+    id: settings.account.supportQuickCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.modal
+    timeout: 5000
+- assertVisible:
+    id: settings.account.support.subjectInput
+- assertVisible:
+    id: settings.account.support.bodyInput
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.submitCta
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: settings.account.support.submitCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.subjectError
+    timeout: 5000
+- tapOn:
+    id: settings.account.support.subjectInput
+- inputText: E2E support issue
+# The sheet lifts above the keyboard on both platforms (Android edge-to-edge
+# included), so the message field is tapped and typed into with the keyboard
+# open and stays on screen while typing.
+- tapOn:
+    id: settings.account.support.bodyInput
+- inputText: The support request flow should submit safely.
+- assertVisible:
+    id: settings.account.support.bodyInput
+    text: The support request flow should submit safely.
+- assertVisible:
+    id: settings.account.support.dialog.title
+- takeScreenshot: support-message-keyboard-open
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: tap
+      TAP_ID: settings.account.support.dialog.title
+- tapOn:
+    id: settings.account.support.submitCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.support.success
+    timeout: 10000

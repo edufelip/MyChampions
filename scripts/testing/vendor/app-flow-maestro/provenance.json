@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "origin": "app-flow-maestro local skill snapshot",
+  "snapshotDate": "2026-09-28",
+  "copies": [
+    {
+      "path": "inventory.schema.json",
+      "upstreamPath": "references/inventory.schema.json",
+      "sha256": "1ac1ed1ccd7e1f44f8560f3699fc014c83f0b9a8e247984b06bfc5ef0d8909cb"
+    },
+    {
+      "path": "generate_maestro_manifest.py",
+      "upstreamPath": "scripts/generate_maestro_manifest.py",
+      "sha256": "40d9fd616661eb3c595664708d88c00d2a1f1c3859511937ba7d60f45322987c"
+    },
+    {
+      "path": "refresh_freshness.py",
+      "upstreamPath": "scripts/refresh_freshness.py",
+      "sha256": "d76b77c920e7162f776203361f987e037f2d97fd4eefcbab15ce3bc04c514e77"
+    }
+  ]
+}

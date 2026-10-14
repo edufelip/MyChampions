@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Offline account write lock - shows the offline banner and blocks account deletion confirmation
+tags: [offline]
+---
+- runFlow: ../common/student-account.yaml
+- extendedWaitUntil:
+    visible:
+      id: settings.account.offlineBanner
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: settings.account.version
+    direction: DOWN
+- tapOn:
+    id: settings.account.deleteCta
+- assertNotVisible:
+    id: settings.account.deleteConfirm

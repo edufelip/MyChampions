@@ -6,7 +6,7 @@ import test from 'node:test';
 import { runInvocations } from '../../scripts/ci/execute-selected-tests';
 import type { CommandInvocation } from '../../scripts/ci/selective-execution';
 
-// Each invocation is a real, trivial child process (no detox/emulator/Metro
+// Each invocation is a real, trivial child process (no Maestro/emulator/Metro
 // involved -- omitting `metro` on the CommandInvocation makes runInvocation
 // take the plain runChild path). It writes a marker file before exiting, so
 // we can prove -- from outside the child process -- whether it actually ran,

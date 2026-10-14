@@ -1,0 +1,24 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - activates only student_pro after an annual student purchase
+tags: [student-annual]
+---
+- runFlow: steps/launch-student-ai-gate.yaml
+- runFlow: steps/student-ai-locked.yaml
+- runFlow:
+    file: steps/open-test-store-purchase.yaml
+    env:
+      SOURCE_CTA: meal.photoAnalysis.paywall.cta
+      ROLE: student
+      INTERVAL: annual
+- tapOn: Test valid purchase
+- runFlow: steps/student-ai-active.yaml
+- takeScreenshot: revenuecat-student-v1-annual-active
+- runFlow: steps/sign-out.yaml
+- runFlow: steps/sign-in-primary.yaml
+- runFlow: steps/pro-open-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-student-v1-annual-professional-inactive

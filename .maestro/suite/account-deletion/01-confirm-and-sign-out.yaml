@@ -1,0 +1,34 @@
+appId: com.edufelip.mychampions.dev
+name: Account deletion - requires confirmation and signs out after account deletion
+tags: [authenticated]
+---
+- runFlow: ../common/student-account.yaml
+- scrollUntilVisible:
+    element:
+      id: settings.account.version
+    direction: DOWN
+- assertVisible:
+    id: settings.account.deleteCta
+- tapOn:
+    id: settings.account.deleteCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.deleteConfirm
+    timeout: 5000
+- assertVisible: "Delete your account?"
+- assertVisible: "This action is irreversible. Your personal information will be removed. Anonymized history may be retained for legal, billing, and continuity requirements."
+- tapOn:
+    id: settings.account.deleteCancelCta
+- extendedWaitUntil:
+    notVisible:
+      id: settings.account.deleteConfirm
+    timeout: 5000
+- tapOn:
+    id: settings.account.deleteCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.deleteConfirm
+    timeout: 5000
+- tapOn:
+    id: settings.account.deleteConfirmCta
+- runFlow: ../common/wait-sign-in.yaml

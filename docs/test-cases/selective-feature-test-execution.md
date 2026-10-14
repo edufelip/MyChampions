@@ -28,10 +28,11 @@ must dispatch at ref `main`, accept a PR number, resolve its live head/base, and
 force full selection. The trusted workflow has no direct `merge_group` trigger;
 its workflow-run authorization validates every associated live PR. It also has
 no direct release/hotfix trigger; authorized same-upstream owner PRs targeting
-those bases enter through the Source-free preflight the same as any other base, and
-no longer force the full matrix on their own (CI web-primary redesign, Step 7) -- only an explicit `ci:full` label does. Full Detox validation for
+those bases enter through the self-hosted, source-free preflight the same as any
+other base, and no longer force the full matrix on their own (CI web-primary
+redesign, Step 7) -- only an explicit `ci:full` label does. Full Maestro validation for
 release/hotfix branches instead comes exclusively from
-`detox-protected-full.yml`'s `push` trigger on those branches (Step 6),
+`native-protected-full.yml`'s `push` trigger on those branches (Step 6),
 independent of the PR pipeline. The
 legacy Android, iOS, and web PR workflows are manual-only. The repository-scoped Mac
 and WSL runners and stress-proven
@@ -45,13 +46,13 @@ status, repository-setting, and complete exact-head matrix evidence.
 Configure the repository variable `MYCHAMPIONS_ENABLE_IOS_TESTS` under
 **Settings → Secrets and variables → Actions → Variables**. The exact value
 `false` skips new iOS test-only jobs, including the manual `ios-pr.yml` smoke
-lane, the full iOS Detox job in `detox-protected-full.yml`, and the
+lane, the full iOS Maestro job in `native-protected-full.yml`, and the
 provider-backed iOS Test Store job in `provider-validation.yml`. There is no
-selected iOS Detox lane on the PR path any more to skip -- Detox left the PR
+selected iOS Maestro lane on the PR path any more to skip -- native E2E left the PR
 path entirely in the CI web-primary redesign's Step 7, so
 `trusted-selective-tests.yml`'s `Selective CI gate` has no iOS-specific
 skip-allowance logic left either; it only evaluates the web lane. The full
-Detox workflow remains test-only even when started by a published release
+Maestro workflow remains test-only even when started by a published release
 event. An unset variable or any value other than the exact string `false` keeps
 iOS testing enabled. The variable does not cancel jobs that are already
 running, and it does not gate the credentialed `ios-release.yml` distribution
@@ -69,12 +70,13 @@ suite is CI-eligible and uses the coordinated API checkout, not fixture auth.
 - `scripts/ci/test-impact.ts`: validation, matching, graph construction, and
   conservative impact resolution.
 - `scripts/ci/execute-selected-tests.ts`: allowlisted, argument-safe execution
-  of selected Playwright and Detox suites.
+  of selected Playwright and Maestro suites.
 - `scripts/ci/metro-bundle-prewarm.ts`: platform-specific Expo bundle readiness
   and full response-stream verification before native test launch.
 - `scripts/ci/metro-process-group.ts`: owned-member Metro termination and
   fail-closed process-group verification.
-- `scripts/ci/detox-fixture-profiles.ts`: isolated Detox phase contracts.
+- `scripts/ci/native-fixture-profiles.ts`: isolated native fixture phases; each
+  phase id is the Maestro tag of the flows that run against its Metro bundle.
 - `.github/workflows/trusted-selective-freshness.yml`: protected-`main`,
   self-hosted, source-free owner/upstream pull-request metadata invalidation with no
   candidate checkout.
@@ -107,10 +109,10 @@ A direct change to a registered suite spec selects that suite when it is
 CI-eligible, even if no feature references it; non-CI provider/evidence suites
 remain excluded.
 
-A normal feature change selects only its affected Playwright and Detox suites,
+A normal feature change selects only its affected Playwright and Maestro suites,
 as the resolver (`resolveImpact()`) computes them; this is the resolver's own
 general contract, independent of any one caller.
-Every selected Detox suite runs on both declared mobile platforms. Shared
+Every selected Maestro suite runs on both declared mobile platforms. Shared
 navigation, localization, global design tokens, native/tooling configuration,
 workflow or resolver changes, invalid metadata, unmapped runtime paths, Git
 resolution errors, or more than 500 changed files select the complete registered
@@ -121,17 +123,17 @@ available only to local/direct resolver invocation; the trusted gate does not
 read a repository variable by that name. These controls may only
 broaden selection. A complete-matrix decision selects every suite registered
 with `ci: true`, including CI suites that are not referenced by a feature.
-Detox suites enter only the platform lanes declared by their `platforms` field;
+Maestro suites enter only the platform lanes declared by their `platforms` field;
 non-CI provider-live and evidence suites remain excluded.
 
 `trusted-selective-tests.yml`'s `impact` job calls the resolver with
 `--platform-scope web-only` (`scripts/ci/test-impact.ts`'s `platformScope`
 option, added ahead of Step 7 and wired in by it): the resolver still
-computes Detox suite membership internally exactly as described above, but
-`platformScope: 'web-only'` strips every `runner === 'detox'` suite from the
+computes Maestro suite membership internally exactly as described above, but
+`platformScope: 'web-only'` strips every `runner === 'maestro'` suite from the
 selection after that full computation, so the PR gate never sees or
-dispatches them. Full Detox validation instead runs exclusively through
-`detox-protected-full.yml` on release/hotfix branch pushes and published
+dispatches them. Full Maestro validation instead runs exclusively through
+`native-protected-full.yml` on release/hotfix branch pushes and published
 releases (Step 6), calling `execute-selected-tests.ts` directly with a
 hardcoded full suite list rather than through this resolver.
 
@@ -155,7 +157,9 @@ SHA; the lane checks out that detached object and records it alongside the
 mobile exact head. Branch movement after resolution must not change the tested
 backend. This exact-SHA behavior remains a pending promotion gate until verified.
 
-iOS uses `ios.sim.debug`; Android uses `android.emu.debug`/`devDebug` so the
+iOS uses the Debug simulator build (`ios-debug`; locally
+`yarn test:e2e:build:ios:debug`); Android uses the `devDebug` build
+(`android-dev-debug`; locally `yarn test:e2e:build:android:debug`) so the
 dev-only deterministic fixture harness remains enabled. Each native job builds
 once, then runs isolated fixture phases with a freshly owned Metro process and
 explicit environment. Runtime phase values take precedence over the app config
@@ -165,39 +169,31 @@ environment, so an inherited self-hosted-runner value cannot masquerade as an
 active scenario. The Metro status endpoint proves only that the
 listener exists. The executor next requests the platform-specific Expo magic
 development-bundle URL and fully consumes its rewritten response before spawning
-Detox, so the first screen wait never owns a cold transform. The cold transform
+Maestro, so the first screen wait never owns a cold transform. The cold transform
 has a bounded four-minute request window; a timeout, non-success response,
 missing or empty body, interrupted stream, or Metro exit after prewarming fails
 the phase and still enters owned-process cleanup. Stories
 that require contradictory fixture
 states run as separate scenario-gated phases: the AI meal-analysis spec runs
 once with both AI and professional entitlement access lapsed and once with both
-active, so no invocation observes an impossible mixed expectation. An
-authenticated direct run with a missing or invalid AI-analysis scenario fails
-immediately instead of reporting both expectations as skipped. Custom-meal image
-upload likewise runs once with the synthetic upload fixture cleared to exercise
-the native source sheet and once with the success fixture enabled to prove the
-preview; only the assertion matching `E2E_IMAGE_UPLOAD_SCENARIO` executes, and
-authenticated missing or invalid scenarios fail closed. The student dashboard
-and relationship stories launch a fresh app instance with
-synchronization disabled in `launchArgs` for every case; Android CI-eligible
-Detox specs must not call `reloadReactNative()` across the native idling
-registry. The iOS job reserves dedicated non-ephemeral Metro port `18081` and
+active, so no invocation observes an impossible mixed expectation. Each phase
+runs only the flows tagged with its phase id; a CI phase whose suite folder has
+no flow for its tag fails immediately instead of reporting zero coverage as
+green. Custom-meal image upload likewise runs once with the synthetic upload
+fixture cleared to exercise the native source sheet and once with the success
+fixture enabled to prove the preview. Every CI flow starts from a shared
+fresh-launch entry that clears app state; no flow launches or reloads the app
+directly. The iOS job reserves dedicated non-ephemeral Metro port `18081` and
 rejects an existing listener before the one-time native build. The Debug build
-compiles that value through `RCT_METRO_PORT`, and Detox's app-level
-`RCT_jsLocation` launch argument routes every fresh app instance to the same
-port while merging with per-story launch arguments. The executor independently
-validates and forwards `DETOX_METRO_PORT` to prewarming and every phase, so an
-unrelated listener on the local default `8081` remains untouched; a listener on
-the dedicated port still fails closed. Before each Android instrumented launch,
-`DetoxTest` synchronously sets React Native's `debug_http_host` to the slot's
-configured Metro host and aborts if the preference cannot be persisted.
-Together with the dynamic `reversePorts` value in `.detoxrc.js`, this keeps each
-slot's Metro traffic on its own ADB reverse tunnel instead of the emulator's
-`10.0.2.2` gateway. Native selective phases explicitly
+compiles that value through `RCT_METRO_PORT`; the Android Debug build compiles
+its port through `reactNativeDevServerPort` and reaches Metro on the emulator's
+`10.0.2.2` host loopback. The executor independently validates and forwards
+`NATIVE_METRO_PORT` to prewarming and every phase, so an unrelated listener on
+the local default `8081` remains untouched; a listener on the dedicated port
+still fails closed. Native selective phases explicitly
 suppress the in-app development
 LogBox notification overlay while retaining warning text in runner logs and
-failure diagnostics, so diagnostics cannot intercept stable Detox action
+failure diagnostics, so diagnostics cannot intercept stable Maestro action
 targets. Tests scroll lower auth actions into view before interaction so the
 same contract holds on the configured compact Android viewport. On macOS,
 process-group probing can return
@@ -206,9 +202,9 @@ the numeric process table, signals the owned supervisor before its descendants
 so its cleanup trap can run, then signals only runner-UID group members,
 verifies TERM and KILL outcomes, and separately proves that the Metro port
 closed. Foreign processes are never signaled, while a surviving runner-owned
-member or listener fails the lane. CI also fails if a selected Detox invocation
-skips every test.
-`detox:revenuecat-live` remains manual/provider-live and is never PR-eligible.
+member or listener fails the lane. A failing phase is retried once and the retry
+is reported as a flaky pass in the lane log.
+`maestro:revenuecat-live` remains manual/provider-live and is never PR-eligible.
 For D-195 promotion, each native creation/use step arms idempotent `EXIT`, `INT`,
 and `TERM` handlers before materializing secrets or acquiring a native device.
 `ENV_FILE_CONTENT` is only the initial GitHub step-environment transport into
@@ -290,15 +286,14 @@ Expensive jobs run only when selected. As of the CI web-primary redesign
 There is no macOS or WSL Android expensive job on the PR path any more --
 `detox-ios-selected`/`detox-android-selected` were deleted outright in Step 7,
 not relocated. The equivalent mechanics moved entirely to
-`detox-protected-full.yml`, which runs on release/hotfix branch pushes and
-published releases instead of on every PR:
+`native-protected-full.yml`, which runs on manual dispatch from `main`,
+release/hotfix branch pushes and published releases instead of on every PR:
 
-- macOS: one iOS debug build plus the full, hardcoded iOS Detox suite list
+- macOS: one iOS debug build plus the full, hardcoded iOS Maestro suite list
   (not resolver-selected). D-195 promotion additionally requires one recorded
   disposable simulator UDID and targeted shutdown/deletion that leaves
   unrelated simulators untouched.
-- Linux Android: Gradle lint/unit checks, one `devDebug`/`productionRelease`
-  app/test build, and the full, hardcoded Android Detox suite list. This
+- Linux Android: Gradle lint/unit checks, one `devDebug` app build, and the full, hardcoded Android Maestro suite list. This
   dedicated runner uses its own fcntl.flock-based native host lock, distinct
   from the per-PR-slot allocation (`android-runner-slot.ts`, exact serial/AVD
   identity, PID-reuse-safe teardown) that `detox-android-selected` used to
@@ -329,13 +324,13 @@ specifically (iOS simulator UDID lifecycle, the MyChampions Android slot's
 ports/AVD/PID recovery, and their per-lane secrets/native-supervisor
 mechanics) describe machinery that was deleted outright from
 `trusted-selective-tests.yml`, not relocated. Read those bullets as
-documenting `detox-protected-full.yml`'s release/hotfix Detox validation
+documenting `native-protected-full.yml`'s release/hotfix Maestro validation
 instead -- it's a simpler, single-runner, non-concurrent implementation
 that doesn't need the per-PR emulator-slot-sharing safety this section
 largely describes, since release/hotfix pushes are infrequent rather than
 concurrent PR volume. This section has not been fully re-derived line by
 line for the new topology; treat any specific port/path/identity claim
-below as pending re-verification against `detox-protected-full.yml` rather
+below as pending re-verification against `native-protected-full.yml` rather
 than as current fact, and flag to a maintainer before treating it as an
 executable QA spec for that workflow.
 
@@ -368,13 +363,13 @@ records workflow/run, repository, host-resource, and exact-head evidence:
   enforcement uses strict up-to-date branches. Manual execution requires `workflow_dispatch` at ref
   `main`, a PR number resolved through the live API, and forced full selection.
 - Live same-upstream owner PRs targeting `release/**` or `hotfix/**` enter
-  through the Source-free preflight and use the protected-`main` trusted workflow
+  through the self-hosted, source-free preflight and use the protected-`main` trusted workflow
   the same as any other base; they no longer force full selection on their
   own (CI web-primary redesign, Step 7) -- only an explicit `ci:full` label
   does. The trusted workflow is never sourced or directly
-  triggered from those target branches. Full Detox validation for
+  triggered from those target branches. Full Maestro validation for
   release/hotfix branches instead comes exclusively from
-  `detox-protected-full.yml`'s `push` trigger on those branches (Step 6),
+  `native-protected-full.yml`'s `push` trigger on those branches (Step 6),
   entirely outside this PR pipeline and its authorization contract -- push
   events to protected branches can't be spoofed or come from a fork, the
   same trust basis `android-release.yml`/`ios-release.yml` already rely on,
@@ -468,8 +463,8 @@ yarn test:impact
 yarn test:impact:resolver
 yarn test:impact:resolve --base main --head HEAD
 SELECTED_SUITES_JSON='["web:auth"]' yarn test:impact:execute --platform web --plan
-SELECTED_SUITES_JSON='["detox:auth"]' yarn test:impact:execute --platform ios --plan
-SELECTED_SUITES_JSON='["detox:auth"]' yarn test:impact:execute --platform android --plan
+SELECTED_SUITES_JSON='["maestro:auth"]' yarn test:impact:execute --platform ios --plan
+SELECTED_SUITES_JSON='["maestro:auth"]' yarn test:impact:execute --platform android --plan
 ```
 
 The resolver writes local evidence under `.artifacts/test-impact/`. These files

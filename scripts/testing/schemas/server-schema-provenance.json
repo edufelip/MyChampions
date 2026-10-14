@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "canonicalOwner": "server",
+  "copies": [
+    {
+      "path": "api-process-v1.schema.json",
+      "source": "server/scripts/testing/schemas/api-process-v1.schema.json",
+      "sha256": "550725d9639546cbb9a56d21a3b33a67e61e8b27a955be5422e5361ca6969540"
+    },
+    {
+      "path": "application-fixtures-v1.schema.json",
+      "source": "server/scripts/testing/schemas/application-fixtures-v1.schema.json",
+      "sha256": "d70d4f38d27c7e83a9ae0bd6965415e248c0cd63ce2c918e7400cc06441ced80"
+    },
+    {
+      "path": "connection-snapshot-v1.schema.json",
+      "source": "server/scripts/testing/schemas/connection-snapshot-v1.schema.json",
+      "sha256": "8c30b2ab6354cfba65f3f50bbb025dae5c095edf3e2b73c1ae5811b4952266b8"
+    },
+    {
+      "path": "domain-snapshot-v1.schema.json",
+      "source": "server/scripts/testing/schemas/domain-snapshot-v1.schema.json",
+      "sha256": "472e5776af93723b4bc64ad6b0c02024cfafc13e051ac15c08bbbc6430a09d84"
+    },
+    {
+      "path": "resource-manifest-v1.schema.json",
+      "source": "server/scripts/testing/schemas/resource-manifest-v1.schema.json",
+      "sha256": "46679d2e31aa6cbeb60d079dd7c57878aaa909ecccb4e53710bb46887eca6456"
+    },
+    {
+      "path": "session-event-v1.schema.json",
+      "source": "server/scripts/testing/schemas/session-event-v1.schema.json",
+      "sha256": "cb70886310dcf37e6de86397f1525cc6ee7438a5552872178cf31afb4a728189"
+    },
+    {
+      "path": "session-receipt-v1.schema.json",
+      "source": "server/scripts/testing/schemas/session-receipt-v1.schema.json",
+      "sha256": "5615e5e1f24f1b7acc63b9f350a7a8771b804693739403ac176a2028da5871ad"
+    },
+    {
+      "path": "session-request-v1.schema.json",
+      "source": "server/scripts/testing/schemas/session-request-v1.schema.json",
+      "sha256": "aff25b58be00b1b74456fdcc0e29af8c7ed5c0d38967032439f35d0fdae9d6b4"
+    }
+  ]
+}

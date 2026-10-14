@@ -1,0 +1,17 @@
+# EMAIL, PASSWORD (fixture accounts).
+appId: com.edufelip.mychampions.dev
+---
+- tapOn:
+    id: auth.signIn.emailInput
+- inputText: ${EMAIL}
+- tapOn:
+    id: auth.signIn.passwordInput
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth.signIn.submitButton
+- runFlow: ../../common/dismiss-password-sheet.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 10000

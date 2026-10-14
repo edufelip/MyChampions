@@ -1,0 +1,24 @@
+# Tap the BUTTON action of a native alert whose message matches MESSAGE.
+# On iOS the title, the alert body and other controls (e.g. a trash icon
+# labelled "Delete") can share the button's text; only the button sits below
+# the message.
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      text: ${MESSAGE}
+    timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: ${BUTTON}
+          below:
+            text: ${MESSAGE}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: android:id/button1

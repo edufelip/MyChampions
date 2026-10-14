@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Auth create account - navigates to role-selection after successful Apple create account
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml
+- runFlow: ../common/open-create-account.yaml
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.appleButton
+    direction: DOWN
+- tapOn:
+    id: auth.createAccount.appleButton
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 10000

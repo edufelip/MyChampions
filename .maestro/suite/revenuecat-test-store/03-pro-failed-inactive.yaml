@@ -1,0 +1,35 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - keeps a failed professional purchase inactive without granting access
+tags: [professional-regression]
+---
+- runFlow: steps/launch-pro-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 15000
+- runFlow:
+    file: steps/open-test-store-purchase.yaml
+    env:
+      SOURCE_CTA: pro.subscription.purchaseCta
+      ROLE: professional
+      INTERVAL: monthly
+- runFlow: steps/acknowledge-failed-purchase.yaml
+- runFlow:
+    file: steps/dismiss-paywall.yaml
+    env:
+      ROLE: professional
+      RETURN_ID: pro.subscription.screen
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 15000
+- tapOn:
+    id: pro.subscription.refreshCta
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 15000
+- takeScreenshot: revenuecat-live-professional-failed

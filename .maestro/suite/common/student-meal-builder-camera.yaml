@@ -1,0 +1,16 @@
+# Fresh launch with CAMERA_PERMISSION, student role, open the custom meal builder.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    file: launch-fresh.yaml
+    env:
+      CAMERA_PERMISSION: ${CAMERA_PERMISSION || 'allow'}
+- runFlow: select-student-role.yaml
+- runFlow:
+    file: open-link.yaml
+    env:
+      LINK: "mychampions://nutrition/custom-meals/new"
+- extendedWaitUntil:
+    visible:
+      id: meal.builder.screen
+    timeout: 10000

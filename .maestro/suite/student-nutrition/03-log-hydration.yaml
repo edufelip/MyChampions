@@ -1,0 +1,36 @@
+appId: com.edufelip.mychampions.dev
+name: Student nutrition - validates and logs hydration intake against the effective goal
+tags: [nutrition]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/nutrition
+      SCREEN_ID: student.nutrition.screen
+- scrollUntilVisible:
+    element:
+      id: student.nutrition.waterWidget.logButton
+    direction: DOWN
+- assertVisible:
+    id: student.nutrition.waterWidget.intakeInput
+- tapOn:
+    id: student.nutrition.waterWidget.logButton
+- extendedWaitUntil:
+    visible:
+      id: student.nutrition.waterWidget.intakeError
+    timeout: 5000
+- tapOn:
+    id: student.nutrition.waterWidget.intakeInput
+- inputText: "250"
+- runFlow: ../common/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: student.nutrition.waterWidget.logButton
+    direction: DOWN
+- tapOn:
+    id: student.nutrition.waterWidget.logButton
+- extendedWaitUntil:
+    visible:
+      id: student.nutrition.waterWidget.consumedValue
+      text: "250"
+    timeout: 10000

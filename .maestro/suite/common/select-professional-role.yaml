@@ -1,0 +1,21 @@
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 15000
+- tapOn:
+    id: auth.roleSelection.professionalCard
+# On short screens (e.g. iPhone SE) Continue sits below the fold of the scrolling
+# role screen; where it is already visible this does not scroll.
+- scrollUntilVisible:
+    element:
+      id: auth.roleSelection.continueButton
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: auth.roleSelection.continueButton
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.screen
+    timeout: 10000

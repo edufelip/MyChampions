@@ -1,0 +1,18 @@
+# Fresh launch (camera allowed), choose the student role, open My Professionals.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    file: launch-fresh.yaml
+    env:
+      CAMERA_PERMISSION: allow
+- runFlow: select-student-role.yaml
+- extendedWaitUntil:
+    visible:
+      id: student.home.accountButton
+    timeout: 5000
+- tapOn:
+    id: student.home.accountButton
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.screen
+    timeout: 10000

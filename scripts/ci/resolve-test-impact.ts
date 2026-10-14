@@ -37,7 +37,7 @@ if (
 ) {
   throw new Error(`--platform-scope must be "all" or "web-only", got "${platformScopeArg}"`);
 }
-const platformScope: PlatformScope = (platformScopeArg as PlatformScope | undefined) ?? 'all';
+const platformScope: PlatformScope = platformScopeArg === 'web-only' ? 'web-only' : 'all';
 
 let changes: ChangedFile[] = [];
 let graphs: ImportGraph[] = [];
@@ -73,23 +73,27 @@ if (githubOutput) {
     mode: result.mode,
     has_web: String(result.webSuites.length > 0),
     has_web_server: String(
-      result.webSuites.some((suite) => manifest.suites[suite]?.runner === 'playwright-server'),
+      result.webSuites.some((suite) =>
+        ['playwright-server', 'playwright-integration'].includes(
+          manifest.suites[suite]?.runner ?? '',
+        ),
+      ),
     ),
-    has_detox_ios: String(result.detoxIosSuites.length > 0),
-    has_detox_android: String(result.detoxAndroidSuites.length > 0),
+    has_native_ios: String(result.nativeIosSuites.length > 0),
+    has_native_android: String(result.nativeAndroidSuites.length > 0),
     full_fallback: String(result.mode === 'full-fallback'),
     web_suites: JSON.stringify(result.webSuites),
-    detox_ios_suites: JSON.stringify(result.detoxIosSuites),
-    detox_android_suites: JSON.stringify(result.detoxAndroidSuites),
+    native_ios_suites: JSON.stringify(result.nativeIosSuites),
+    native_android_suites: JSON.stringify(result.nativeAndroidSuites),
     web_matrix: JSON.stringify({ include: result.webSuites.map((suite) => ({ suite })) }),
-    detox_ios_matrix: JSON.stringify({
-      include: result.detoxIosSuites.map((suite) => ({
+    native_ios_matrix: JSON.stringify({
+      include: result.nativeIosSuites.map((suite) => ({
         suite,
         fixtureProfile: manifest.suites[suite]?.fixtureProfile ?? 'default',
       })),
     }),
-    detox_android_matrix: JSON.stringify({
-      include: result.detoxAndroidSuites.map((suite) => ({
+    native_android_matrix: JSON.stringify({
+      include: result.nativeAndroidSuites.map((suite) => ({
         suite,
         fixtureProfile: manifest.suites[suite]?.fixtureProfile ?? 'default',
       })),

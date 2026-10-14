@@ -1,0 +1,30 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - grants only the professional privilege after a valid professional purchase
+tags: [professional-regression]
+---
+- runFlow: steps/launch-pro-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 15000
+- runFlow:
+    file: steps/open-test-store-purchase.yaml
+    env:
+      SOURCE_CTA: pro.subscription.purchaseCta
+      ROLE: professional
+      INTERVAL: monthly
+- tapOn: Test valid purchase
+- runFlow:
+    file: steps/dismiss-paywall.yaml
+    env:
+      ROLE: professional
+      RETURN_ID: pro.subscription.screen
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 30000
+- assertNotVisible:
+    id: pro.subscription.warning
+- takeScreenshot: revenuecat-live-professional-active

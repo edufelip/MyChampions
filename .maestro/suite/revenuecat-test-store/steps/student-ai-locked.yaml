@@ -1,0 +1,10 @@
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: meal.photoAnalysis.paywall
+    timeout: ${TIMEOUT || 15000}
+- assertVisible:
+    id: meal.photoAnalysis.paywall.cta
+- assertNotVisible:
+    id: meal.photoAnalysis.cta

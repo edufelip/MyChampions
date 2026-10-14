@@ -16,13 +16,23 @@
 - Saved-meal actions form a compact, wrapping action row under the meal summary instead of a sparse trailing column.
 - Quick log is a bottom sheet on phones and a centered, width-capped dialog on tablet/desktop, with a dimmed backdrop and unchanged keyboard/accessibility behavior.
 
+## Native Keyboard Behavior
+
+- On iOS and Android (including Android 15+ edge-to-edge, where
+  `adjustResize` no longer resizes the window) the quick-log panel is lifted by
+  the height the keyboard covers, measured from the keyboard's own metrics. The
+  grams input, the nutrition preview, and the Log meal / Cancel actions stay
+  visible while typing and respond to taps with the keyboard open. On iOS the
+  decimal pad's Done accessory stays above the panel's actions.
+
 ## Native Automation Contract
 
 - The cross-platform quick-log story focuses the grams input, atomically replaces
-  and verifies the intended value, dismisses Android's active keyboard with the
-  native back action or iOS's localized accessory action after its keyboard
-  animation settles, and submits through the stable confirm identifier. It does
-  not fall back to screen coordinates hidden beneath an IME.
+  and verifies the intended value and the nutrition preview while the keyboard
+  is open, captures `quick-log-keyboard-open`, and submits through the stable
+  confirm identifier without closing the keyboard first: a Log action left
+  beneath the keyboard would receive a key press instead. It never uses screen
+  coordinates.
 
 ## UX Copy Intent
 - Emphasize fast logging from already-saved meals.
@@ -86,7 +96,7 @@
 ## Links
 - Functional requirement: FR-139, FR-140, FR-141, FR-142, FR-143, FR-144, FR-147, FR-150
 - Use case: UC-003.2, UC-003.3, UC-003.4, UC-003.6, UC-003.9
-- Acceptance criteria: AC-403, AC-404, AC-405, AC-406, AC-407, AC-408, AC-411, AC-413
+- Acceptance criteria: AC-403, AC-404, AC-405, AC-406, AC-407, AC-408, AC-411, AC-413, AC-543
 - Business rules: BR-304, BR-305, BR-306, BR-307, BR-308, BR-309, BR-310, BR-313, BR-316
 - Test cases: TC-404, TC-405, TC-406, TC-407, TC-408, TC-409, TC-412, TC-414, TC-415, TC-436
 - Decisions: D-132 (AI paywall gate — `useSubscription` wired; `hasAiAccess`, `isSubscriptionLoading`, `onOpenPaywall` threaded through `QuickLogPanel` → `QuickLogAnalysisRow`)

@@ -1,0 +1,8 @@
+appId: com.edufelip.mychampions.dev
+---
+- tapOn:
+    id: tabs.account
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 10000

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "maxChangedFiles": 500,
-  "criticalSuites": ["detox:student", "web:shell", "web:critical-paths"],
+  "criticalSuites": ["maestro:student", "web:shell", "web:critical-paths"],
   "documentationPaths": ["docs/**", "*.md", ".github/ISSUE_TEMPLATE/**"],
   "runtimePaths": [
     "app/**",
@@ -36,8 +36,39 @@
     "app.json",
     "tsconfig.json",
     "eslint.config.js",
-    ".detoxrc.js",
-    "playwright*.config.ts"
+    "playwright*.config.ts",
+    "e2e/web/support/test-profiles.ts",
+    "e2e/web/support/create-web-test-config.ts",
+    "scripts/testing/integration-preflight.ts",
+    "scripts/testing/owned-session.ts",
+    "scripts/testing/verify-session-acquisition.ts",
+    "scripts/testing/owned-api-proxy.ts",
+    "scripts/testing/verify-owned-api-proxy.ts",
+    "scripts/testing/owned-expo.ts",
+    "scripts/testing/owned-ios-simulator.ts",
+    "scripts/testing/capture-native-testability.ts",
+    "scripts/testing/native-runtime-preflight.ts",
+    "scripts/testing/native-build-identity.ts",
+    "scripts/testing/native-build-reuse.ts",
+    "scripts/testing/generate-native-declaration.py",
+    "scripts/testing/validate-native-inventory.mjs",
+    "scripts/testing/vendor/**",
+    "docs/qa/native-pilot/**",
+    ".maestro/flows/**",
+    "scripts/testing/owned-process-group.ts",
+    "scripts/testing/verify-owned-expo.ts",
+    "scripts/testing/integration-registry.ts",
+    "scripts/testing/integration-context.ts",
+    "scripts/testing/integration-results.ts",
+    "scripts/testing/run-web-integration.ts",
+    "scripts/testing/verify-web-integration.ts",
+    "scripts/run-web-e2e-batch.mjs",
+    "scripts/testing/schema-validation.ts",
+    "scripts/testing/schemas/**",
+    "scripts/testing/verify-domain-snapshot.ts",
+    "scripts/testing/worker-control.ts",
+    "scripts/testing/verify-worker-control.ts",
+    "scripts/testing/verify-worker-control-receipt.ts"
   ],
   "sharedRules": [
     {
@@ -87,6 +118,18 @@
       "paths": ["android/**"],
       "impact": "all",
       "platforms": ["android"]
+    },
+    {
+      "id": "maestro-shared-subflows",
+      "paths": [".maestro/suite/common/**"],
+      "impact": "all",
+      "platforms": ["ios", "android"]
+    },
+    {
+      "id": "maestro-ios-device-setup",
+      "paths": [".maestro/setup/**"],
+      "impact": "all",
+      "platforms": ["ios"]
     }
   ],
   "features": {
@@ -97,11 +140,13 @@
       "webSuites": [
         "web:auth",
         "web:server-auth",
+        "web:integration-auth",
         "web:shell",
         "web:critical-paths",
-        "web:manual-webview-recovery"
+        "web:manual-webview-recovery",
+        "web:integration-denial"
       ],
-      "detoxSuites": ["detox:auth"],
+      "nativeSuites": ["maestro:auth"],
       "owners": ["@edufelip"]
     },
     "connections": {
@@ -112,8 +157,13 @@
       ],
       "dependsOn": ["auth", "platform"],
       "unitTests": ["features/connections/**/*.test.ts"],
-      "webSuites": ["web:connections", "web:shell", "web:critical-paths"],
-      "detoxSuites": ["detox:connections"],
+      "webSuites": [
+        "web:connections",
+        "web:shell",
+        "web:critical-paths",
+        "web:integration-connections"
+      ],
+      "nativeSuites": ["maestro:connections"],
       "owners": ["@edufelip"]
     },
     "nutrition": {
@@ -131,7 +181,7 @@
       "dependsOn": ["auth", "connections", "offline", "platform"],
       "unitTests": ["features/nutrition/**/*.test.ts"],
       "webSuites": ["web:nutrition", "web:custom-meal-error", "web:shell"],
-      "detoxSuites": ["detox:nutrition"],
+      "nativeSuites": ["maestro:nutrition"],
       "owners": ["@edufelip"]
     },
     "training": {
@@ -149,9 +199,12 @@
         "web:training",
         "web:shell",
         "web:exercise-search",
-        "web:assigned-plan-detail-heading"
+        "web:assigned-plan-detail-heading",
+        "web:integration-training",
+        "web:integration-save-retry",
+        "web:integration-denial"
       ],
-      "detoxSuites": ["detox:training"],
+      "nativeSuites": ["maestro:training"],
       "owners": ["@edufelip"]
     },
     "plans": {
@@ -162,9 +215,12 @@
         "web:nutrition",
         "web:training",
         "web:exercise-search",
-        "web:assigned-plan-detail-heading"
+        "web:assigned-plan-detail-heading",
+        "web:integration-training",
+        "web:integration-save-retry",
+        "web:integration-denial"
       ],
-      "detoxSuites": ["detox:plans"],
+      "nativeSuites": ["maestro:plans"],
       "owners": ["@edufelip"]
     },
     "professional": {
@@ -179,7 +235,7 @@
         "web:professional-tabbar-labels",
         "web:shell"
       ],
-      "detoxSuites": ["detox:professional"],
+      "nativeSuites": ["maestro:professional"],
       "owners": ["@edufelip"]
     },
     "subscription": {
@@ -187,7 +243,7 @@
       "dependsOn": ["auth", "platform", "professional"],
       "unitTests": ["features/subscription/**/*.test.ts"],
       "webSuites": ["web:subscription", "web:critical-paths", "web:subscription-lock"],
-      "detoxSuites": ["detox:subscription", "detox:revenuecat-live"],
+      "nativeSuites": ["maestro:subscription", "maestro:revenuecat-live"],
       "owners": ["@edufelip"]
     },
     "support": {
@@ -195,7 +251,7 @@
       "dependsOn": ["auth", "offline", "platform"],
       "unitTests": ["features/support/**/*.test.ts"],
       "webSuites": ["web:shell", "web:server-support"],
-      "detoxSuites": ["detox:support"],
+      "nativeSuites": ["maestro:support"],
       "owners": ["@edufelip"]
     },
     "student": {
@@ -211,7 +267,7 @@
       ],
       "unitTests": ["features/student/**/*.test.ts"],
       "webSuites": ["web:student", "web:shell"],
-      "detoxSuites": ["detox:student"],
+      "nativeSuites": ["maestro:student"],
       "owners": ["@edufelip"]
     },
     "analytics": {
@@ -219,7 +275,7 @@
       "dependsOn": ["auth", "platform"],
       "unitTests": ["features/analytics/**/*.test.ts"],
       "webSuites": ["web:shell"],
-      "detoxSuites": [],
+      "nativeSuites": [],
       "owners": ["@edufelip"]
     },
     "offline": {
@@ -227,7 +283,7 @@
       "dependsOn": ["platform"],
       "unitTests": ["features/offline/**/*.test.ts"],
       "webSuites": ["web:shell"],
-      "detoxSuites": ["detox:offline"],
+      "nativeSuites": ["maestro:offline"],
       "owners": ["@edufelip"]
     },
     "platform": {
@@ -240,7 +296,7 @@
       "dependsOn": [],
       "unitTests": ["features/platform/**/*.test.ts"],
       "webSuites": ["web:platform"],
-      "detoxSuites": ["detox:platform"],
+      "nativeSuites": ["maestro:platform"],
       "owners": ["@edufelip"]
     }
   },
@@ -249,139 +305,156 @@
     ["professional", "subscription"]
   ],
   "suites": {
-    "detox:auth": {
-      "runner": "detox",
+    "web:integration-auth": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/auth-session.spec.ts"],
+      "integrationScenarios": ["auth-session"],
+      "grep": "@integration:auth-session",
+      "tier": "integration",
+      "ci": false
+    },
+    "maestro:auth": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
       "specs": [
-        "e2e/auth-sign-in.e2e.test.js",
-        "e2e/auth-role-selection.e2e.test.js",
-        "e2e/auth-terms.e2e.test.js",
-        "e2e/account-password-reset.e2e.test.js",
-        "e2e/account-deletion.e2e.test.js",
-        "e2e/account-settings.e2e.test.js",
-        "e2e/language-select.e2e.test.js"
+        ".maestro/suite/auth-sign-in",
+        ".maestro/suite/auth-role-selection",
+        ".maestro/suite/auth-terms",
+        ".maestro/suite/account-password-reset",
+        ".maestro/suite/account-deletion",
+        ".maestro/suite/account-settings",
+        ".maestro/suite/language-select"
       ],
       "fixtureProfile": "auth-entry-and-authenticated",
       "tier": "feature",
       "ci": true
     },
-    "detox:auth-role-persistence": {
-      "runner": "detox",
+    "maestro:auth-role-persistence": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
-      "specs": ["e2e/auth-role-selection.e2e.test.js"],
+      "specs": [".maestro/suite/auth-role-selection"],
       "fixtureProfile": "auth-role-persistence",
       "tier": "critical",
       "ci": true
     },
-    "detox:connections": {
-      "runner": "detox",
+    "maestro:connections": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
       "specs": [
-        "e2e/student-professionals.e2e.test.js",
-        "e2e/professional-home-invite-code.e2e.test.js"
+        ".maestro/suite/student-professionals",
+        ".maestro/suite/professional-home-invite-code"
       ],
       "fixtureProfile": "authenticated-connections",
       "tier": "feature",
       "ci": true
     },
-    "detox:nutrition": {
-      "runner": "detox",
+    "maestro:nutrition": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
       "specs": [
-        "e2e/student-nutrition.e2e.test.js",
-        "e2e/custom-meal-ai-analysis.e2e.test.js",
-        "e2e/custom-meal-builder.e2e.test.js",
-        "e2e/custom-meal-image-upload.e2e.test.js",
-        "e2e/custom-meal-library.e2e.test.js",
-        "e2e/professional-nutrition-builder.e2e.test.js",
-        "e2e/shared-recipe.e2e.test.js"
+        ".maestro/suite/student-nutrition",
+        ".maestro/suite/custom-meal-ai-analysis",
+        ".maestro/suite/custom-meal-builder",
+        ".maestro/suite/custom-meal-image-upload",
+        ".maestro/suite/custom-meal-library",
+        ".maestro/suite/professional-nutrition-builder",
+        ".maestro/suite/shared-recipe"
       ],
       "fixtureProfile": "authenticated-nutrition",
       "tier": "feature",
       "ci": true
     },
-    "detox:training": {
-      "runner": "detox",
+    "maestro:training": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
-      "specs": [
-        "e2e/student-training.e2e.test.js",
-        "e2e/professional-training-builder.e2e.test.js"
-      ],
+      "specs": [".maestro/suite/student-training", ".maestro/suite/professional-training-builder"],
       "fixtureProfile": "authenticated-training",
       "tier": "feature",
       "ci": true
     },
-    "detox:plans": {
-      "runner": "detox",
+    "maestro:plans": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
       "specs": [
-        "e2e/professional-bulk-assign.e2e.test.js",
-        "e2e/student-self-managed-builder.e2e.test.js"
+        ".maestro/suite/professional-bulk-assign",
+        ".maestro/suite/student-self-managed-builder"
       ],
       "fixtureProfile": "authenticated-plans",
       "tier": "feature",
       "ci": true
     },
-    "detox:professional": {
-      "runner": "detox",
+    "maestro:professional": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
       "specs": [
-        "e2e/professional-specialty-removal.e2e.test.js",
-        "e2e/professional-specialty.e2e.test.js",
-        "e2e/professional-student-profile.e2e.test.js",
-        "e2e/professional-student-roster.e2e.test.js"
+        ".maestro/suite/professional-specialty-removal",
+        ".maestro/suite/professional-specialty",
+        ".maestro/suite/professional-student-profile",
+        ".maestro/suite/professional-student-roster"
       ],
       "fixtureProfile": "authenticated-professional",
       "tier": "feature",
       "ci": true
     },
-    "detox:subscription": {
-      "runner": "detox",
+    "maestro:subscription": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
       "specs": [
-        "e2e/professional-subscription-actions.e2e.test.js",
-        "e2e/professional-subscription-cap.e2e.test.js"
+        ".maestro/suite/professional-subscription-actions",
+        ".maestro/suite/professional-subscription-cap"
       ],
       "fixtureProfile": "authenticated-subscription",
       "tier": "feature",
       "ci": true
     },
-    "detox:revenuecat-live": {
-      "runner": "detox",
+    "maestro:revenuecat-live": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
-      "specs": ["e2e/revenuecat-test-store.e2e.test.js"],
+      "specs": [".maestro/suite/revenuecat-test-store"],
       "fixtureProfile": "provider-live",
       "tier": "release",
       "ci": false
     },
-    "detox:support": {
-      "runner": "detox",
+    "maestro:support": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
-      "specs": ["e2e/support-request.e2e.test.js"],
+      "specs": [".maestro/suite/support-request"],
       "fixtureProfile": "authenticated-support",
       "tier": "feature",
       "ci": true
     },
-    "detox:student": {
-      "runner": "detox",
+    "maestro:student": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
-      "specs": ["e2e/student-home.e2e.test.js"],
+      "specs": [".maestro/suite/student-home"],
       "fixtureProfile": "authenticated-student",
       "tier": "critical",
       "ci": true
     },
-    "detox:offline": {
-      "runner": "detox",
+    "maestro:offline": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
-      "specs": ["e2e/offline-account-write-lock.e2e.test.js"],
+      "specs": [".maestro/suite/offline-account-write-lock"],
       "fixtureProfile": "authenticated-offline",
       "tier": "feature",
       "ci": true
     },
-    "detox:platform": {
-      "runner": "detox",
+    "maestro:platform": {
+      "runner": "maestro",
       "platforms": ["ios", "android"],
-      "specs": ["e2e/shared-webview.e2e.test.js"],
+      "specs": [".maestro/suite/shared-webview"],
       "fixtureProfile": "authenticated-platform",
       "tier": "feature",
       "ci": true
@@ -593,7 +666,7 @@
     "web:flow-atlas-auth": {
       "runner": "playwright-evidence",
       "playwrightConfig": "playwright.flows-auth.config.ts",
-      "projects": ["mobile-auth", "mobile-auth-pt", "mobile-auth-es"],
+      "projects": ["mobile", "tablet", "web"],
       "specs": ["e2e/web-flows-auth/authentication-flow-atlas.spec.ts"],
       "grep": "@feature:auth",
       "tier": "evidence",
@@ -631,6 +704,86 @@
       "specs": ["e2e/web/invite-code-rotation.spec.ts"],
       "grep": "@feature:professional",
       "tier": "evidence",
+      "ci": false
+    },
+    "web:integration-training": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/training-durable.spec.ts"],
+      "integrationScenarios": ["training-durable"],
+      "grep": "@integration:training-durable",
+      "tier": "integration",
+      "ci": false
+    },
+    "web:integration-connections": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/connection-approval.spec.ts"],
+      "integrationScenarios": ["connection-approval"],
+      "grep": "@integration:connection-approval",
+      "tier": "integration",
+      "ci": false
+    },
+    "web:integration-save-retry": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/save-retry.spec.ts"],
+      "integrationScenarios": ["save-retry"],
+      "grep": "@integration:save-retry",
+      "tier": "integration",
+      "ci": false
+    },
+    "web:integration-denial": {
+      "runner": "playwright-integration",
+      "playwrightConfig": "playwright.integration.config.ts",
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit",
+        "mobile-en",
+        "mobile-pt",
+        "mobile-es",
+        "tablet-en",
+        "tablet-pt",
+        "tablet-es"
+      ],
+      "specs": ["e2e/web-integration/unrelated-denial.spec.ts"],
+      "integrationScenarios": ["unrelated-denial"],
+      "grep": "@integration:unrelated-denial",
+      "tier": "integration",
       "ci": false
     }
   }

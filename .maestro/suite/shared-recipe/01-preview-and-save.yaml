@@ -1,0 +1,31 @@
+appId: com.edufelip.mychampions.dev
+name: Shared recipe - previews and saves a shared recipe link inside the app shell
+tags: [nutrition]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-student-role.yaml
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://shared/recipes/e2e-shared-recipe"
+- extendedWaitUntil:
+    visible:
+      id: shared_recipe.preview
+    timeout: 10000
+- assertVisible:
+    id: shared_recipe.preview.name
+- assertVisible: E2E Shared Recovery Bowl
+- assertVisible:
+    id: shared_recipe.preview.nutrition
+- assertVisible:
+    id: shared_recipe.cta.save
+- assertVisible:
+    id: shared_recipe.cta.cancel
+- tapOn:
+    id: shared_recipe.cta.save
+- extendedWaitUntil:
+    visible:
+      id: shared_recipe.saved
+    timeout: 10000
+- assertVisible: Recipe saved to your account.
+- assertVisible: E2E Shared Recovery Bowl

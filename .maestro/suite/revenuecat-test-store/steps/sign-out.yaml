@@ -1,0 +1,27 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    file: ../../common/open-link.yaml
+    env:
+      LINK: "mychampions://settings/account"
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: settings.account.signOutCta
+    timeout: 10000
+- tapOn:
+    id: settings.account.signOutCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.signOutConfirm
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: settings.account.signOutConfirmCta
+    direction: DOWN
+- tapOn:
+    id: settings.account.signOutConfirmCta
+- runFlow: ../../common/wait-sign-in.yaml

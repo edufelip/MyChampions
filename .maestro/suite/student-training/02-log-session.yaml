@@ -1,0 +1,20 @@
+appId: com.edufelip.mychampions.dev
+name: Student training - logs an assigned workout session for today and shows it as logged
+tags: [training]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/training
+      SCREEN_ID: student.training.screen
+- scrollUntilVisible:
+    element:
+      id: student.training.logBtn-e2e-assigned-session
+    direction: DOWN
+- tapOn:
+    id: student.training.logBtn-e2e-assigned-session
+- extendedWaitUntil:
+    visible:
+      id: student.training.logBtn-e2e-assigned-session.label
+      text: Completed
+    timeout: 10000

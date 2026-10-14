@@ -9,6 +9,7 @@
 
 import type { AuthProviderId } from './auth-user';
 import { authSessionRuntime, type AuthSessionRuntime } from './auth-session-runtime';
+import { clearNativeCookies } from './native-cookie-store';
 import { serverAuthStorage } from './server-auth-storage';
 
 type ServerAuthProfile = {
@@ -55,9 +56,14 @@ export type ServerAuthDeps = {
   getServerBaseUrl: () => string | undefined;
   runtime?: AuthSessionRuntime;
   storage?: ServerAuthStorage;
+  clearCookies?: () => Promise<void>;
+  cookieClearTimeoutMs?: number;
 };
 
 const SERVER_AUTH_SESSION_STORAGE_KEY = 'auth.server.session';
+// Android skips the clear-cookies callback when the WebView cookie manager is
+// unavailable (ForwardingCookieHandler), so sign-out never waits on it forever.
+const NATIVE_COOKIE_CLEAR_TIMEOUT_MS = 1500;
 const ACCESS_TOKEN_REFRESH_LEEWAY_MS = 30_000;
 
 let currentSession: ServerAuthSession | null = null;
@@ -444,11 +450,34 @@ export async function clearPersistedServerAuthSession(
   }
 
   refreshInFlight = null;
+  const clearCookies = deps.clearCookies ?? clearNativeCookies;
+  const cookieClearTimeoutMs = deps.cookieClearTimeoutMs ?? NATIVE_COOKIE_CLEAR_TIMEOUT_MS;
+  // Clear the cookie store before dropping the bearer: a request sent once the
+  // local session has ended (such as sign-out analytics) must carry neither.
+  await clearCookiesWithin(clearCookies, cookieClearTimeoutMs);
   setCurrentSession(null);
+  // A response already in flight can set a cookie again after the first clear.
+  void clearCookiesWithin(clearCookies, cookieClearTimeoutMs);
   try {
     await resolveStorage(deps).removeItem(SERVER_AUTH_SESSION_STORAGE_KEY);
   } catch {
     // Memory is already cleared; storage may be unavailable in non-app runtimes.
+  }
+}
+
+async function clearCookiesWithin(clearCookies: () => Promise<void>, timeoutMs: number) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      Promise.resolve().then(clearCookies),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, timeoutMs);
+      }),
+    ]);
+  } catch {
+    // The native cookie store may be unavailable in non-app runtimes.
+  } finally {
+    clearTimeout(timer);
   }
 }
 

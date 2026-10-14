@@ -1,0 +1,24 @@
+# Open the deep link LINK. On iOS the system asks "Open in “MyChampions Dev”?"
+# for a custom-scheme URL; confirm it so the prompt cannot cover later steps.
+appId: com.edufelip.mychampions.dev
+---
+- openLink: ${LINK}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: "Open in .*MyChampions.*"
+          timeout: 3000
+          optional: true
+      - retry:
+          maxRetries: 2
+          commands:
+            - runFlow:
+                when:
+                  visible: "Open in .*MyChampions.*"
+                commands:
+                  - tapOn: "^Open$"
+                  - extendedWaitUntil:
+                      notVisible: "Open in .*MyChampions.*"
+                      timeout: 10000

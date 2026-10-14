@@ -1,0 +1,41 @@
+appId: com.edufelip.mychampions.dev
+name: Shared webview - opens privacy and terms links inside the controlled app webview
+tags: [platform]
+---
+- runFlow: ../common/student-account.yaml
+- scrollUntilVisible:
+    element:
+      id: settings.account.termsRow
+    direction: DOWN
+- tapOn:
+    id: settings.account.privacyPolicyRow
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.webview
+    timeout: 10000
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://settings/account"
+- extendedWaitUntil:
+    visible:
+      id: settings.account.screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: settings.account.termsRow
+    direction: DOWN
+- tapOn:
+    id: settings.account.termsRow
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.webview
+    timeout: 10000

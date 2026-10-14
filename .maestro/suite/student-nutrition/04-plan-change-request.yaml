@@ -1,0 +1,35 @@
+appId: com.edufelip.mychampions.dev
+name: Student nutrition - validates and submits an assigned nutrition plan change request
+tags: [nutrition]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/nutrition
+      SCREEN_ID: student.nutrition.screen
+- scrollUntilVisible:
+    element:
+      id: student.nutrition.planChangeForm.submitButton
+    direction: DOWN
+- assertVisible:
+    id: student.nutrition.planChangeForm.input
+- tapOn:
+    id: student.nutrition.planChangeForm.submitButton
+- extendedWaitUntil:
+    visible:
+      id: student.nutrition.planChangeForm.error
+    timeout: 5000
+- tapOn:
+    id: student.nutrition.planChangeForm.input
+- inputText: Please add more breakfast variety this week.
+- runFlow: ../common/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: student.nutrition.planChangeForm.submitButton
+    direction: DOWN
+- tapOn:
+    id: student.nutrition.planChangeForm.submitButton
+- extendedWaitUntil:
+    visible:
+      id: student.nutrition.planChangeForm.success
+    timeout: 10000

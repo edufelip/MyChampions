@@ -25,6 +25,7 @@ import { StudentPickerModal } from '@/components/ds/patterns/StudentPickerModal'
 import { DsBackButton } from '@/components/ds/primitives/DsBackButton';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
 import { DsScreen } from '@/components/ds/primitives/DsScreen';
+import { useDsKeyboardTarget } from '@/components/ds/primitives/useDsKeyboard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DsRadius, DsShadow, DsSpace, DsTypography, getDsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -44,6 +45,7 @@ import { isStarterTemplate, type TrainingSession } from '@/features/plans/plan-b
 import { isReadOnlyForStudentSurface } from '@/features/plans/plan-ownership.logic';
 import { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import { useTrainingPlanBuilder } from '@/features/plans/use-plan-builder';
+import { usePlanExitGuard } from '@/features/plans/use-plan-exit-guard';
 import { usePlanForm } from '@/features/plans/use-plan-form';
 import { usePlans } from '@/features/plans/use-plans';
 import * as Haptics from '@/features/platform/haptics-adapter';
@@ -80,7 +82,7 @@ export default function TrainingPlanBuilderScreen() {
 
   const { t } = useTranslation();
   const router = useRouter();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const pathname = usePathname();
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const { currentUser } = useAuthSession();
@@ -144,20 +146,27 @@ export default function TrainingPlanBuilderScreen() {
     validate: validateInput,
     t,
     onSave: async (formValues) => {
-      return savePlanWithSessions(
+      const result = await savePlanWithSessions(
         planId ?? 'new',
         formValues,
         draftSessions,
         isDraftAssignment,
         creationMode,
       );
+      if ('plan' in result) {
+        // Adopt canonical session/item IDs before usePlanForm dispatches its
+        // success navigation, so the persisted plan is the clean baseline.
+        setDraftSessions(result.plan.sessions);
+        setSavedSessionsSnapshot(result.plan.sessions);
+      }
+      return result;
     },
     onSuccess: (id) => {
       // After a successful save, we want to go back to the library.
       // We must clear the local dirty state first so the 'beforeRemove'
       // listener doesn't trigger the discard dialog.
       setIsDirty(false);
-      setSavedSessionsSnapshot(draftSessions);
+      markPlanExitClean();
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Navigate to the tab route so the bottom nav bar is visible
@@ -191,6 +200,9 @@ export default function TrainingPlanBuilderScreen() {
 
   const planNameRef = useRef<TextInput>(null);
   const sessionNotesRef = useRef<TextInput>(null);
+  // The add-session form (fields + Add/Cancel) stays above the keyboard.
+  const addSessionKeyboardTarget = useDsKeyboardTarget();
+  const emptyStateAddSessionKeyboardTarget = useDsKeyboardTarget();
 
   // ── Auto-focus name on new plan ────────────────────────────────────────────
   useEffect(() => {
@@ -245,30 +257,16 @@ export default function TrainingPlanBuilderScreen() {
     }
   }, [state, hasUnsavedChanges, planId]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (event: any) => {
-      if (!hasUnsavedChanges) {
-        return;
-      }
-
-      event.preventDefault();
-      Alert.alert(t('pro.plan.discard.title'), t('pro.plan.discard.body'), [
-        { text: t('pro.plan.discard.no'), style: 'cancel' },
-        {
-          text: t('pro.plan.discard.yes'),
-          style: 'destructive',
-          onPress: async () => {
-            // Reset dirty states before dispatching so the listener doesn't fire again
-            setIsDirty(false);
-            setDraftSessions(savedSessionsSnapshot);
-            navigation.dispatch(event.data.action);
-          },
-        },
-      ]);
-    });
-
-    return unsubscribe;
-  }, [hasUnsavedChanges, navigation, t, setIsDirty, savedSessionsSnapshot]);
+  const discardDraft = useCallback(() => {
+    setIsDirty(false);
+    setDraftSessions(savedSessionsSnapshot);
+  }, [setIsDirty, savedSessionsSnapshot]);
+  const markPlanExitClean = usePlanExitGuard({
+    navigation,
+    hasUnsavedChanges,
+    onDiscard: discardDraft,
+    t,
+  });
 
   // ── Handlers with Animations ───────────────────────────────────────────────
   const handleNameChange = useCallback(
@@ -291,11 +289,6 @@ export default function TrainingPlanBuilderScreen() {
     if (result && 'error' in result && result.error && result.error !== 'validation') {
       Alert.alert(tr('pro.plan.error.save', 'student.plan.error.save'));
       return;
-    }
-
-    if (result && !('error' in result) && 'plan' in result) {
-      setDraftSessions(result.plan.sessions);
-      setSavedSessionsSnapshot(result.plan.sessions);
     }
   }, [handleSave, tr]);
 
@@ -356,7 +349,7 @@ export default function TrainingPlanBuilderScreen() {
 
       Alert.alert(
         t('common.cta.delete'),
-        t('pro.plan.delete.body').replace('{name}', sessionName),
+        t('pro.plan.session.delete.body', { name: sessionName }),
         [
           { text: t('common.cta.cancel'), style: 'cancel' },
           {
@@ -383,30 +376,34 @@ export default function TrainingPlanBuilderScreen() {
       const item = session?.items.find((i) => i.id === itemId);
       const itemName = item?.name || t('pro.plan.section.sessions');
 
-      Alert.alert(t('common.cta.delete'), t('pro.plan.delete.body').replace('{name}', itemName), [
-        { text: t('common.cta.cancel'), style: 'cancel' },
-        {
-          text: t('common.cta.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setDraftSessions((prev) =>
-              prev.map((sessionDraft) => {
-                if (sessionDraft.id !== sessionId) {
-                  return sessionDraft;
-                }
+      Alert.alert(
+        t('common.cta.delete'),
+        t('pro.plan.session_item.delete.body', { name: itemName }),
+        [
+          { text: t('common.cta.cancel'), style: 'cancel' },
+          {
+            text: t('common.cta.delete'),
+            style: 'destructive',
+            onPress: async () => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setDraftSessions((prev) =>
+                prev.map((sessionDraft) => {
+                  if (sessionDraft.id !== sessionId) {
+                    return sessionDraft;
+                  }
 
-                return {
-                  ...sessionDraft,
-                  items: sessionDraft.items.filter((candidate) => candidate.id !== itemId),
-                };
-              }),
-            );
-            setIsDirty(true);
+                  return {
+                    ...sessionDraft,
+                    items: sessionDraft.items.filter((candidate) => candidate.id !== itemId),
+                  };
+                }),
+              );
+              setIsDirty(true);
+            },
           },
-        },
-      ]);
+        ],
+      );
     },
     [draftSessions, isBusy, state.kind, setIsDirty, t],
   );
@@ -564,6 +561,7 @@ export default function TrainingPlanBuilderScreen() {
       scheme={scheme}
       contentWidth="content"
       contentContainerStyle={styles.content}
+      keyboardAware
       testID="pro.training_plan.screen"
     >
       <Stack.Screen options={{ headerShown: false }} />
@@ -746,6 +744,7 @@ export default function TrainingPlanBuilderScreen() {
 
           {isEmptyStateAddSessionOpen && (
             <Animated.View
+              ref={emptyStateAddSessionKeyboardTarget}
               entering={FadeIn.duration(300)}
               exiting={FadeOut.duration(200)}
               style={[
@@ -753,6 +752,7 @@ export default function TrainingPlanBuilderScreen() {
                 styles.emptyStateSessionOverlay,
                 { backgroundColor: theme.color.surface },
               ]}
+              testID="pro.training_plan.addSession.form"
             >
               <View style={styles.sessionHeader}>
                 <TextInput
@@ -852,9 +852,11 @@ export default function TrainingPlanBuilderScreen() {
         state.kind === 'ready' &&
         addSessionForm.kind === 'open' && (
           <Animated.View
+            ref={addSessionKeyboardTarget}
             entering={FadeIn.duration(300)}
             exiting={FadeOut.duration(200)}
             style={[styles.sessionCard, { backgroundColor: theme.color.surface }]}
+            testID="pro.training_plan.addSession.form"
           >
             <View style={styles.sessionHeader}>
               <TextInput

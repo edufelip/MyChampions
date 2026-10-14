@@ -11,7 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, LogBox, View } from 'react-native';
 import 'react-native-reanimated';
-
+import { LocaleDiagnostic } from '@/components/testing/LocaleDiagnostic';
 import { getDsTheme } from '@/constants/design-system';
 import {
   normalizeAuthReturnTo,
@@ -227,6 +227,7 @@ function RootLayoutContent() {
         />
       </Stack>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <LocaleDiagnostic />
     </ThemeProvider>
   );
 }

@@ -1,0 +1,54 @@
+appId: com.edufelip.mychampions.dev
+name: Professional student roster - loads roster rows, filters them, searches by name, and opens a profile
+tags: [professional]
+---
+- runFlow: ../common/pro-students-tab.yaml
+- assertVisible:
+    id: pro.students.screen
+- extendedWaitUntil:
+    visible:
+      id: pro.students.row.e2e-active-student
+    timeout: 10000
+- assertVisible:
+    id: pro.students.row.e2e-dual-student
+- assertVisible:
+    id: pro.students.row.e2e-pending-student
+- tapOn:
+    id: pro.students.filter.active
+- extendedWaitUntil:
+    notVisible:
+      id: pro.students.row.e2e-pending-student
+    timeout: 5000
+- assertVisible:
+    id: pro.students.row.e2e-active-student
+- assertVisible:
+    id: pro.students.row.e2e-dual-student
+- tapOn:
+    id: pro.students.search
+- inputText: Drew
+- extendedWaitUntil:
+    notVisible:
+      id: pro.students.row.e2e-active-student
+    timeout: 5000
+- assertVisible:
+    id: pro.students.row.e2e-dual-student
+- tapOn:
+    id: pro.students.search
+- eraseText: 20
+- runFlow: ../common/hide-keyboard.yaml
+- tapOn:
+    id: pro.students.filter.pending
+- extendedWaitUntil:
+    visible:
+      id: pro.students.row.e2e-pending-student
+    timeout: 5000
+- extendedWaitUntil:
+    notVisible:
+      id: pro.students.row.e2e-active-student
+    timeout: 5000
+- tapOn:
+    id: pro.students.row.e2e-pending-student
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.screen
+    timeout: 10000

@@ -1,0 +1,60 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - observes Test Store renewal and expiration instead of trusting a cached privilege
+tags: [expiration-monitor]
+---
+- runFlow: steps/launch-pro-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 20000
+# Test Store monthly periods are minutes long: wait past one renewal.
+- extendedWaitUntil:
+    visible: __revenuecat_renewal_wait__
+    timeout: 360000
+    optional: true
+- tapOn:
+    id: pro.subscription.refreshCta
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-live-professional-renewed
+# Refresh about once a minute for up to 25 minutes until the entitlement lapses.
+# Each refresh must read Inactive within 10 s or still read Active; any other
+# status fails the run.
+- repeat:
+    times: 25
+    while:
+      notVisible:
+        id: pro.subscription.statusValue
+        text: 'Subscription: Inactive'
+    commands:
+      - extendedWaitUntil:
+          visible: __revenuecat_expiry_wait__
+          timeout: 60000
+          optional: true
+      - tapOn:
+          id: pro.subscription.refreshCta
+      - extendedWaitUntil:
+          visible:
+            id: pro.subscription.statusValue
+            text: 'Subscription: Inactive'
+          timeout: 10000
+          optional: true
+      - runFlow:
+          when:
+            notVisible:
+              id: pro.subscription.statusValue
+              text: 'Subscription: Inactive'
+          file: steps/pro-status.yaml
+          env:
+            STATUS: Active
+            TIMEOUT: 10000
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 10000
+- takeScreenshot: revenuecat-live-professional-expired

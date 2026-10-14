@@ -1,0 +1,22 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: pro-open-subscription.yaml
+- assertVisible:
+    id: pro.subscription.statusValue
+    text: "Subscription: Inactive"
+- assertVisible:
+    id: pro.subscription.capUsage
+    text: 3 / 10 active students
+- assertVisible:
+    id: pro.subscription.purchaseCta
+- assertVisible:
+    id: pro.subscription.restoreCta
+- assertVisible:
+    id: pro.subscription.refreshCta
+- tapOn:
+    id: pro.subscription.refreshCta
+- assertVisible:
+    id: pro.subscription.statusValue
+    text: "Subscription: Inactive"
+- tapOn:
+    id: pro.subscription.purchaseCta

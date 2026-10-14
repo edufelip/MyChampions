@@ -8,7 +8,7 @@ This atlas maps the implemented client flows and every documented use case to de
 - `tablet`: 820 × 1000 browser viewport with the compact navigation rail.
 - `web`: 1440 × 1000 browser viewport with the labeled sidebar.
 
-These are responsive web captures, not iOS/Android simulator screenshots. Native device validation remains a separate manual/Detox activity.
+These are responsive web captures, not iOS/Android simulator screenshots. Native device validation remains a separate manual/Maestro activity.
 
 The ignored local artifact hierarchy is:
 

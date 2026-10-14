@@ -1,0 +1,19 @@
+# ROLE, RETURN_ID. Failed and valid outcomes may already have closed the paywall.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    when:
+      visible: "^(Close|Fechar|Cerrar)$"
+    commands:
+      - tapOn: "^(Close|Fechar|Cerrar)$"
+# The published professional paywall has no labelled close control; it sits top-left.
+- runFlow:
+    when:
+      visible: "^(Grow your professional practice|Expanda sua atuação profissional|Haz crecer tu práctica profesional)$"
+    commands:
+      - tapOn:
+          point: "45,110"
+- extendedWaitUntil:
+    visible:
+      id: ${RETURN_ID || 'pro.subscription.screen'}
+    timeout: 10000

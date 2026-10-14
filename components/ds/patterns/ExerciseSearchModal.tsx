@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -12,10 +12,15 @@ import {
   Text,
   TextInput,
   View,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { DsPillButton } from '@/components/ds/primitives/DsPillButton';
+import {
+  computeKeyboardSheetBounds,
+  useDsKeyboardAwareScroll,
+  useDsKeyboardOverlap,
+} from '@/components/ds/primitives/useDsKeyboard';
 import { useDsModalSheetLayout } from '@/components/ds/primitives/useDsModalSheetLayout';
 import { DsRadius, DsSpace, DsTypography, type DsTheme } from '@/constants/design-system';
 import { Fonts } from '@/constants/theme';
@@ -25,6 +30,8 @@ import type { useExerciseSearch } from '@/features/plans/use-exercise-search';
 import type { TranslationKey, useTranslation } from '@/localization';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
+
+const SHEET_MIN_HEIGHT_RATIO = 0.75;
 
 const EXERCISE_MUSCLE_GROUP_KEYS = new Set([
   'chest',
@@ -74,6 +81,23 @@ export function ExerciseSearchModal({
   const [notes, setNotes] = useState('');
   const notesRef = useRef<TextInput>(null);
   const modalLayout = useDsModalSheetLayout();
+  // Keyboard avoidance on both platforms: lift the sheet by the covered
+  // height and cap it below the top safe area, so the title and the
+  // auto-focused search box stay on screen while the result list shrinks.
+  const overlayRef = useRef<View>(null);
+  const [overlayHeight, setOverlayHeight] = useState(0);
+  const keyboardOverlap = useDsKeyboardOverlap(overlayRef, isVisible);
+  const topInset = useContext(SafeAreaInsetsContext)?.top ?? 0;
+  const keyboardSheetBounds = computeKeyboardSheetBounds({
+    containerHeight: overlayHeight,
+    overlap: keyboardOverlap,
+    topInset,
+    preferredMinHeight: modalLayout.isDesktop ? 0 : overlayHeight * SHEET_MIN_HEIGHT_RATIO,
+  });
+  const detailKeyboardScroll = useDsKeyboardAwareScroll({
+    enabled: isVisible && view === 'detail',
+    mode: 'resized',
+  });
   useWebDialogAccessibility({
     dialogTitleTestID: 'exerciseSearch.title',
     isVisible,
@@ -139,18 +163,22 @@ export function ExerciseSearchModal({
       accessibilityLabel={dialogTitle}
       transparent
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <View
+        ref={overlayRef}
+        onLayout={(event) => setOverlayHeight(event.nativeEvent.layout.height)}
         style={[
           styles.modalOverlay,
           modalLayout.overlayStyle,
           { backgroundColor: theme.color.overlaySoft },
+          keyboardOverlap > 0 && { paddingBottom: keyboardOverlap },
         ]}
+        testID="exerciseSearch.keyboardFrame"
       >
         <View
           style={[
             styles.modalContent,
             modalLayout.contentStyle,
+            keyboardSheetBounds,
             { backgroundColor: theme.color.surface },
           ]}
           testID="exerciseSearch.modal"
@@ -333,8 +361,10 @@ export function ExerciseSearchModal({
           ) : (
             // ── Detail View ──────────────────────────────────────────────────
             <ScrollView
+              ref={detailKeyboardScroll.scrollRef}
               style={styles.detailsContainer}
               contentContainerStyle={{ paddingBottom: 40 }}
+              {...detailKeyboardScroll.scrollViewProps}
               keyboardShouldPersistTaps="handled"
               testID="exerciseSearch.detailScroll"
             >
@@ -475,7 +505,7 @@ export function ExerciseSearchModal({
             </ScrollView>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

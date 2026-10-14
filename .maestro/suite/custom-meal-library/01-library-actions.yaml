@@ -1,0 +1,19 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal library - shows saved custom meals and library actions for the current user
+tags: [nutrition]
+---
+- runFlow: ../common/student-open-meal-library.yaml
+- extendedWaitUntil:
+    visible:
+      id: meal.library.row.e2e-custom-meal
+    timeout: 10000
+- assertVisible:
+    id: meal.library.row.e2e-custom-meal.log
+- assertVisible:
+    id: meal.library.row.e2e-custom-meal.edit
+- assertVisible:
+    id: meal.library.row.e2e-custom-meal.share
+- assertVisible:
+    id: meal.library.row.e2e-custom-meal.delete
+- assertVisible:
+    id: meal.library.cta.create

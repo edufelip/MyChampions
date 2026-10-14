@@ -1,0 +1,27 @@
+# Answer the iOS camera permission prompt with CAMERA_ANSWER=allow|deny.
+# Simulators cannot pre-grant the camera (launchApp permissions and
+# `simctl privacy` have no camera service), so the prompt must be answered.
+appId: com.edufelip.mychampions.dev
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: ".*would like to access the Camera.*"
+          timeout: 5000
+          optional: true
+      - runFlow:
+          when:
+            visible: ".*would like to access the Camera.*"
+          commands:
+            - runFlow:
+                when:
+                  true: ${CAMERA_ANSWER == 'deny'}
+                commands:
+                  - tapOn: "^Don.t Allow$"
+            - runFlow:
+                when:
+                  true: ${CAMERA_ANSWER != 'deny'}
+                commands:
+                  - tapOn: "^Allow$"

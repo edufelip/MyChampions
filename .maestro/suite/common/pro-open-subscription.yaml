@@ -1,0 +1,13 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: pro-home-skip-specialty.yaml
+- scrollUntilVisible:
+    element:
+      id: pro.home.subscriptionCta
+    direction: DOWN
+- tapOn:
+    id: pro.home.subscriptionCta
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.screen
+    timeout: 10000

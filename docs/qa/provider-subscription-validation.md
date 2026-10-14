@@ -3,7 +3,7 @@
 Provider validation is an explicit, credential-gated lane outside pull-request
 CI. It uses the RevenueCat Test Store only from the development app variant,
 isolates every run with unique App User IDs, and removes deterministic
-entitlement overrides before Detox starts.
+entitlement overrides before Maestro starts.
 
 Configure `MYCHAMPIONS_ENABLE_IOS_TESTS` under **Settings → Secrets and
 variables → Actions → Variables**. Its exact value `false` skips new
@@ -17,16 +17,16 @@ does not gate the credentialed `ios-release.yml` distribution workflow.
   `test_*` SDK key, `test_student`/`test_professional` offerings, development
   guards, distinct safe App User IDs, and absence of deterministic entitlement
   overrides.
-- `bash scripts/run-detox-revenuecat-test-store.sh` runs the professional
+- `bash scripts/run-maestro-revenuecat-test-store.sh` runs the professional
   Test Store lifecycle, account switching, restore/failure states, and optional
   read-only server reconciliation.
-- `bash scripts/run-detox-revenuecat-student-matrix.sh` runs isolated student
+- `bash scripts/run-maestro-revenuecat-student-matrix.sh` runs isolated student
   purchase, cancel, failure, duplicate, monthly/annual, restore, switch, and
   professional-route cases.
 - `.github/workflows/provider-validation.yml` is the manual protected iOS
   workflow. It can run only from the protected `main` ref, checks out and
   verifies the exact protected SHA before secrets are materialized, shares the
-  native iOS host lock with protected Detox, and retains diagnostics only on
+  native iOS host lock with the protected native lane, and retains diagnostics only on
   failure for one day. Release-branch validation remains blocked until branch
   protection and environment restrictions are independently established.
 

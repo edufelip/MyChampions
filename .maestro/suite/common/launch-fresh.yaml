@@ -1,0 +1,15 @@
+# Start the app from a clean install state (Detox `launchApp({ delete: true })`).
+# Pass CAMERA_PERMISSION=allow|deny to pre-set the camera permission.
+appId: com.edufelip.mychampions.dev
+---
+# A system prompt from a previous flow can outlive the app process. Clear it
+# before launching: querying the screen while the app starts can fail on iOS.
+- runFlow: dismiss-stale-system-prompts.yaml
+- launchApp:
+    clearState: true
+    permissions:
+      camera: ${CAMERA_PERMISSION || 'unset'}
+# Let the first render settle before any step reads the screen: an iOS
+# hierarchy read during app start can fail once and abort a wait.
+- waitForAnimationToEnd:
+    timeout: 5000

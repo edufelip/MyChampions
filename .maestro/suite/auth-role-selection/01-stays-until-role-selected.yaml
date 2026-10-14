@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Auth role selection - keeps the user on role selection until a role is selected
+tags: [authenticated]
+---
+- runFlow: ../common/launch-fresh.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 15000
+- assertVisible:
+    id: auth.roleSelection.continueButton
+- assertNotVisible:
+    id: auth.roleSelection.error.roleRequired
+- assertNotVisible:
+    id: student.home.screen
+- assertNotVisible:
+    id: pro.specialty.screen

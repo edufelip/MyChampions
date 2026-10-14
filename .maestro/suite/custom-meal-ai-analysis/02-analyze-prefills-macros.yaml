@@ -1,0 +1,34 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal AI analysis - analyzes a selected meal photo through the dev fixture and pre-fills macros
+tags: [meal-analysis-success]
+---
+- runFlow: ../common/student-meal-builder-camera.yaml
+- extendedWaitUntil:
+    visible:
+      id: meal.photoAnalysis.cta
+    timeout: 15000
+- tapOn:
+    id: meal.photoAnalysis.cta
+- extendedWaitUntil:
+    visible:
+      id: meal.photoAnalysis.disclaimer
+    timeout: 10000
+- assertVisible:
+    id: meal.photoAnalysis.attachToggle
+- scrollUntilVisible:
+    element:
+      id: meal.builder.field.grams.input
+    direction: DOWN
+- assertVisible:
+    id: meal.builder.field.grams.input
+    text: "350"
+- scrollUntilVisible:
+    element:
+      id: meal.builder.field.carbs.input
+    direction: DOWN
+- assertVisible:
+    id: meal.builder.field.calories.input
+    text: "520"
+- assertVisible:
+    id: meal.builder.field.carbs.input
+    text: "45"

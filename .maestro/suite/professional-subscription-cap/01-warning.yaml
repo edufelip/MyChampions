@@ -1,0 +1,24 @@
+appId: com.edufelip.mychampions.dev
+name: Professional subscription cap - renders the cap warning state (10/10, renewal risk)
+tags: [cap-warning]
+---
+- runFlow: ../common/pro-home-skip-specialty.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.home.subscriptionWarning
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: "10( .*)?"
+    timeout: 5000
+- tapOn:
+    id: pro.home.subscriptionRenewCta
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.screen
+    timeout: 10000
+- assertVisible:
+    id: pro.subscription.warning
+- assertVisible:
+    id: pro.subscription.capUsage
+    text: 10 / 10 active students

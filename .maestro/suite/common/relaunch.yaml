@@ -1,0 +1,9 @@
+# Restart the app process, keeping its stored state (Detox `launchApp({ newInstance: true })`).
+appId: com.edufelip.mychampions.dev
+---
+- launchApp:
+    stopApp: true
+# Let the first render settle before any step reads the screen: an iOS
+# hierarchy read during app start can fail once and abort a wait.
+- waitForAnimationToEnd:
+    timeout: 5000

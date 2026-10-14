@@ -1,0 +1,15 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal image upload - uploads a selected image through the dev fixture and shows the preview
+tags: [image-upload-success]
+---
+- runFlow: ../common/student-meal-builder-camera.yaml
+- tapOn:
+    id: meal.builder.imageUpload
+- extendedWaitUntil:
+    visible:
+      id: meal.builder.imageUpload.preview
+    timeout: 10000
+- assertNotVisible:
+    id: meal.builder.imageUpload.progress
+- assertNotVisible:
+    id: meal.builder.imageUpload.error

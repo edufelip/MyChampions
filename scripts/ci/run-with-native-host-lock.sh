@@ -85,7 +85,7 @@ done
   exit 1
 }
 
-"$@" &
+MYCHAMPIONS_NATIVE_HOST_LOCK_HELD=1 "$@" &
 command_pid=$!
 set +e
 wait "$command_pid"

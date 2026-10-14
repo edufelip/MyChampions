@@ -43,6 +43,41 @@ yarn test:e2e:web
 
 Web E2E commands create timestamped, gitignored evidence packages under `.artifacts/web-e2e`, including an HTML report, JSON/JUnit results, screenshots, run metadata, and a generated manual-validation checklist. Batch definitions and the manual review procedure are documented in `docs/test-cases/web-playwright-batches-and-manual-validation.md`; pending release work is tracked in `docs/discovery/web-pending-items-and-future-improvements.md`.
 
+The BL-018 integration lane owns disposable Postgres, the real sibling server and
+isolated Expo/proxy ports. Run one auth case with
+`yarn test:e2e:web:integration --scenario=auth-session --project=chromium`.
+Private artifacts and validated attempt receipts live in
+`.qa/artifacts/web-integration/<run-id>/`. Default selection requests all five
+scenarios. Both complete 45-case matrices pass locally; current proof and
+freshness are tracked in the task card. Native/hosted promotion remains pending.
+`yarn tsx scripts/testing/verify-web-integration.ts` checks input rejection,
+live-worker cancellation and deadline cleanup. Local proof, remaining journeys
+and pending selective CI/native adoption are tracked in
+`docs/qa/testing-modernization-task-card.md`.
+
+The public native pilot runs ten integrated Maestro cells: the five journeys
+(`session`, `training`, `connection`, `camera-denied`, `save-retry`) on iOS and
+Android, for example
+`yarn test:e2e:native:pilot --platform=ios --engine=maestro --scenario=SCN-training-ios --mode=integration`.
+Set `MYCHAMPIONS_NATIVE_STATE_ROOT` to an existing canonical owned directory
+with mode0700 for the shared host lock. Each attempt writes an immutable receipt
+under `.qa/artifacts/native-pilot-attempts/`. It returns0 only after the complete
+UI/API/SQL ledger, current inputs and independent cleanup pass; unsupported
+selections remain blocked2. SIGINT/SIGTERM return130/143 with retained receipts.
+Optional `MYCHAMPIONS_NATIVE_BOOTSTATUS_DEADLINE_MS` accepts integer1000–180000
+for the iOS cells; unset keeps180000. Bootstrap timeout returns blocked2. Optional build, command-step and whole-run
+bounds use `MYCHAMPIONS_NATIVE_BUILD_DEADLINE_MS`1000–900000,
+`MYCHAMPIONS_NATIVE_STEP_DEADLINE_MS`1000–600000 and
+`MYCHAMPIONS_NATIVE_WHOLE_DEADLINE_MS`1000–2400000. Defaults are the upper
+bounds; an override cannot widen a shorter declared command. Timeout aborts
+owned work and returns blocked2 after independently checked teardown.
+Optional `MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID` reuses only qualified immutable
+bytes from a private retained24-hex capture. It validates current app source,
+binary/config/bootstrap and reviewed entry before acquisition; new device,
+fixture/backend, ports and processes are still required. Invalid reuse blocks
+without a compile fallback. The task card records bounded local proof and the
+pending reliability/hosted gates.
+
 For native development builds, use:
 
 ```bash
@@ -86,35 +121,58 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    yarn test:unit
    ```
 
-2. E2E (Detox) iOS
+   The unit suite runs with `TMPDIR` set to a private, per-run directory under
+   `~/.mychampions-unit-tmp` (`scripts/testing/run-unit-tests.sh`), removed when it
+   ends. The native harness refuses temp paths that another account could write to,
+   so a shared `/tmp` or group-writable runner `TMPDIR` would fail its tests.
+
+   Rendered component checks use `yarn test:component`; `yarn test:all` runs both
+   unit and component suites. Component checks exercise real UI state/handlers
+   with native adapters and external transport mocked. They do not replace
+   browser, native-device or database integration evidence. See
+   [testing strategy](docs/qa/testing-strategy-v1.md) for the phased rollout and
+   recorded baseline gaps.
+
+2. Native E2E (Maestro)
+
+   The native suite lives in `.maestro/suite/<spec>/`; each flow is tagged with
+   the fixture phase it runs under (`scripts/ci/native-fixture-profiles.ts`).
+   The runner builds the Debug app once (the Metro port is compiled in),
+   installs it, then starts a fresh Metro per fixture phase and runs the flows
+   tagged for it. The scripts install their pinned [Maestro CLI](https://maestro.dev)
+   (2.10.0, `scripts/testing/install-maestro.sh`) into
+   `~/.cache/mychampions/maestro/` on first use, separate from the native
+   pilot's `~/.maestro` (2.6.1). iOS runs on a dedicated English simulator
+   (created on first run as `MyChampions Maestro` from an `iPhone 17`,
+   overridable with `MAESTRO_IOS_SIMULATOR` / `MAESTRO_IOS_DEVICE_TYPE`; device
+   prep also turns off password AutoFill, which clears typed passwords). Android
+   runs on one device (`ANDROID_SERIAL` when several are attached) that must be
+   API 33+ with an English (United States) system language; device prep checks
+   both before installing, then pins the app to en-US with Android's per-app
+   language setting. The system language still has to be en-US because every
+   flow starts with `launchApp: clearState`, which runs `pm clear` on Android and
+   drops the per-app language.
 
    ```bash
-   yarn test:e2e:build:ios
-   yarn test:e2e:ios
+   yarn test:e2e:ios                 # every CI Maestro suite on iOS
+   yarn test:e2e:android             # every CI Maestro suite on Android
+   yarn test:e2e:ios:smoke           # auth + connection suites (the iOS PR smoke)
+   bash scripts/testing/run-maestro-suite.sh --platform ios maestro:nutrition
    ```
 
-3. E2E (Detox) Android
+   `NATIVE_SKIP_BUILD=true` reuses an existing build (the iOS PR smoke passes it
+   after its single workflow-owned build); `NATIVE_METRO_PORT` picks the Metro
+   port for both the build and the run. A failing phase is retried
+   once and the retry is reported. Diagnostics land under
+   `.artifacts/ci-diagnostics/<platform>/`.
 
-   ```bash
-   yarn test:e2e:build:android
-   yarn test:e2e:android
-   ```
+   The five integrated journeys (session, training, connection, camera denial,
+   save/retry against the real server) run through the native pilot:
+   `yarn test:e2e:native:pilot --platform=<ios|android> --engine=maestro --scenario=SCN-<journey>-<platform> --mode=integration`.
 
-4. E2E debug variants (optional)
+3. RevenueCat Test Store lifecycle (explicit live-provider run only)
 
-   The iOS Debug test commands start Metro on port `8081` when it is not already running, and leave a pre-existing Metro process alone.
-   The `test:e2e:ios:debug:smoke` command builds the Debug app once, then runs unauthenticated auth-entry and authenticated role/connection checks in separate fresh Metro phases so their fixture states cannot conflict. CI passes `DETOX_SKIP_BUILD=true` after its single workflow-owned build. The authenticated connection mode uses deterministic invite, QR, and active-nutrition fixtures without backend mutation.
-
-   ```bash
-   yarn test:e2e:build:ios:debug
-   yarn test:e2e:ios:debug
-   yarn test:e2e:build:android:debug
-   yarn test:e2e:android:debug
-   ```
-
-5. RevenueCat Test Store lifecycle (explicit live-provider run only)
-
-   This command is intentionally separate from fixture Detox. It accepts only a
+   This command is intentionally separate from the fixture suite. It accepts only a
    RevenueCat `test_*` public SDK key, forces the dev app variant, clears every
    deterministic entitlement override, and generates an isolated App User ID.
    Never use a Test Store key in a release build. Provider/catalog changes and
@@ -123,7 +181,7 @@ tester group, and iOS Ad Hoc signing assets before their first live run.
    ```bash
    REVENUECAT_LIVE_E2E=true \
    EXPO_PUBLIC_REVENUECAT_API_KEY_TEST_STORE=... \
-   yarn test:e2e:ios:debug:revenuecat-live
+   yarn test:e2e:ios:revenuecat-live
    ```
 
    Set `REVENUECAT_TEST_APP_USER_ID` to a safe explicit ID when the run must be

@@ -63,3 +63,37 @@ test('server-backed connection reads do not load Firestore at module import', as
     delete require.cache[sourcePath];
   }
 });
+
+test('server connection reads keep a trimmed student display name and drop blank ones', async () => {
+  const { getMyConnections } =
+    require('./connection-source') as typeof import('./connection-source');
+  const row = (id: string, studentDisplayName?: unknown) => ({
+    id,
+    status: 'pending_confirmation',
+    canceledReason: null,
+    specialty: 'fitness_coach',
+    professionalAuthUid: 'professional-1',
+    ...(studentDisplayName === undefined ? {} : { studentDisplayName }),
+  });
+
+  const connections = await getMyConnections({
+    getCurrentAccessToken: async () => 'server-token',
+    getServerBaseUrl: () => 'http://server.test',
+    fetchFn: async () =>
+      new Response(
+        JSON.stringify({
+          connections: [
+            row('named', '  Pia Pending '),
+            row('blank', '   '),
+            row('null', null),
+            row('absent'),
+          ],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+  } as any);
+
+  assert.equal(connections.find((c) => c.id === 'named')?.studentDisplayName, 'Pia Pending');
+  for (const id of ['blank', 'null', 'absent'])
+    assert.equal('studentDisplayName' in (connections.find((c) => c.id === id) ?? {}), false);
+});

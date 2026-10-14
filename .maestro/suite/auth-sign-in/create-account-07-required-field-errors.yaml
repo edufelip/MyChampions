@@ -1,0 +1,27 @@
+appId: com.edufelip.mychampions.dev
+name: Auth create account - shows required-field errors when submitting empty form
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml
+- runFlow: ../common/open-create-account.yaml
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.submitButton
+    direction: DOWN
+- tapOn:
+    id: auth.createAccount.submitButton
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.error.passwordConfirmation
+    direction: DOWN
+- assertVisible:
+    id: auth.createAccount.error.password
+- assertVisible:
+    id: auth.createAccount.error.passwordConfirmation
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.error.nameRequired
+    direction: UP
+- assertVisible:
+    id: auth.createAccount.error.emailRequired

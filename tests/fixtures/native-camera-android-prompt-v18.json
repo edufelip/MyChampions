@@ -1,0 +1,61 @@
+{
+  "children": [
+    {
+      "attributes": {
+        "bounds": "[0,0][320,640]",
+        "enabled": "true",
+        "clickable": "false"
+      },
+      "children": [
+        {
+          "attributes": {
+            "bounds": "[8,131][312,532]",
+            "enabled": "true",
+            "clickable": "true",
+            "resource-id": "com.android.permissioncontroller:id/grant_singleton"
+          },
+          "children": [
+            {
+              "attributes": {
+                "bounds": "[8,131][312,532]",
+                "enabled": "true",
+                "clickable": "true",
+                "resource-id": "com.android.permissioncontroller:id/grant_dialog"
+              },
+              "children": [
+                {
+                  "attributes": {
+                    "bounds": "[24,147][296,336]",
+                    "enabled": "true",
+                    "clickable": "false",
+                    "resource-id": "com.android.permissioncontroller:id/content_container"
+                  },
+                  "children": [
+                    {
+                      "attributes": {
+                        "bounds": "[48,215][272,312]",
+                        "enabled": "true",
+                        "clickable": "false",
+                        "resource-id": "com.android.permissioncontroller:id/permission_message",
+                        "text": "Allow MyChampions Dev to take pictures and record video?"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "attributes": {
+                    "bounds": "[48,448][272,496]",
+                    "enabled": "true",
+                    "clickable": "true",
+                    "resource-id": "com.android.permissioncontroller:id/permission_deny_button",
+                    "text": "Don’t allow"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

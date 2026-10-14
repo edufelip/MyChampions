@@ -1,0 +1,11 @@
+# Fill one custom-meal builder field (FIELD, VALUE).
+appId: com.edufelip.mychampions.dev
+---
+- scrollUntilVisible:
+    element:
+      id: meal.builder.field.${FIELD}.input
+    direction: DOWN
+- tapOn:
+    id: meal.builder.field.${FIELD}.input
+- inputText: ${VALUE}
+- runFlow: hide-keyboard.yaml

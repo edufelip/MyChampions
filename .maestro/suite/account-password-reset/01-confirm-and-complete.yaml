@@ -1,0 +1,20 @@
+appId: com.edufelip.mychampions.dev
+name: Account password reset - confirms and completes password reset for an email/password user
+tags: [authenticated]
+---
+- runFlow: ../common/student-account.yaml
+- tapOn:
+    id: settings.account.changePasswordRow
+- extendedWaitUntil:
+    visible:
+      id: settings.account.passwordConfirm
+    timeout: 5000
+- assertVisible: "Reset password?"
+- assertVisible: "We'll send a password reset link to e2e-auth-session@example.test. Check your inbox after confirming."
+- tapOn:
+    id: settings.account.passwordConfirmCta
+- extendedWaitUntil:
+    visible:
+      id: settings.account.passwordSuccess
+    timeout: 5000
+- assertVisible: "Password reset email sent. Check your inbox."

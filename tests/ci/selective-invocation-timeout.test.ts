@@ -42,14 +42,14 @@ test(
     try {
       await assert.rejects(
         runChild(
-          'detox:timeout-fixture',
+          'maestro:timeout-fixture',
           process.execPath,
           ['-e', leaderProgram],
           process.cwd(),
           process.env,
           timeoutMs,
         ),
-        new RegExp(`Invocation detox:timeout-fixture timed out after ${timeoutMs} ms`),
+        new RegExp(`Invocation maestro:timeout-fixture timed out after ${timeoutMs} ms`),
       );
       const descendantPid = Number(readFileSync(descendantPidPath, 'utf8'));
       assert.ok(Number.isInteger(descendantPid) && descendantPid > 0);

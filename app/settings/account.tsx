@@ -221,9 +221,9 @@ export default function AccountSettingsScreen() {
     setIsSignOutConfirmVisible(true);
   }
 
-  function submitSignOut() {
+  async function submitSignOut() {
     setIsSignOutConfirmVisible(false);
-    void clearSession();
+    await clearSession();
   }
 
   function handleRequestDeletion() {

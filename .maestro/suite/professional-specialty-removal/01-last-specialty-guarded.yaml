@@ -1,0 +1,27 @@
+appId: com.edufelip.mychampions.dev
+name: Professional specialty removal - blocks removing the last specialty and keeps the add action on the setup screen
+tags: [professional]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-professional-role.yaml
+- runFlow: ../common/pro-add-nutritionist-skip-credential.yaml
+- tapOn:
+    id: pro.specialty.remove.nutritionist
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.removalAssist
+    timeout: 5000
+- assertVisible:
+    id: pro.specialty.removalAssist.add_specialty
+- tapOn:
+    id: pro.specialty.removalAssist.add_specialty
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.screen
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.add.fitness_coach
+    timeout: 5000
+- assertVisible:
+    id: pro.specialty.row.nutritionist

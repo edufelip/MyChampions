@@ -1,0 +1,12 @@
+# Wait for the sign-in screen. On iOS a hierarchy read can fail
+# (kAXErrorInvalidUIElement) while the screen animates in; one failed read
+# aborts a wait, so the wait is retried.
+appId: com.edufelip.mychampions.dev
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: auth.signIn.title
+          timeout: 15000

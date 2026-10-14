@@ -1,0 +1,23 @@
+appId: com.edufelip.mychampions.dev
+name: Student professionals - shows an actionable error for an invalid QR invite payload
+tags: [qr-invalid-payload]
+---
+- runFlow: ../common/student-professionals.yaml
+- tapOn:
+    id: student.professionals.scanQrButton
+- runFlow:
+    file: ../common/answer-camera-prompt.yaml
+    env:
+      CAMERA_ANSWER: allow
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.qrScanError
+    timeout: 10000
+- assertNotVisible:
+    id: student.professionals.connectionPending.e2e-pending-nutritionist-connection
+- tapOn:
+    id: student.professionals.qrCloseButton
+- extendedWaitUntil:
+    visible:
+      id: student.professionals.screen
+    timeout: 5000

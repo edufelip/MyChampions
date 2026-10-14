@@ -1,0 +1,28 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - keeps a cancelled professional purchase inactive
+tags: [professional-regression]
+---
+- runFlow: steps/launch-pro-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 15000
+- runFlow:
+    file: steps/open-test-store-purchase.yaml
+    env:
+      SOURCE_CTA: pro.subscription.purchaseCta
+      ROLE: professional
+      INTERVAL: monthly
+- tapOn: Cancel
+- runFlow:
+    file: steps/dismiss-paywall.yaml
+    env:
+      ROLE: professional
+      RETURN_ID: pro.subscription.screen
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 15000
+- takeScreenshot: revenuecat-live-professional-cancelled

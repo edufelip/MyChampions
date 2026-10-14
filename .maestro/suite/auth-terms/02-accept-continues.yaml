@@ -1,0 +1,21 @@
+appId: com.edufelip.mychampions.dev
+name: Auth terms - accepts required terms and continues to role selection
+tags: [terms-outdated]
+---
+- runFlow: ../common/launch-fresh.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth.terms.title
+    timeout: 15000
+- tapOn:
+    id: auth.terms.checkbox
+- extendedWaitUntil:
+    visible:
+      id: auth.terms.acceptButton
+    timeout: 5000
+- tapOn:
+    id: auth.terms.acceptButton
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 10000

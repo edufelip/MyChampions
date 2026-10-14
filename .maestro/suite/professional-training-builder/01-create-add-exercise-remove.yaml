@@ -1,0 +1,185 @@
+appId: com.edufelip.mychampions.dev
+name: Professional training builder - creates a plan, adds a searched exercise, saves it, and removes it
+tags: [training]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-professional-role.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.add.fitness_coach
+    timeout: 5000
+- tapOn:
+    id: pro.specialty.add.fitness_coach
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.credentialForm
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: pro.specialty.credential.skip
+    direction: DOWN
+- tapOn:
+    id: pro.specialty.credential.skip
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.row.fitness_coach
+    timeout: 5000
+- tapOn:
+    id: pro.specialty.cta_continue
+- extendedWaitUntil:
+    visible:
+      id: pro.home.screen
+    timeout: 10000
+- tapOn:
+    id: tabs.training
+- extendedWaitUntil:
+    visible:
+      id: pro.library.training.create
+    timeout: 10000
+- tapOn:
+    id: pro.library.training.create
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.screen
+    timeout: 10000
+- tapOn:
+    id: pro.training_plan.name
+- inputText: E2E Builder Training Plan
+- runFlow: ../common/hide-keyboard.yaml
+- scrollUntilVisible:
+    element:
+      id: pro.training_plan.saveButton
+    direction: DOWN
+- tapOn:
+    id: pro.training_plan.saveButton
+- extendedWaitUntil:
+    visible:
+      id: pro.library.training.row.e2e-training-builder-plan-1
+    timeout: 10000
+- tapOn:
+    id: pro.library.training.row.e2e-training-builder-plan-1
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: pro.training_plan.addSession
+    direction: DOWN
+- tapOn:
+    id: pro.training_plan.addSession
+# The session name opens focused and the form scrolls above the keyboard, so
+# its fields and Add session button are tapped while the keyboard stays open:
+# a control left behind the keyboard would take a key press instead.
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.addSession.form
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: pro.training_plan.addSession.name
+- inputText: Push Day
+- tapOn:
+    id: pro.training_plan.addSession.notes
+- inputText: Upper body focus
+- assertVisible:
+    id: pro.training_plan.addSession.name
+    text: Push Day
+- assertVisible:
+    id: pro.training_plan.addSession.notes
+    text: Upper body focus
+- assertVisible:
+    id: pro.training_plan.addSession.cancel
+- takeScreenshot: add-session-keyboard-open
+- tapOn:
+    id: pro.training_plan.addSession.confirm
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.sessionRow.Push_Day
+    timeout: 10000
+- tapOn:
+    id: pro.training_plan.sessionRow.Push_Day.addItem
+- extendedWaitUntil:
+    visible:
+      id: exerciseSearch.modal
+    timeout: 5000
+# The search input opens focused. The sheet stays between the top safe area
+# and the keyboard, so its title and search box stay on screen while typing
+# and the result is tapped with the keyboard still open.
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: exerciseSearch.input
+- inputText: push
+- extendedWaitUntil:
+    visible:
+      id: exerciseSearch.result.e2e-exercise-push-up
+    timeout: 10000
+- assertVisible:
+    id: exerciseSearch.title
+- assertVisible:
+    id: exerciseSearch.input
+    text: push
+- takeScreenshot: exercise-search-keyboard-open
+- tapOn:
+    id: exerciseSearch.result.e2e-exercise-push-up
+- extendedWaitUntil:
+    visible:
+      id: exerciseSearch.detail
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: exerciseSearch.quantity
+    direction: DOWN
+- tapOn:
+    id: exerciseSearch.quantity
+- inputText: 3 x 10
+- runFlow:
+    file: ../common/hide-keyboard.yaml
+    env:
+      IOS_KEYBOARD: enter
+- scrollUntilVisible:
+    element:
+      id: exerciseSearch.confirm
+    direction: DOWN
+- tapOn:
+    id: exerciseSearch.confirm
+- extendedWaitUntil:
+    notVisible:
+      id: exerciseSearch.modal
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.itemRow.E2E_Push-Up
+    timeout: 10000
+- assertVisible:
+    id: pro.training_plan.itemRow.E2E_Push-Up.quantity
+    text: 3 x 10
+- scrollUntilVisible:
+    element:
+      id: pro.training_plan.saveButton
+    direction: DOWN
+- tapOn:
+    id: pro.training_plan.saveButton
+- extendedWaitUntil:
+    visible:
+      id: pro.library.training.row.e2e-training-builder-plan-1
+    timeout: 10000
+- tapOn:
+    id: pro.library.training.row.e2e-training-builder-plan-1
+- extendedWaitUntil:
+    visible:
+      id: pro.training_plan.itemRow.E2E_Push-Up
+    timeout: 10000
+- tapOn:
+    id: pro.training_plan.itemRow.E2E_Push-Up.remove
+- runFlow:
+    file: ../common/confirm-alert.yaml
+    env:
+      BUTTON: Delete
+      MESSAGE: "Remove E2E Push-Up from this session\\?"
+- extendedWaitUntil:
+    notVisible:
+      id: pro.training_plan.itemRow.E2E_Push-Up
+    timeout: 10000

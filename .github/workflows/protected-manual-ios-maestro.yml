@@ -1,0 +1,266 @@
+name: Protected manual iOS Maestro pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_sha:
+        description: Exact coordinated server commit SHA
+        required: true
+        type: string
+      build_run_id:
+        description: Qualified Metro-attached Debug build run ID
+        required: true
+        type: string
+      build_source:
+        description: Qualified Debug build availability path
+        required: true
+        type: choice
+        options:
+          - private-restoration
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mychampions-protected-manual-ios-maestro
+  cancel-in-progress: false
+
+jobs:
+  ios-maestro-training:
+    name: Protected manual iOS Maestro training
+    if: github.event.repository.fork == false && github.ref_protected == true
+    runs-on: [self-hosted, macOS, ARM64, mychampions-ci, mychampions-ios]
+    timeout-minutes: 180
+    defaults:
+      run:
+        working-directory: client
+    env:
+      APP_VARIANT: dev
+      CI: 'true'
+      CI_REQUIRE_E2E_EXECUTION: 'true'
+      EXPO_PUBLIC_ENV: dev
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      GITHUB_SHA: ${{ github.sha }}
+      MYCHAMPIONS_SERVER_SHA: ${{ inputs.server_sha }}
+      MYCHAMPIONS_NATIVE_REUSE_BUILD_RUN_ID: ${{ inputs.build_run_id }}
+      MYCHAMPIONS_NATIVE_BUILD_SOURCE: ${{ inputs.build_source }}
+    steps:
+      - name: Validate exact manual inputs before checkout
+        # The job default (client) does not exist until the checkout below.
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        env:
+          SERVER_SHA: ${{ inputs.server_sha }}
+          BUILD_RUN_ID: ${{ inputs.build_run_id }}
+          BUILD_SOURCE: ${{ inputs.build_source }}
+        run: |
+          set -euo pipefail
+          [[ "$SERVER_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'server_sha must be a lowercase 40-character commit SHA.' >&2
+            exit 1
+          }
+          [[ "$BUILD_RUN_ID" =~ ^[0-9a-f]{24}$ ]] || {
+            echo 'build_run_id must be a lowercase 24-character qualified build ID.' >&2
+            exit 1
+          }
+          [[ "$BUILD_SOURCE" == 'private-restoration' ]] || {
+            echo 'build_source must be the supported private-restoration path.' >&2
+            exit 1
+          }
+
+      - name: Checkout exact client revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          path: client
+
+      - name: Checkout exact coordinated server revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          repository: edufelip/mychampions-api
+          ref: ${{ inputs.server_sha }}
+          path: server
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Bun for the coordinated server
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.10
+
+      - name: Select Xcode 26 and verify the simulator SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcode_app="$({ for candidate in /Applications/Xcode_26*.app; do [[ -d "$candidate" ]] && printf '%s\n' "$candidate"; done; } | sort | tail -n 1)"
+          if [[ -z "$xcode_app" && -d /Applications/Xcode.app ]]; then xcode_app=/Applications/Xcode.app; fi
+          [[ -n "$xcode_app" ]] || { echo 'Xcode 26.x is not installed.' >&2; exit 1; }
+          echo "DEVELOPER_DIR=$xcode_app/Contents/Developer" >> "$GITHUB_ENV"
+          export DEVELOPER_DIR="$xcode_app/Contents/Developer"
+          xcodebuild -version | grep -Eq '^Xcode 26(\.|$)'
+          sdk_version="$(xcrun --sdk iphonesimulator --show-sdk-version)"
+          [[ "${sdk_version%%.*}" == '26' ]] || {
+            echo "Expected iOS simulator SDK 26.x; found $sdk_version." >&2
+            exit 1
+          }
+
+      - name: Bind the protected checkout and build-cache roots
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -n "${MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT:-}" ]] || {
+            echo 'MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT must be configured on the protected runner.' >&2
+            exit 1
+          }
+          case "$MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT" in
+            /*) ;;
+            *) echo 'MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT must be absolute.' >&2; exit 1 ;;
+          esac
+          [[ -d "$MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT" && ! -L "$MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT" ]] || {
+            echo 'The protected qualified-build cache root must already exist as a non-symlink directory.' >&2
+            exit 1
+          }
+          [[ "$(stat -f '%Lp' "$MYCHAMPIONS_NATIVE_BUILD_CACHE_ROOT")" == '700' ]] || {
+            echo 'The protected qualified-build cache root must have mode 0700.' >&2
+            exit 1
+          }
+          {
+            printf 'MYCHAMPIONS_CLIENT_ROOT=%q\n' "$GITHUB_WORKSPACE/client"
+            printf 'MYCHAMPIONS_SERVER_ROOT=%q\n' "$GITHUB_WORKSPACE/server"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare private failure namespace and native output parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          recovery_root="${MYCHAMPIONS_NATIVE_STATE_ROOT:-}"
+          [[ "$recovery_root" == /* && -d "$recovery_root" && ! -L "$recovery_root" ]] || {
+            echo 'MYCHAMPIONS_NATIVE_STATE_ROOT must be an existing non-symlink directory.' >&2
+            exit 1
+          }
+          [[ "$(stat -f '%Lp' "$recovery_root")" == '700' ]] || {
+            echo 'MYCHAMPIONS_NATIVE_STATE_ROOT must have mode 0700.' >&2
+            exit 1
+          }
+          private_root="$recovery_root/mychampions-protected-manual-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          failure_root="$RUNNER_TEMP/mychampions-protected-manual-failure-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          output_parent="$GITHUB_WORKSPACE/client/.qa/artifacts/native-pilot-attempts"
+          if [[ -e "$private_root" || -L "$private_root" ]]; then
+            [[ -d "$private_root" && ! -L "$private_root" ]] || {
+              echo 'The private receipt root already exists but is not a directory.' >&2
+              exit 1
+            }
+            [[ "$(stat -f '%Lp' "$private_root")" == '700' ]] || {
+              echo 'The existing private receipt root must have mode 0700.' >&2
+              exit 1
+            }
+          else
+            mkdir "$private_root"
+            chmod 700 "$private_root"
+          fi
+          if [[ -e "$failure_root" || -L "$failure_root" ]]; then
+            [[ -d "$failure_root" && ! -L "$failure_root" ]] || {
+              echo 'The failure receipt root already exists but is not a directory.' >&2
+              exit 1
+            }
+            [[ "$(stat -f '%Lp' "$failure_root")" == '700' ]] || {
+              echo 'The existing failure receipt root must have mode 0700.' >&2
+              exit 1
+            }
+          else
+            mkdir -p "$failure_root"
+            chmod 700 "$failure_root"
+          fi
+          if [[ -e "$output_parent" || -L "$output_parent" ]]; then
+            [[ -d "$output_parent" && ! -L "$output_parent" ]] || {
+              echo 'The native output parent already exists but is not a directory.' >&2
+              exit 1
+            }
+            [[ "$(stat -f '%Lp' "$output_parent")" == '700' ]] || {
+              echo 'The existing native output parent must have mode 0700.' >&2
+              exit 1
+            }
+          else
+            mkdir -p "$output_parent"
+            chmod 700 "$output_parent"
+          fi
+          export MYCHAMPIONS_PRIVATE_RECEIPT_ROOT="$private_root"
+          export MYCHAMPIONS_NATIVE_OUTPUT_PARENT="$output_parent"
+          export MYCHAMPIONS_FAILURE_RECEIPT_PATH="$failure_root/failure-receipt.private.json"
+          export MYCHAMPIONS_NATIVE_REQUESTED_RUN_ID="$(/usr/bin/python3 -c 'import secrets; print(secrets.token_hex(12))')"
+          {
+            printf 'MYCHAMPIONS_PRIVATE_RECEIPT_ROOT=%q\n' "$MYCHAMPIONS_PRIVATE_RECEIPT_ROOT"
+            printf 'MYCHAMPIONS_NATIVE_OUTPUT_PARENT=%q\n' "$MYCHAMPIONS_NATIVE_OUTPUT_PARENT"
+            printf 'MYCHAMPIONS_FAILURE_RECEIPT_PATH=%q\n' "$MYCHAMPIONS_FAILURE_RECEIPT_PATH"
+            printf 'MYCHAMPIONS_NATIVE_REQUESTED_RUN_ID=%q\n' "$MYCHAMPIONS_NATIVE_REQUESTED_RUN_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Execute the exact protected manual training cell
+        shell: bash
+        run: |
+          set -euo pipefail
+          export MYCHAMPIONS_PRIVATE_RECEIPT_ROOT MYCHAMPIONS_NATIVE_OUTPUT_PARENT
+          export MYCHAMPIONS_FAILURE_RECEIPT_PATH MYCHAMPIONS_NATIVE_REQUESTED_RUN_ID
+          scripts/ci/run-with-native-host-lock.sh bash -euo pipefail -c '
+            corepack enable
+            yarn install --frozen-lockfile --no-progress
+            (cd "$MYCHAMPIONS_SERVER_ROOT" && bun install --frozen-lockfile)
+            set +e
+            node --import tsx scripts/ci/protected-native-pilot.ts preflight
+            preflight_status=$?
+            set -e
+            if [[ "$preflight_status" -ne 0 ]]; then
+              set +e
+              node --import tsx scripts/ci/protected-native-pilot.ts finalize \
+                --exit-code="$preflight_status" \
+                --preflight-failure="protected preflight exited with $preflight_status"
+              finalizer_status=$?
+              set -e
+              if [[ "$finalizer_status" -ne 2 ]]; then
+                echo 'protected preflight finalizer did not publish a failure receipt.' >&2
+                exit 2
+              fi
+              exit "$preflight_status"
+            fi
+            set +e
+            node --import tsx scripts/testing/run-native-pilot.ts \
+              --platform=ios \
+              --engine=maestro \
+              --scenario=SCN-training-ios \
+              --mode=integration \
+              --run-id="$MYCHAMPIONS_NATIVE_REQUESTED_RUN_ID" \
+              --attempt-id="${MYCHAMPIONS_NATIVE_REQUESTED_RUN_ID}:first" \
+              --output-parent="$MYCHAMPIONS_NATIVE_OUTPUT_PARENT"
+            pilot_status=$?
+            set -e
+            set +e
+            node --import tsx scripts/ci/protected-native-pilot.ts finalize --exit-code="$pilot_status"
+            finalizer_status=$?
+            set -e
+            if [[ "$pilot_status" -ne 0 ]]; then exit "$pilot_status"; fi
+            exit "$finalizer_status"
+          '
+
+      - name: Upload only failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: protected-manual-ios-maestro-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mychampions-protected-manual-failure-${{ github.run_id }}-${{ github.run_attempt }}/failure-receipt.private.json
+          if-no-files-found: error
+          retention-days: 1

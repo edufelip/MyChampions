@@ -1,0 +1,28 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - does not leak professional privileges across account switches
+tags: [professional-regression]
+---
+- runFlow: steps/launch-pro-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 20000
+- runFlow: steps/sign-out.yaml
+- runFlow: steps/sign-in-google.yaml
+- runFlow: steps/pro-open-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Inactive
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-live-google-inactive
+- runFlow: steps/sign-out.yaml
+- runFlow: steps/sign-in-primary.yaml
+- runFlow: steps/pro-open-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-live-primary-returned-active

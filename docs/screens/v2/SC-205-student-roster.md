@@ -21,6 +21,7 @@
 - Offline state uses `DsOfflineBanner`; all copy remains localization-key driven.
 - `/professional/pending` queue follows the same shell, card, and pill-action structure for search, selection, and bulk deny flows.
 - Each pending-queue row (`pro.pending.row.N`) is a non-interactive container `View`, never a button/pressable. Selection is a dedicated sibling checkbox control (`pro.pending.checkbox.N`, `accessibilityRole="checkbox"`, 44x44 hit area, keyboard-operable via Space) and Accept/Deny (`pro.pending.acceptButton.N` / `pro.pending.denyButton.N`) are sibling buttons in the same row. No interactive control is nested inside another interactive control, so the web DOM never renders a `<button>` descendant of another `<button>` (ET-106).
+- Each pending-queue row shows the student's display name (from `GET /connections` `studentDisplayName`) with the specialty underneath; when no name is available it shows the specialty and, below it, the connection ID so rows stay distinguishable. The selection checkbox's accessible name names the student when known (`pro.pending.row.select_named`), else the specialty (`pro.pending.row.select`). The specialty text carries `pro.pending.connection.<connectionId>` as the stable test marker. On narrow screens the Accept/Deny pair wraps below the details (and the summary card's count pill wraps below its copy) rather than squeezing the text column. Search matches the student name or the connection ID.
 - Selection mode uses an inset elevated action tray with horizontal and bottom clearance around the plan-type chips and assignment CTA.
 - The pending queue begins with an informative summary card that explains the decision, exposes the pending count, and keeps search and request actions in separate task groups.
 - Browser bulk deny uses an accessible stateful confirmation dialog with a selected-count summary, an explicit accessible name, cancel/confirm actions, focus containment, Escape dismissal, loading feedback, and localized success/error result feedback. Native continues to use the platform confirmation alert, rechecks the latest connectivity state before mutating, and shows the localized write-lock helper if connectivity was lost after the alert opened.
@@ -35,6 +36,7 @@
   - Filter/search pending requests queue.
   - Select multiple pending requests and run bulk deny.
   - Select multiple active students and start predefined-plan bulk assignment flow.
+  - A bulk assignment that completes after the same coach left and returned to the roster still reports its result and clears the selection, so the same students cannot be assigned twice; the return itself reloads the roster.
   - Open student profile.
 - Secondary:
   - View assignment state badges (pending/active/ended).
@@ -45,6 +47,12 @@
 - Empty: shown only after first fetch settles with zero visible students (no loading overlap).
 - Error: a settled roster-read failure renders a dedicated error card (Retry + Back to dashboard) in place of the search/filter/bulk-assign shell. Search, filters, and Bulk assign plan are not mounted while this state is showing, so there is no dead control surface around the error copy. Retry re-invokes the roster load and shows the loading indicator before settling into error, empty, or the roster list. Preserved via `resolveStudentRosterViewState` in `features/professional/students-screen.logic.ts`, which is exclusive with the empty hero state — a stale roster is not shown read-only behind an error (open question, see below).
 - Success: roster list with actionable entries.
+- On every return to the focused roster, read the current server roster so a
+  connection confirmed in the pending queue appears under Active without an
+  app restart. Preserve the current search/filter and selection eligibility
+  rules. Only the latest request for the current focused authenticated screen
+  may publish rows, synchronization time, loading or error state; late results
+  from a blurred screen, older reload or previous identity are ignored.
 
 ## Validation Rules
 
@@ -77,6 +85,10 @@
 
 - Large client list should support paging/virtualization.
 - Concurrent unbind can remove student from active list in-session.
+- A bulk-assignment completion from a blurred screen or previous authenticated
+  identity cannot publish alerts, selection changes or reloads into the current
+  screen. A new focus clears obsolete assignment progress; this UI guard does
+  not cancel a server write that was already submitted.
 - If invite code is missing/loading/error in empty state, share CTA falls back to `/professional/home` (no modal error copy).
 - Transient auth/profile re-hydration must not remount the tab shell for the same authenticated UID.
 - Open question (not yet resolved, tracked as `Q-028` in `docs/discovery/open-questions-v1.md`): whether a roster read error should fall back to a cached read-only roster when one exists, following the same stale-data policy as the professional dashboard, instead of always showing the error card. Currently any settled error hides the roster shell regardless of prior successful data.

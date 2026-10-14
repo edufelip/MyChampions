@@ -1155,6 +1155,8 @@ jobs:
           node-version: 24
       - run: yarn install --frozen-lockfile --no-progress
       - run: yarn test:impact
+      - name: Rendered component behavior
+        run: yarn test:component --ci
       - run: yarn test:unit
       - run: yarn lint
       - run: yarn tsc --noEmit

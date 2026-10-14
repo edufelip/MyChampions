@@ -1,0 +1,8 @@
+# STATUS=Active|Inactive|Status unavailable; TIMEOUT in ms.
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.statusValue
+      text: "Subscription: ${STATUS}"
+    timeout: ${TIMEOUT || 15000}

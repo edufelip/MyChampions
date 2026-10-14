@@ -1,0 +1,30 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal image upload - shows a permission error when camera access is denied
+tags: [image-upload-permission-denied]
+---
+- runFlow:
+    file: ../common/student-meal-builder-camera.yaml
+    env:
+      CAMERA_PERMISSION: deny
+- tapOn:
+    id: meal.builder.imageUpload
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            text: Take photo
+          timeout: 5000
+      - tapOn:
+          text: Take photo
+      - runFlow:
+          file: ../common/answer-camera-prompt.yaml
+          env:
+            CAMERA_ANSWER: deny
+- extendedWaitUntil:
+    visible:
+      id: meal.builder.imageUpload.error
+    timeout: 10000
+- assertNotVisible:
+    id: meal.builder.imageUpload.preview

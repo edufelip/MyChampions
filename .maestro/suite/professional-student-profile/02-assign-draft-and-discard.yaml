@@ -1,0 +1,119 @@
+appId: com.edufelip.mychampions.dev
+name: Professional student profile - assigns a predefined nutrition plan as a draft and can discard it
+tags: [professional]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-professional-role.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.add.nutritionist
+    timeout: 5000
+- tapOn:
+    id: pro.specialty.add.nutritionist
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.credentialForm
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: pro.specialty.credential.skip
+    direction: DOWN
+- tapOn:
+    id: pro.specialty.credential.skip
+- extendedWaitUntil:
+    visible:
+      id: pro.specialty.row.nutritionist
+    timeout: 5000
+- tapOn:
+    id: pro.specialty.cta_continue
+- extendedWaitUntil:
+    visible:
+      id: pro.home.screen
+    timeout: 10000
+- tapOn:
+    id: tabs.students
+- extendedWaitUntil:
+    visible:
+      id: pro.students.search
+    timeout: 10000
+- runFlow: ../common/pro-open-dual-student.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.nutrition.cta_assign
+    timeout: 10000
+- tapOn:
+    id: pro.student_profile.nutrition.cta_assign
+- extendedWaitUntil:
+    visible:
+      id: planPicker.modal
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: planPicker.ready
+    timeout: 5000
+- assertVisible:
+    id: planPicker.row.e2e-nutrition-predefined-plan
+- assertNotVisible:
+    id: planPicker.row.e2e-training-predefined-plan
+- tapOn:
+    id: planPicker.assign.e2e-nutrition-predefined-plan
+- extendedWaitUntil:
+    visible:
+      text: Plan assigned successfully.
+    timeout: 5000
+- tapOn:
+    text: OK
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_plan.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: "Draft Assignment: Customize this nutrition plan for the student before sending."
+    timeout: 10000
+- assertVisible:
+    id: pro.plan.metadata.name
+    text: Balanced Nutrition Template
+- assertNotVisible:
+    text: Could not load plan. Try again.
+- extendedWaitUntil:
+    visible:
+      id: pro.nutrition_plan.backButton
+    timeout: 5000
+- tapOn:
+    id: pro.nutrition_plan.backButton
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.nutrition.status
+      text: Draft pending send
+    timeout: 10000
+- assertVisible:
+    id: pro.student_profile.nutrition.cta_resume_draft
+- assertVisible:
+    id: pro.student_profile.nutrition.cta_discard
+- tapOn:
+    id: pro.student_profile.nutrition.cta_discard
+- runFlow:
+    file: ../common/confirm-alert.yaml
+    env:
+      BUTTON: Discard
+      MESSAGE: "You have unsaved changes\\..*"
+- extendedWaitUntil:
+    visible:
+      text: Draft discarded successfully.
+    timeout: 5000
+- tapOn:
+    text: OK
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.nutrition.status
+      text: Active, awaiting plan
+    timeout: 10000
+- assertVisible:
+    id: pro.student_profile.nutrition.cta_assign
+- assertNotVisible:
+    id: pro.student_profile.nutrition.cta_resume_draft

@@ -1,0 +1,51 @@
+appId: com.edufelip.mychampions.dev
+name: Custom meal library - validates and logs a custom meal portion from the quick log panel
+tags: [nutrition]
+---
+- runFlow: ../common/student-open-meal-library.yaml
+- extendedWaitUntil:
+    visible:
+      id: meal.library.row.e2e-custom-meal.log
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 2000
+# Tap again only while the panel is still closed: a blind repeat tap can land on
+# the open panel's backdrop, which cancels it.
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              id: meal.library.quickLog.panel
+          commands:
+            - tapOn:
+                id: meal.library.row.e2e-custom-meal.log
+      - extendedWaitUntil:
+          visible:
+            id: meal.library.quickLog.panel
+          timeout: 5000
+- tapOn:
+    id: meal.library.quickLog.cta.confirm
+- extendedWaitUntil:
+    visible:
+      id: meal.library.quickLog.error
+    timeout: 5000
+- tapOn:
+    id: meal.library.quickLog.input
+- inputText: "150"
+# The panel lifts above the keyboard on both platforms (Android edge-to-edge
+# included): the typed grams, the preview and the Log action stay on screen,
+# and Log is tapped while the keyboard is still open.
+- assertVisible:
+    id: meal.library.quickLog.input
+    text: "150"
+- assertVisible:
+    id: meal.library.quickLog.preview
+- takeScreenshot: quick-log-keyboard-open
+- tapOn:
+    id: meal.library.quickLog.cta.confirm
+- extendedWaitUntil:
+    notVisible:
+      id: meal.library.quickLog.panel
+    timeout: 10000

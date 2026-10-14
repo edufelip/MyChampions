@@ -76,7 +76,7 @@
   - The auth guard allows only the controlled legal webview route during pending acceptance; role-selection and role-home routes remain blocked.
   - Native shared WebView rejects invalid legal URLs with a recoverable localized back state.
   - Pending-terms WebView access is intent-scoped to the configured terms URL, and direct-entry recovery falls back to the terms screen when navigation history is unavailable.
-  - Native E2E launches a fresh app instance with Detox synchronization disabled in the launch arguments before each terms case; it does not use `reloadReactNative` across the idling-registry boundary because that corrupts the Android Detox/Espresso registry, and startup analytics cannot block a later synchronization transition.
+  - Native E2E launches a fresh, clean-state app instance before each terms case and never reloads the app mid-case, so startup analytics cannot block a later step.
 
 ## Links
 

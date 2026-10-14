@@ -1,0 +1,7 @@
+appId: com.edufelip.mychampions.dev
+---
+- tapOn: Test failed purchase
+- extendedWaitUntil:
+    visible: "^OK$"
+    timeout: 15000
+- tapOn: "^OK$"

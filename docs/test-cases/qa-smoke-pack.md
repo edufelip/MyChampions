@@ -29,7 +29,7 @@ Define the default on-demand manual QA pack for the MyChampions `web` surface (n
 ## Out of pack
 
 - Server-auth Playwright batch (`yarn test:e2e:web:server`) — only when scope explicitly includes those TCs.
-- Complete flow atlas, Detox, native device/TestFlight.
+- Complete flow atlas, Maestro native suite, native device/TestFlight.
 - Store-live, provider-live, or production mutation paths.
 
 ## Related

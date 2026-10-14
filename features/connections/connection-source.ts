@@ -293,12 +293,18 @@ function mapServerConnections(payload: ServerConnectionResponse | null): Connect
 
       if (!id || !status || !specialty || !professionalAuthUid) return null;
 
+      const studentDisplayName =
+        typeof connection.studentDisplayName === 'string'
+          ? connection.studentDisplayName.trim()
+          : '';
+
       return {
         id,
         status,
         canceledReason: normalizeCanceledReason(connection.canceledReason ?? null),
         specialty,
         professionalAuthUid,
+        ...(studentDisplayName ? { studentDisplayName } : {}),
       };
     })
     .filter((connection): connection is ConnectionRecord => connection !== null);

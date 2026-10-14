@@ -1,0 +1,35 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - does not leak student AI access across account switches
+tags: [student-switch]
+---
+- runFlow: steps/launch-student-ai-gate.yaml
+- runFlow: steps/student-ai-locked.yaml
+- runFlow:
+    file: steps/open-test-store-purchase.yaml
+    env:
+      SOURCE_CTA: meal.photoAnalysis.paywall.cta
+      ROLE: student
+      INTERVAL: monthly
+- tapOn: Test valid purchase
+- runFlow: steps/student-ai-active.yaml
+- runFlow: steps/sign-out.yaml
+- runFlow: steps/sign-in-google.yaml
+- runFlow:
+    file: steps/select-role.yaml
+    env:
+      ROLE: student
+- runFlow: steps/student-open-ai-gate.yaml
+- runFlow:
+    file: steps/student-ai-locked.yaml
+    env:
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-student-v1-alternate-account-locked
+- runFlow: steps/sign-out.yaml
+- runFlow: steps/sign-in-primary.yaml
+- runFlow:
+    file: steps/select-role.yaml
+    env:
+      ROLE: student
+- runFlow: steps/student-open-ai-gate.yaml
+- runFlow: steps/student-ai-active.yaml
+- takeScreenshot: revenuecat-student-v1-primary-account-active

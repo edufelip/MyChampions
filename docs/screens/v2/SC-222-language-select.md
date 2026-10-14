@@ -1,16 +1,19 @@
 # SC-222 Language Select (V2)
 
 ## Route
+
 - `/settings/language-select`
 - Pushed from SC-213 Account & Privacy Settings when the user taps the Language row.
 
 ## Objective
+
 Provide a dedicated full-screen language selector that replaces the former inline
 native picker (ActionSheetIOS / Alert.alert) previously described in SC-213.
 The selected language takes effect **immediately in-session** via `LocaleContext` —
 no app restart is required.
 
 ## Design Structure
+
 - Custom header (no native navigation toolbar, per D-147):
   - Left: back arrow (`MaterialIcons arrow-back`) — discards pending selection.
   - Center: screen title (`settings.language_select.title`).
@@ -28,6 +31,7 @@ no app restart is required.
 ## Behavior
 
 ### Selection
+
 - On mount: `pendingLocale` initialises to `activeLocale` from `LocaleContext`.
 - Tapping a locale row sets `pendingLocale` to that locale (local state only).
 - The tapped row shows a `check` icon; the previous selection loses it.
@@ -36,6 +40,7 @@ no app restart is required.
   pending selection.
 
 ### Save
+
 - Save button is **enabled** when `pendingLocale !== activeLocale`.
 - On Save:
   1. Calls `setActiveLocale(pendingLocale)` from `useLocale()`.
@@ -44,15 +49,39 @@ no app restart is required.
      immediately with the new locale.
   3. Calls `router.back()` to return to SC-213.
 
+### Hydration and persistence ordering
+
+- The first render uses the device locale while the stored override is being read.
+- A supported stored override becomes the effective locale after hydration. Missing
+  or invalid overrides retain the device fallback; storage failures retain the
+  current locale and do not qualify a hydrated test observation.
+- After a successful Save, a delayed initial storage read or rejection must not
+  overwrite the saved in-session locale. A failed persistence operation must not
+  change the current locale. These rules preserve the Save contract above.
+- BL-018/D-219 adds a non-user-facing diagnostic hierarchy only in development
+  native builds with the expected development app ID and variant. It exposes
+  closed locale/status IDs without raw storage or errors. The transparent
+  noninteractive seam stays inside the viewport. Production and browser builds
+  render no diagnostic nodes. This source integration is **Done** with 13
+  rendered controls; actual native hydration/reset/relaunch evidence remains
+  **Pending**. The sealed v12 preliminary entry observation retained exactly
+  `testing.locale.diagnostic`, `testing.locale.hydration.hydrated`,
+  `testing.locale.override.absent` and `testing.locale.effective.en-US`.
+  Entry-tree retention does not qualify hydration, OS reset, relaunch or public
+  locale projection; those remain **Pending** with zero native/public passes.
+
 ### Back / Cancel
+
 - Tapping the back arrow discards `pendingLocale` and calls `router.back()`.
 - No persistence occurs if Save was not pressed.
 
 ## States
+
 - **Idle**: all three locale rows visible; Save button disabled (nothing changed).
 - **Dirty**: at least one tap on a different locale; Save button enabled.
 
 ## Data Contract
+
 - Inputs:
   - `useLocale()`: `activeLocale` (current effective locale), `setActiveLocale`.
   - `useTranslation()`: screen copy keys.
@@ -62,29 +91,33 @@ no app restart is required.
   - `router.back()`: returns to SC-213.
 
 ## Locale Display Names
+
 Locale option names are **intentionally not translated** so users can identify their
 preferred language regardless of the current app language.
 
-| Locale | Display name |
-|--------|-------------|
-| `en-US` | English |
-| `pt-BR` | Português |
-| `es-ES` | Español |
+| Locale  | Display name |
+| ------- | ------------ |
+| `en-US` | English      |
+| `pt-BR` | Português    |
+| `es-ES` | Español      |
 
 ## Localization Keys (SC-222)
-| Key | en-US | pt-BR | es-ES |
-|-----|-------|-------|-------|
-| `settings.language_select.title` | Language | Idioma | Idioma |
-| `settings.language_select.save` | Save | Salvar | Guardar |
+
+| Key                                       | en-US        | pt-BR         | es-ES            |
+| ----------------------------------------- | ------------ | ------------- | ---------------- |
+| `settings.language_select.title`          | Language     | Idioma        | Idioma           |
+| `settings.language_select.save`           | Save         | Salvar        | Guardar          |
 | `settings.language_select.section_header` | App Language | Idioma do App | Idioma de la app |
-| `common.back` | Back | Voltar | Atrás |
+| `common.back`                             | Back         | Voltar        | Atrás            |
 
 Existing keys reused from SC-213:
+
 - `settings.account.language.en_us` — "English" (locale option label)
 - `settings.account.language.pt_br` — "Português" (locale option label)
 - `settings.account.language.es_es` — "Español" (locale option label)
 
 ## Architecture Notes
+
 - `LocaleContext` (`localization/locale-context.tsx`) holds `activeLocale` in React
   state. `LocaleProvider` wraps the entire app in `app/_layout.tsx`.
 - `useTranslation()` (`localization/use-translation.ts`) reads from `LocaleContext`
@@ -95,11 +128,13 @@ Existing keys reused from SC-213:
   `use-translation.ts` imports both `index.ts` and `locale-context.tsx`.
 
 ## New Files Introduced
+
 - `localization/locale-context.tsx` — `LocaleProvider` + `useLocale()` hook.
 - `localization/use-translation.ts` — context-aware `useTranslation()` hook.
 - `app/settings/language-select.tsx` — this screen.
 
 ## Links
+
 - Functional requirement: FR-227
 - Decisions: D-144 (superseded: inline picker replaced by this screen), D-155
 - Related screen: SC-213 (Account & Privacy Settings)

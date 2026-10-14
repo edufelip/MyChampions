@@ -1,0 +1,12 @@
+appId: com.edufelip.mychampions.dev
+---
+- scrollUntilVisible:
+    element:
+      id: auth.signIn.googleButton
+    direction: DOWN
+- tapOn:
+    id: auth.signIn.googleButton
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 10000

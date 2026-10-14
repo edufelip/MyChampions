@@ -6,11 +6,12 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const workflow = readFileSync('.github/workflows/provider-validation.yml', 'utf8');
-const metroRunner = readFileSync('scripts/run-detox-ios-debug.sh', 'utf8');
+const providerRunner = readFileSync('scripts/run-maestro-revenuecat-test-store.sh', 'utf8');
+const metroOwner = readFileSync('scripts/testing/run-with-fresh-metro.ts', 'utf8');
 const lockRunnerPath = 'scripts/ci/run-with-native-host-lock.sh';
 const lockRunner = readFileSync(lockRunnerPath, 'utf8');
 
-test('provider validation is protected, exact-head, and isolated from native Detox', () => {
+test('provider validation is protected, exact-head, and isolated from the native suites', () => {
   assert.match(workflow, /resolve-ios-tests:/);
   assert.match(workflow, /IOS_TESTS_VALUE: \$\{\{ vars\.MYCHAMPIONS_ENABLE_IOS_TESTS \}\}/);
   assert.match(workflow, /os\.environ\.get\("IOS_TESTS_VALUE", ""\) != "false"/);
@@ -21,16 +22,23 @@ test('provider validation is protected, exact-head, and isolated from native Det
   assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/);
   assert.match(workflow, /EXPECTED_SHA: \$\{\{ github\.sha \}\}/);
   assert.match(workflow, /actual_sha=.*git rev-parse HEAD/);
-  assert.match(workflow, /group: mychampions-protected-ios-detox/);
+  assert.match(workflow, /group: mychampions-protected-ios-native/);
   assert.match(workflow, /run-with-native-host-lock\.sh/);
-  assert.match(workflow, /DETOX_METRO_PORT: '18081'/);
+  assert.match(workflow, /NATIVE_METRO_PORT: '18081'/);
+  assert.match(workflow, /scripts\/testing\/install-maestro\.sh/);
+  assert.match(workflow, /scripts\/run-maestro-revenuecat-student-matrix\.sh/);
 });
 
-test('provider Metro cleanup uses a process group or recursive process-tree fallback', () => {
-  assert.match(metroRunner, /DETOX_METRO_PROCESS_GROUP/);
-  assert.match(metroRunner, /kill -TERM "-\$metro_pid"/);
-  assert.match(metroRunner, /terminate_process_tree/);
-  assert.match(metroRunner, /Metro port \$\{metro_port\} remained occupied after cleanup/);
+test('provider Metro is owned and stopped by the selective executor', () => {
+  // The provider run starts Metro through the same executor as selective CI,
+  // which refuses an occupied port and stops Metro by process group.
+  assert.match(
+    providerRunner,
+    /node --import tsx scripts\/testing\/run-with-fresh-metro\.ts --platform ios --/,
+  );
+  assert.match(metroOwner, /runInvocations\(/);
+  assert.match(metroOwner, /metro: \{ port, platform, appId: 'com\.edufelip\.mychampions\.dev' \}/);
+  assert.match(metroOwner, /installCancellationHandlers\(\);/);
 });
 
 test('native host lock releases after successful and failed commands', () => {
@@ -62,4 +70,40 @@ test('native host lock releases after successful and failed commands', () => {
   assert.doesNotMatch(lockRunner, /exec "\$@"/);
   assert.match(lockRunner, /trap 'forward_signal INT' INT/);
   assert.match(lockRunner, /trap 'forward_signal TERM' TERM/);
+});
+
+test('live runner suppresses the LogBox overlay like the CI fixture phases', () => {
+  assert.match(providerRunner, /^export EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX=true$/m);
+  assert.doesNotMatch(providerRunner, /unset EXPO_PUBLIC_E2E_SUPPRESS_LOGBOX/);
+});
+
+test('live runner tag filters survive an empty filter under set -u (macOS bash 3.2)', () => {
+  // scenario=all with the expiration monitor leaves tag_args empty, and bash
+  // 3.2 treats a plain "${tag_args[@]}" of an empty array as unbound.
+  const tagBlock = providerRunner.match(
+    /^monitor="\$\{REVENUECAT_LIVE_MONITOR_EXPIRATION[\s\S]*?^fi$/m,
+  )?.[0];
+  const expansion = providerRunner.match(/ test (\S*tag_args\S*) \\$/m)?.[1];
+  assert.ok(tagBlock, 'tag-arg block not found');
+  assert.equal(expansion, '${tag_args[@]+"${tag_args[@]}"}');
+  const argsFor = (scenario: string, monitor: string) => {
+    const result = spawnSync(
+      '/bin/bash',
+      [
+        '-c',
+        `set -euo pipefail\nlive_scenario=${scenario}\n${tagBlock}\nfor arg in ${expansion}; do echo "$arg"; done`,
+      ],
+      { env: { ...process.env, REVENUECAT_LIVE_MONITOR_EXPIRATION: monitor }, encoding: 'utf8' },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.split('\n').filter(Boolean);
+  };
+
+  assert.deepEqual(argsFor('all', 'true'), []);
+  assert.deepEqual(argsFor('all', 'false'), ['--exclude-tags', 'expiration-monitor']);
+  assert.deepEqual(argsFor('professional-regression', 'true'), [
+    '--include-tags',
+    'professional-regression,expiration-monitor',
+  ]);
+  assert.deepEqual(argsFor('student-dismiss', 'false'), ['--include-tags', 'student-dismiss']);
 });

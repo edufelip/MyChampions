@@ -1,0 +1,18 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - keeps Test Store customer state across reinstall and a non-destructive restore call
+tags: [professional-regression]
+---
+- runFlow: steps/launch-pro-subscription.yaml
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 20000
+- tapOn:
+    id: pro.subscription.restoreCta
+- runFlow:
+    file: steps/pro-status.yaml
+    env:
+      STATUS: Active
+      TIMEOUT: 20000
+- takeScreenshot: revenuecat-live-professional-restored

@@ -1,0 +1,12 @@
+appId: com.edufelip.mychampions.dev
+---
+- scrollUntilVisible:
+    element:
+      id: pro.home.rotateCodeCta
+    direction: DOWN
+- extendedWaitUntil:
+    visible:
+      id: pro.home.inviteCodeValue
+    timeout: 10000
+- assertVisible:
+    id: pro.home.shareCodeCta

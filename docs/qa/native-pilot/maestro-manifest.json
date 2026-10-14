@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-10-10T12:50:22.300961+00:00",
+  "target": "native-dev-pilot-unqualified",
+  "entries": [
+    {
+      "scenarioId": "SCN-camera-denied-android",
+      "flowId": "FLW-camera-denied",
+      "maestroFlow": ".maestro/flows/camera-denied-android.yaml",
+      "platform": "android",
+      "roles": ["student"],
+      "fixtureRef": "owned-postgres:SCN-camera-denied-android:fresh-attempt",
+      "tags": ["native-pilot", "integration", "camera-denied", "android"],
+      "behaviorStatus": "untested",
+      "freshness": "unknown"
+    }
+  ]
+}

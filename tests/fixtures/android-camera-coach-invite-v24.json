@@ -1,0 +1,46 @@
+{
+  "before": {
+    "attributes": {
+      "resource-id": "com.edufelip.mychampions.dev:id/action_bar_root",
+      "enabled": "true",
+      "bounds": "[0,0][320,640]"
+    },
+    "children": [
+      {
+        "attributes": {
+          "resource-id": "pro.home.screen",
+          "enabled": "true",
+          "bounds": "[0,0][320,640]"
+        },
+        "children": []
+      }
+    ]
+  },
+  "after": {
+    "attributes": {
+      "resource-id": "com.edufelip.mychampions.dev:id/action_bar_root",
+      "enabled": "true",
+      "bounds": "[0,0][320,640]"
+    },
+    "children": [
+      {
+        "attributes": {
+          "resource-id": "pro.home.screen",
+          "enabled": "true",
+          "bounds": "[0,0][320,640]"
+        },
+        "children": [
+          {
+            "attributes": {
+              "resource-id": "pro.home.inviteCodeValue",
+              "accessibilityText": "Your invite code: A1B2C3D4",
+              "text": "",
+              "enabled": "true",
+              "bounds": "[20,240][300,300]"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

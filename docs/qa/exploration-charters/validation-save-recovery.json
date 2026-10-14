@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "EXP-VALIDATION-SAVE-RECOVERY",
+  "title": "Training validation and save recovery",
+  "summary": "Explore required-field validation, one scoped save failure, retained editable content, and the documented retry path.",
+  "platforms": ["ios", "android", "web"],
+  "connectorsByPlatform": {
+    "ios": "maestro",
+    "android": "maestro",
+    "web": "playwright"
+  },
+  "locales": ["en-US", "pt-BR", "es-ES"],
+  "roles": ["professional"],
+  "dataMode": "integration",
+  "fixture": {
+    "id": "owned-postgres:exploration:validation-save-recovery",
+    "resetStrategy": "fresh-professional-training-draft-and-one-scoped-save-fault"
+  },
+  "allowedActions": [
+    "Reset the declared owned fixture and verify the selected target/build/connector",
+    "Open a new training plan and submit the documented invalid or incomplete state",
+    "Enter the canonical fixture values and arm only the declared account-scoped one-time fault",
+    "Submit Save once, inspect retained inputs and error feedback, clear the declared fault, and retry once",
+    "Verify the final durable state with the authenticated API and read-only SQL evidence"
+  ],
+  "excludedExternalEffects": [
+    "Unscoped network interception, production writes, real purchases, or provider-console changes",
+    "Direct database writes that perform the save under test or mutation of unrelated users/plans",
+    "Repeated retries after two unchanged failures, selector healing, coordinate actions, or hidden bypass flags",
+    "Classifying a validation or harness block as a product bug without the authoritative expectation"
+  ],
+  "budget": {
+    "maxDurationMinutes": 30,
+    "maxUiActions": 100,
+    "stopWhen": "first-limit-reached",
+    "unchangedFailureLimit": 2
+  },
+  "artifactPolicy": {
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "rawEvidence": "private-only",
+    "publicSummary": "redacted-status-only",
+    "forbiddenFields": [
+      "password",
+      "accessToken",
+      "refreshToken",
+      "cookie",
+      "authorization",
+      "secret"
+    ]
+  },
+  "requirementRefs": ["SC-208", "TC-279", "TC-303", "BL-018/T11.4", "BL-018/T16"],
+  "requirementPaths": [
+    "docs/screens/v2/SC-208-training-plan-builder.md",
+    "docs/test-cases/TC-002-role-and-assignment-controls.md",
+    "docs/plans/2026-09-28-testing-structure-and-maestro-plan.md"
+  ],
+  "scenario": {
+    "id": "EXP-VALIDATION-001",
+    "title": "Validation and one failed Save retain an editable draft for one retry",
+    "sourceRefs": ["SC-208", "TC-279", "TC-303", "BL-018/T11.4", "BL-018/T16"],
+    "preconditions": [
+      "The fixture has a fresh professional draft and a once-only private fault scoped to that attempt",
+      "The expected invalid state and the expected saved values are taken from the cited documents",
+      "The API and SQL read identities are independent of the UI action path"
+    ],
+    "actions": [
+      "Submit an incomplete plan and observe validation",
+      "Complete the draft, trigger one declared save failure, and capture the first anomaly",
+      "Inspect the retained form values and error state",
+      "Clear the fault, retry once, and verify one durable result through API and SQL"
+    ],
+    "expectedObservations": [
+      "Invalid input blocks Save and exposes the documented localized guidance",
+      "A failed Save retains the editable draft and does not create a durable row",
+      "The cleared fault permits one normal retry without duplicate data",
+      "The finding classification separates product behavior from selector, fixture, and harness failures"
+    ],
+    "risk": "high"
+  }
+}

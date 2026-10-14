@@ -46,7 +46,7 @@ test('Android runner slot parsing derives an isolated, exact port contract', () 
   );
 });
 
-test('Android runner slot environment exports Detox and exact cleanup namespaces', () => {
+test('Android runner slot environment exports native E2E and exact cleanup namespaces', () => {
   const values = androidRunnerSlotEnvironment(parseAndroidRunnerSlot(validEnvironment()));
 
   assert.deepEqual(Object.keys(values).sort(), [
@@ -57,9 +57,6 @@ test('Android runner slot environment exports Detox and exact cleanup namespaces
     'ANDROID_SERIAL',
     'ANDROID_TMPDIR',
     'ANDROID_USER_HOME',
-    'DETOX_ANDROID_AVD',
-    'DETOX_ANDROID_DEVICE',
-    'DETOX_METRO_PORT',
     'MYCHAMPIONS_ANDROID_ADB_SERVER_PORT',
     'MYCHAMPIONS_ANDROID_AVD',
     'MYCHAMPIONS_ANDROID_AVD_HOME',
@@ -73,6 +70,7 @@ test('Android runner slot environment exports Detox and exact cleanup namespaces
     'MYCHAMPIONS_ANDROID_TEMP_ROOT',
     'MYCHAMPIONS_ANDROID_USER_HOME',
     'MYCHAMPIONS_NATIVE_STATE_ROOT',
+    'NATIVE_METRO_PORT',
     'TMPDIR',
   ]);
   assert.equal(values.ADB_SERVER_PORT, '5038');
@@ -80,8 +78,7 @@ test('Android runner slot environment exports Detox and exact cleanup namespaces
   assert.equal(values.MYCHAMPIONS_ANDROID_ADB_SERVER_PORT, '5038');
   assert.equal(values.ANDROID_SERIAL, 'emulator-5556');
   assert.equal(values.ANDROID_TMPDIR, '/var/lib/mychampions/mychampions-android-a/temp');
-  assert.equal(values.DETOX_ANDROID_DEVICE, 'emulator-5556');
-  assert.equal(values.DETOX_METRO_PORT, '18082');
+  assert.equal(values.NATIVE_METRO_PORT, '18082');
   assert.equal(values.MYCHAMPIONS_ANDROID_METRO_PORT, '18082');
   assert.equal(
     values.MYCHAMPIONS_NATIVE_STATE_ROOT,

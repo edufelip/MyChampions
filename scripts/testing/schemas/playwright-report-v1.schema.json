@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mychampions.test/testing/playwright-report-v1.schema.json",
+  "type": "object",
+  "properties": { "suites": { "type": "array", "items": { "$ref": "#/definitions/suite" } } },
+  "required": ["suites"],
+  "definitions": {
+    "suite": {
+      "type": "object",
+      "properties": {
+        "suites": { "type": "array", "items": { "$ref": "#/definitions/suite" } },
+        "specs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "tests": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "projectName": { "type": "string" },
+                    "status": { "enum": ["expected", "unexpected", "flaky", "skipped"] },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "enum": ["passed", "failed", "timedOut", "skipped", "interrupted"]
+                          },
+                          "startTime": { "type": "string", "format": "utc-timestamp" },
+                          "duration": { "type": "number", "minimum": 0 }
+                        },
+                        "required": ["status", "startTime", "duration"]
+                      }
+                    }
+                  },
+                  "required": ["projectName", "status", "results"]
+                }
+              }
+            },
+            "required": ["title", "tests"]
+          }
+        }
+      }
+    }
+  }
+}

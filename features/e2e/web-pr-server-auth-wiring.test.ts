@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import test from 'node:test';
+import { createWebTestConfig } from '../../e2e/web/support/create-web-test-config';
 
 const root = join(__dirname, '..', '..');
 
-test('web PR workflow runs the real cookie-session browser contract against its coordinated backend', () => {
+void test('web PR workflow runs the real cookie-session browser contract against its coordinated backend', () => {
   const workflow = readFileSync(join(root, '.github', 'workflows', 'web-pr.yml'), 'utf8');
-  const playwrightConfig = readFileSync(join(root, 'playwright.server.config.ts'), 'utf8');
+  const servers = createWebTestConfig('server').webServer;
+  assert.ok(Array.isArray(servers));
+  assert.equal(servers.length, 2);
+  const [api, web] = servers;
   const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
     scripts?: Record<string, string>;
   };
@@ -35,19 +39,18 @@ test('web PR workflow runs the real cookie-session browser contract against its 
     packageJson.scripts?.['test:e2e:web:server'],
     'node scripts/run-web-e2e-batch.mjs server',
   );
-  assert.match(playwrightConfig, /process\.env\.MYCHAMPIONS_SERVER_ROOT \?\? '\.\.\/server'/);
-  assert.match(playwrightConfig, /cwd: serverRoot/);
+  assert.equal(api.cwd, resolve(process.env.MYCHAMPIONS_SERVER_ROOT ?? '../server'));
   assert.match(
-    playwrightConfig,
+    api.command,
     /PORT=3401 WEB_E2E_ORIGIN=http:\/\/127\.0\.0\.1:8082 bun run dev:web-e2e/,
   );
   assert.match(
-    playwrightConfig,
+    web.command,
     /EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=http:\/\/127\.0\.0\.1:3401 yarn web:dev --port 8082 --clear/,
   );
   assert.equal(
-    [...playwrightConfig.matchAll(/reuseExistingServer: false/g)].length,
-    2,
+    servers.every((server) => server.reuseExistingServer === false),
+    true,
     'Playwright must own and terminate both server processes for this isolated lane',
   );
 });

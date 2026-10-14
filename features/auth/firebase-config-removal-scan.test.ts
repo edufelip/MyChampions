@@ -926,7 +926,7 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
       runner: 'runs-on: [self-hosted, Linux, X64, mychampions-ci, mychampions-android]',
       requiredTokens: [
         'assembleDevRelease',
-        'devReleaseWithDebugSigning=true',
+        '-PdevReleaseWithDebugSigning=true',
         'app/build/outputs/apk/dev/release/app-dev-release.apk',
         'EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID',
         'EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID_DEV',
@@ -940,9 +940,13 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
       requiredTokens: [
         'PRODUCT_BUNDLE_IDENTIFIER="com.edufelip.mychampions.dev"',
         'APP_DISPLAY_NAME="MyChampions Dev"',
+        'CODE_SIGN_IDENTITY="Apple Distribution"',
+        '<key>method</key><string>ad-hoc</string>',
+        'ProvisionedDevices:0',
         'IOS_ADHOC_PROFILE_BASE64',
         'IOS_KEYCHAIN_PATH=$RUNNER_TEMP/mychampions-dev-signing.keychain-db',
         'IOS_PROFILE_PATH=$RUNNER_TEMP/mychampions-dev.mobileprovision',
+        'security import "$CERTIFICATE_PATH" -P "$CERT_PASSWORD"',
         'EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID',
         'EXPO_PUBLIC_REVENUECAT_API_KEY_IOS_DEV',
         'EXPO_PUBLIC_MYCHAMPIONS_SERVER_URL=https://dev.mychampions.eduwaldo.com',
@@ -954,11 +958,13 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
     assert.equal(existsSync(join(root, relativePath)), true, `${relativePath} must exist`);
     const source = readFileSync(join(root, relativePath), 'utf8');
 
+    assert.match(source, /push:\n\s+branches: \[develop\]/);
     for (const token of [
       'workflow_dispatch',
       'branches: [develop]',
       'EXPO_PUBLIC_ENV=dev',
       'APP_VARIANT=dev',
+      'configured non-production MyChampions server URL',
       'FIREBASE_SERVICE_ACCOUNT_JSON',
       appIdSecret,
       'base-group',
@@ -969,12 +975,22 @@ test('CI uses Firebase only as a development-binary distribution transport', () 
     ]) {
       assert.equal(source.includes(token), true, `${relativePath} must contain ${token}`);
     }
+    assert.doesNotMatch(source, /actions\/upload-artifact/);
+
+    if (relativePath.endsWith('ios.yml')) {
+      assert.ok(
+        source.indexOf('security import "$CERTIFICATE_PATH" -P "$CERT_PASSWORD"') <
+          source.indexOf('unset CERT_P12_BASE64 CERT_PASSWORD PROFILE_BASE64'),
+        'the Ad Hoc certificate password must remain available through keychain import',
+      );
+    }
 
     for (const token of [
+      'GoogleService-Info',
       'google-services.json',
-      'GoogleService-Info.plist',
       'GOOGLE_SERVICE_INFO_PLIST',
       'GOOGLE_SERVICES_JSON',
+      'com.google.gms.google-services',
       'FIREBASE_DEV_',
       'FIREBASE_PROD_',
     ]) {
@@ -1155,7 +1171,7 @@ test('mobile tests no longer describe server-backed paths as Firestore precedenc
   }
 });
 
-test('current product requirements no longer require Firebase provider surfaces', () => {
+test('current product requirements retain Firebase delivery only, not Firebase runtime provider surfaces', () => {
   const currentDocs = [
     'docs/functional-requirements/FR-001-domain-role-and-care-plans.md',
     'docs/acceptance-criteria/AC-005-mobile-platform-and-delivery-nfr.md',
@@ -1198,6 +1214,18 @@ test('current product requirements no longer require Firebase provider surfaces'
     'Social auth is pending the MyChampions server/Supabase bridge',
     'local development fails closed outside explicit E2E fixtures',
   ];
+
+  for (const relativePath of [
+    'docs/functional-requirements/FR-001-domain-role-and-care-plans.md',
+    'docs/acceptance-criteria/AC-005-mobile-platform-and-delivery-nfr.md',
+    'docs/test-cases/TC-005-mobile-platform-and-delivery-nfr.md',
+  ]) {
+    assert.match(
+      readFileSync(join(root, relativePath), 'utf8'),
+      /Firebase App Distribution/,
+      `${relativePath} must retain the development delivery contract`,
+    );
+  }
 
   for (const relativePath of currentDocs) {
     const source = readFileSync(join(root, relativePath), 'utf8');

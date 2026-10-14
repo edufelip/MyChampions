@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "status": "local replacement proof; hosted CI pending",
+  "retiredAssertions": [
+    {
+      "source": "features/support/support-modal-dismissal.test.ts",
+      "formerAssertionPurpose": "support modal close controls use the submission-aware dismissal guard",
+      "originalFileHash": "e9287b305a494bf03913574b586f02ff28aad67989bb01f10386935b8f5b01ab",
+      "replacementId": "TST-1c2b4da87ec9",
+      "replacementPath": "tests/component/support-modal.test.tsx",
+      "family": "support",
+      "evidenceRef": ".qa/artifacts/testing-modernization/component-controlled-regressions-current-root-20261005/controlled-regressions.json",
+      "historicalEvidenceRef": ".qa/artifacts/testing-modernization/2026-09-28-p2/controlled-regressions.json"
+    },
+    {
+      "source": "features/support/support-modal-dismissal.test.ts",
+      "formerAssertionPurpose": "support modal native back callback uses the submission-aware dismissal guard",
+      "originalFileHash": "e9287b305a494bf03913574b586f02ff28aad67989bb01f10386935b8f5b01ab",
+      "replacementId": "TST-1c2b4da87ec9",
+      "replacementPath": "tests/component/support-modal.test.tsx",
+      "family": "support",
+      "evidenceRef": ".qa/artifacts/testing-modernization/component-controlled-regressions-current-root-20261005/controlled-regressions.json",
+      "historicalEvidenceRef": ".qa/artifacts/testing-modernization/2026-09-28-p2/controlled-regressions.json"
+    },
+    {
+      "source": "features/auth/role-selection-runtime.test.ts",
+      "formerAssertionPurpose": "role selection binds the preselection guard to the Continue control",
+      "originalFileHash": "b884404d6dd4ff6ee396db9d6ffc390a4b67860719a255609a60a98e38d63e1d",
+      "replacementId": "TST-905db3e219eb",
+      "replacementPath": "tests/component/role-selection.test.tsx",
+      "family": "role",
+      "evidenceRef": ".qa/artifacts/testing-modernization/component-controlled-regressions-current-root-20261005/controlled-regressions.json",
+      "historicalEvidenceRef": ".qa/artifacts/testing-modernization/2026-09-28-p2/controlled-regressions.json"
+    },
+    {
+      "source": "features/professional/professional-home-theme-contract.test.ts",
+      "formerAssertionPurpose": "professional home task icons use the scheme-aware accent foreground (background and exact JSX assertions)",
+      "originalFileHash": "d211f5cf68cc487ead3f6cd034bb5a1ce41a1e1908ed747956fd33f35598447a",
+      "replacementId": "TST-756c627f0836",
+      "replacementPath": "tests/component/task-card-theme.test.tsx",
+      "family": "theme",
+      "evidenceRef": ".qa/artifacts/testing-modernization/component-controlled-regressions-current-root-20261005/controlled-regressions.json",
+      "retained": "Hardcoded color prohibition; decorative accessibility checks remain in their original suite.",
+      "historicalEvidenceRef": ".qa/artifacts/testing-modernization/2026-09-28-p2/controlled-regressions.json"
+    }
+  ],
+  "retained": [
+    "Support web Escape and DOM semantics/cleanup source assertions pending browser replacement",
+    "Role navigation guard and Detox synchronization checks",
+    "Shared pill button enforcement source assertions pending dedicated replacement",
+    "Professional hardcoded-color and decorative accessibility policy checks"
+  ],
+  "gaps": [
+    "TC-304.1 simultaneous empty-field errors contradict first-error validator; component cases cover fields sequentially without claiming TC-304.1."
+  ]
+}

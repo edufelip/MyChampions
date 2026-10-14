@@ -1,0 +1,16 @@
+# ROLE=student|professional; waits for the role's landing screen.
+appId: com.edufelip.mychampions.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 15000
+- runFlow: ../../common/dismiss-password-sheet.yaml
+- tapOn:
+    id: "auth.roleSelection.${ROLE == 'student' ? 'studentCard' : 'professionalCard'}"
+- tapOn:
+    id: auth.roleSelection.continueButton
+- extendedWaitUntil:
+    visible:
+      id: "${ROLE == 'student' ? 'student.home.screen' : 'pro.specialty.screen'}"
+    timeout: 10000

@@ -1,0 +1,18 @@
+appId: com.edufelip.mychampions.dev
+name: Shared webview - shows recoverable state for a repeated unsafe WebView deep link
+tags: [platform]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-student-role.yaml
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://shared/webview?intent=account&url=https%3A%2F%2Feduwaldo.com%2Fterms&url=javascript%3Aalert(1)"
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: shared.webview.invalidLink.backButton
+    timeout: 10000

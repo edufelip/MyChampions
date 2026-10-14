@@ -1,0 +1,16 @@
+appId: com.edufelip.mychampions.dev
+name: Auth role selection - redirects students away from professional routes
+tags: [authenticated]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-student-role.yaml
+- runFlow:
+    file: ../common/open-link.yaml
+    env:
+      LINK: "mychampions://professional/students"
+- extendedWaitUntil:
+    visible:
+      id: student.home.screen
+    timeout: 10000
+- assertNotVisible:
+    id: pro.students.screen

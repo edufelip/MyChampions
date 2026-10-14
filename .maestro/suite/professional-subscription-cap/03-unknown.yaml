@@ -1,0 +1,31 @@
+appId: com.edufelip.mychampions.dev
+name: Professional subscription cap - renders the unknown lock state (11/10)
+tags: [cap-unknown]
+---
+- runFlow: ../common/pro-home-skip-specialty.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.home.entitlementLock
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: "11( .*)?"
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: pro.home.subscriptionCta
+    direction: DOWN
+- tapOn:
+    id: pro.home.subscriptionCta
+- extendedWaitUntil:
+    visible:
+      id: pro.subscription.screen
+    timeout: 10000
+- assertVisible:
+    id: pro.subscription.locked
+- assertVisible:
+    id: pro.subscription.capUsage
+    text: 11 / 10 active students
+- assertVisible:
+    id: pro.subscription.statusValue
+    text: "Subscription: Status unavailable"

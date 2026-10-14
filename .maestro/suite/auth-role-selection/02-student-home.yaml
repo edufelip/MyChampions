@@ -1,0 +1,6 @@
+appId: com.edufelip.mychampions.dev
+name: Auth role selection - routes students to student home after role selection
+tags: [authenticated]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/select-student-role.yaml

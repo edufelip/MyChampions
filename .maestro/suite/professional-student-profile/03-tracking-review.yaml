@@ -1,0 +1,25 @@
+appId: com.edufelip.mychampions.dev
+name: Professional student profile - shows student tracking review and can mark a plan change request reviewed
+tags: [professional]
+---
+- runFlow: ../common/pro-students-tab.yaml
+- runFlow: ../common/pro-open-dual-student.yaml
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.trackingReview
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: pro.student_profile.trackingReview.waterValue
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: pro.student_profile.planChangeRequest.e2e-plan-change-request-nutrition
+    direction: DOWN
+- assertVisible: Please add one more high-protein breakfast option.
+- tapOn:
+    id: pro.student_profile.planChangeRequest.e2e-plan-change-request-nutrition.review
+- extendedWaitUntil:
+    visible:
+      text: No pending change requests.
+    timeout: 5000

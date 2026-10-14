@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "scope": "Configuration behavior; no application persistence claim",
+  "assertionReplacements": [
+    {
+      "source": "features/connections/use-connections-contract.test.ts",
+      "purpose": "fresh fixture server reuse policy",
+      "replacement": "In-place resolved configuration assertions; unrelated architecture checks retained",
+      "replacementFileInventoryId": "TST-af87d85c1944",
+      "controlledRegressionId": "fresh-server",
+      "testHash": "11dc5395fcc8aa0c3503b6256f9c4e47e18cb5b51fc2d1c241e53a416f09f684",
+      "evidenceRef": ".qa/artifacts/testing-modernization/2026-09-28-p3/config-regressions.json"
+    },
+    {
+      "source": "tests/ci/parse-web-port.test.ts",
+      "purpose": "strict parsing wired through resolved browser profile",
+      "replacement": "In-place resolved configuration assertions; unrelated architecture checks retained",
+      "replacementFileInventoryId": "TST-53ec5a48a180",
+      "controlledRegressionId": "strict-port",
+      "testHash": "df5e5d023fb8026dc1cc8ea814d60f96f1e6dfa11ed39fd2edb495fa26a1e3a6",
+      "evidenceRef": ".qa/artifacts/testing-modernization/2026-09-28-p3/config-regressions.json"
+    },
+    {
+      "source": "features/e2e/web-pr-server-auth-wiring.test.ts",
+      "purpose": "coordinated backend cwd/origin and owned two-server setup",
+      "replacement": "In-place resolved configuration assertions; unrelated architecture checks retained",
+      "replacementFileInventoryId": "TST-0cbcb7299828",
+      "controlledRegressionId": "coordinated-backend",
+      "testHash": "6e634f88dbb47a869b82d6e6f2ec76a40b7bf7548ea4942301b6775b161a7047",
+      "evidenceRef": ".qa/artifacts/testing-modernization/2026-09-28-p3/config-regressions.json"
+    }
+  ]
+}

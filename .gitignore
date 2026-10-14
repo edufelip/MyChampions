@@ -34,9 +34,6 @@ yarn-error.*
 # Local browser evidence (Playwright reports, traces, videos, and screenshots)
 .artifacts/
 
-# Raw Detox run output; curated evidence bundles under artifacts/ remain tracked
-artifacts/ios.sim.debug.*/
-
 # macOS
 .DS_Store
 *.pem
@@ -52,3 +49,10 @@ artifacts/ios.sim.debug.*/
 *.tsbuildinfo
 
 app-example
+
+# Private QA runtime evidence
+.qa/artifacts/
+
+# Owned isolated native-control dependency link; not a source input.
+/node_modules
+.qa/private/

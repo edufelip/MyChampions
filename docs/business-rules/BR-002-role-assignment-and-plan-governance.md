@@ -72,12 +72,11 @@
     selected native builds/tests on self-hosted runners without publishing
     successful build artifacts; bounded failure diagnostics expire after one
     day.
-  - A selected native phase is ready to launch Detox only after its freshly
+  - A selected native phase is ready to launch Maestro only after its freshly
     owned Metro process has returned and fully streamed the exact platform
     development bundle under that phase's runtime fixture environment.
   - The selected iOS job reserves dedicated non-ephemeral Metro port `18081`
-    before building, compiles it as the debug fallback, routes every debug-app
-    launch to that port, and fails closed rather than reusing or terminating an
+    before building, compiles it into the Debug app, and fails closed rather than reusing or terminating an
     unrelated listener.
   - New iOS test-only jobs are default-on. The exact lowercase repository
     variable value `MYCHAMPIONS_ENABLE_IOS_TESTS=false` intentionally skips
@@ -90,8 +89,8 @@
     listeners; boots `Pixel_10` on `emulator-5554`; proves the exact healthy AVD
     and PID/UID/start-time command identity within a bounded wait; and fails if
     any QEMU process, emulator device, or owned ports survive targeted teardown.
-  - Android Detox debug traffic must use the test-owned ADB reverse tunnel;
-    instrumented launches may not depend on the emulator's host-gateway route.
+  - Android native E2E debug traffic uses the Metro port compiled into the
+    Debug app, reached on the emulator's host loopback.
 - `BR-257`: Client-side compression is required before any image/media upload through the MyChampions server upload boundary.
 - `BR-258`: Production monitoring scope in MVP requires a selected crash/ANR provider before release and excludes additional non-crash error-monitoring platforms.
 - `BR-259`: Release updates in MVP are delivered only through App Store/Play Store binaries; OTA update channels are disabled.
@@ -120,7 +119,7 @@
 - `BR-282`: Bulk assignment clones predefined plans into per-student copies; later edits to source predefined plan do not retroactively mutate already assigned student copies.
 - `BR-283`: Bulk assignment flow must allow per-student fine-tuning before final assignment confirmation.
 - `BR-284`: Localization baseline requires every user-facing string key to have `en-US`, `pt-BR`, and `es-ES` values before release readiness.
-- `BR-285`: Critical journey screens covered by Detox smoke tests must expose stable `testID` selectors; selector changes require synchronized updates in E2E tests in the same change.
+- `BR-285`: Critical journey screens covered by Maestro smoke tests must expose stable `testID` selectors; selector changes require synchronized updates in E2E tests in the same change.
 - `BR-286`: AI meal photo analysis result is advisory only; all macro fields pre-filled by AI remain user-editable before any save or log operation.
 - `BR-287`: A captured meal image must be compressed client-side to ≤1.5 MB and ≤1600 px on longest side before base64 encoding and transmission to the MyChampions server analyzer endpoint (per FR-202 / D-061).
 - `BR-288`: The MyChampions server analyzer endpoint must validate the caller's bearer session before forwarding the request to the configured meal-photo analyzer provider; unauthenticated calls must be rejected.
@@ -138,7 +137,7 @@
 - `BR-300`: Provider detection for the password reset flow is performed at runtime from the current authenticated session metadata; the "Change password" row is always visible regardless of provider, and the runtime branch determines the action.
 - `BR-301`: A user confirmation alert must precede any password-reset request from the account settings screen; silent auto-dispatch without user acknowledgment is not permitted.
 - `BR-302`: The OAuth provider label shown in the informational alert must be resolved from runtime provider metadata: `google.com` maps to "Google", `apple.com` maps to "Apple", and any other unrecognized provider maps to "your sign-in provider".
-- `BR-303`: SC-208 exercise search/detail calls must use the exercise catalog service (`POST /catalog/search`, `GET /catalog/exercises/:id`); direct mobile calls to upstream YMove endpoints are not allowed.
+- `BR-303`: SC-208 mobile exercise search/detail calls must use the MyChampions server (`POST /integrations/exercise/search`, `GET /integrations/exercise/exercises/:id`) with the server bearer session, as specified by D-157. The server owns mirrored catalog access and upstream integration; direct mobile calls to a separate public catalog service or upstream YMove endpoints are not allowed. Earlier `/catalog/search` and `/catalog/exercises/:id` wording describes the superseded client integration, not the current mobile contract.
 - `BR-304`: Catalog requests must include the effective app/device locale in `lang` and client-generated `x-request-id` for correlation.
 - `BR-305`: Upstream YMove API keys are server-side only; no client build/runtime variable may expose that key.
 - `BR-306`: Training session items persist only stable exercise identifiers (`exerciseId`); pre-signed media URLs are never persisted.
@@ -156,7 +155,7 @@
 - `BR-339`: Production subscription authorization is derived from a server-side canonical RevenueCat customer reconciliation. A single webhook event must not directly overwrite an unrelated entitlement, and transfer events must reconcile every affected App User ID before acknowledgement.
 - `BR-340`: Professional pre-lapse warning is driven only by authoritative active-entitlement expiry plus explicit renewal, unsubscribe, or billing-issue risk. Student capacity is never treated as a billing-expiry signal.
 - `BR-341`: New `student_pro` purchases may be initiated only by locked student accounts. A professional who enters an AI gate is routed to `default_professional`, because `professional_pro` already grants AI access. Existing valid `student_pro` entitlements continue to unlock AI regardless of current role, but missing or malformed role state presents no paywall.
-- `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native bearer-session persistence keeps its existing immediate-clear behavior.
+- `BR-342`: Browser cookie sign-out and session establishment are serialized. Sign-out clears the current in-memory identity immediately, every subsequent server-backed authentication path waits for the still-running credentialed sign-out barrier, and a failed sign-out attempt releases the barrier so later authentication cannot deadlock. Native sign-out immediately clears the app's native HTTP cookie store, then the authenticated identity and the device-local persisted credential/session, so no request sent after the identity is cleared carries the old access cookie. Relaunch must remain signed out and protected UI must remain inaccessible until a new sign-in. Native sign-out does not revoke the server bearer token; a still-valid server token is not a failed native logout.
 - `BR-343`: The SC-207 add-food editor participates in the meal screen's measured layout. It may not be positioned outside the scroll extent, and native automation must use stable fields/actions and semantic confirmation copy rather than hidden coordinates.
 - `BR-344`: The supported PR path for target bases `main`, `release/**`, and
   `hotfix/**` begins with protected-`main`, self-hosted, source-free

@@ -1,0 +1,20 @@
+appId: com.edufelip.mychampions.dev
+name: RevenueCat live - shows Student Paywall v1 and dismissal grants no entitlement
+tags: [student-dismiss]
+---
+- runFlow: steps/launch-student-ai-gate.yaml
+- runFlow: steps/student-ai-locked.yaml
+- tapOn:
+    id: meal.photoAnalysis.paywall.cta
+- runFlow:
+    file: steps/paywall-contract.yaml
+    env:
+      ROLE: student
+- takeScreenshot: revenuecat-student-v1-paywall
+- runFlow:
+    file: steps/dismiss-paywall.yaml
+    env:
+      ROLE: student
+      RETURN_ID: meal.builder.screen
+- runFlow: steps/student-ai-locked.yaml
+- takeScreenshot: revenuecat-student-v1-dismissed-locked

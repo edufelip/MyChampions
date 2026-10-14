@@ -82,7 +82,7 @@ Convert current brainstorming into an execution-ready product backlog with clear
 | BL-007 Image upload progress and retry UX                  | Implemented — pure logic layer (`image-upload.logic.ts`, 62 tests), discriminated union `ImageUploadState`, retryable/non-retryable error classification, 5 locale keys in all 3 bundles, screen wiring in `nutrition/custom-meals/[mealId].tsx`                                                                                                        | FR-213 | UC-003.8  | AC-424, AC-425 | BR-271 | TC-426, TC-427 |
 | BL-008 Explicit offline banner and write-lock explanations | Implemented — offline banner + write-lock gated on all 12 screens: `pro/home`, `pro/students`, `pro/student-profile`, `pro/specialty`, `pro/pending`, `pro/subscription`, `student/home`, `student/nutrition`, `student/training`, `settings/account`, `nutrition/custom-meals/index`, `nutrition/custom-meals/[mealId]`, `shared/recipes/[shareToken]` | FR-214 | UC-002.17 | AC-257         | BR-272 | TC-261         |
 | BL-009 Subscription pre-lapse warning                      | Partial — warning UI and copy exist, but an authoritative expiry-risk signal is still required. Student capacity no longer masquerades as billing expiry, and entitlement locks no longer block recovery actions.                                                                                                                                       | FR-215 | UC-002.15 | AC-312         | BR-273 | TC-311         |
-| BL-013 Accessibility baseline for MVP                      | Implemented — all auth, student, professional, and Phase 6 screens annotated with RN core a11y props (D-105, D-125); screen-reader Detox E2E smoke and color-contrast audit deferred to release hardening                                                                                                                                               | FR-217 | UC-002.18 | AC-512         | BR-275 | TC-512         |
+| BL-013 Accessibility baseline for MVP                      | Implemented — all auth, student, professional, and Phase 6 screens annotated with RN core a11y props (D-105, D-125); screen-reader native (Maestro) E2E smoke and color-contrast audit deferred to release hardening                                                                                                                                    | FR-217 | UC-002.18 | AC-512         | BR-275 | TC-512         |
 
 ## Account & Support Coverage
 
@@ -120,15 +120,195 @@ The ten testing-strategy workstreams are implemented or explicitly gated as
 follows. “Blocked” means the required external evidence source is unavailable;
 it is not a passing result.
 
-| Workstream                                  | Status                                                                                              | Evidence and traceability                                                                                                                                                     |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. Selective-CI failure publication         | Implemented locally; hosted rerun pending                                                           | `.github/workflows/trusted-selective-tests.yml`, `tests/ci/selective-workflow-contract.test.ts`, D-201                                                                        |
-| 2. App static analysis and developer hooks  | Implemented locally                                                                                 | `docs/qa/static-analysis.md`, typed ESLint, `yarn typecheck`, `yarn lint`, `yarn format:check`, Husky/lint-staged; `noUncheckedIndexedAccess` deferred as a tracked migration |
-| 3. Cross-repo service quality and contracts | Implemented locally                                                                                 | Server, food, and exercise `docs/qa/service-quality-gates.md` plus their build/lint/test/contract workflows; server backend baseline retained                                 |
-| 4. Protected full Detox iOS/Android lane    | Implemented as protected manual/release workflow; self-hosted runner evidence pending               | `.github/workflows/detox-protected-full.yml`, `docs/qa/native-release-validation.md`; no nightly until SLO proof                                                              |
-| 5. Top native E2E gaps                      | Implemented as scenario-isolated fixtures                                                           | `docs/qa/native-e2e-gap-matrix.md`; role persistence, camera denial, malformed QR on iOS/Android profiles                                                                     |
-| 6. Playwright critical paths                | Implemented and locally green                                                                       | `e2e/web/critical-path-regressions.spec.ts`, `config/test-impact.json`, full 74-pass run across browser engines                                                               |
-| 7. Visual evidence triage                   | Implemented and locally tested                                                                      | `e2e/web/support/visual-evidence.ts`, `tests/ci/visual-evidence.test.ts`; no baseline means `unbaselined`, not pass                                                           |
-| 8. Provider/subscription validation         | Implemented as credential-gated lane; provider evidence blocked without approved credentials/access | `.github/workflows/provider-validation.yml`, `docs/qa/provider-subscription-validation.md`; iOS Test Store lane only, Android provider setup pending                          |
-| 9. Recurring persona QA                     | Week-one browser-first run completed; native/provider rows remain unverified                        | Linear QA Run `ET-25`, `docs/qa/first-week-personas-2026-08-08.md`, QA Skill insight                                                                                          |
-| 10. Monthly cross-repo gap sweep            | First dated sweep completed                                                                         | `docs/qa/test-gap-sweep.md`, `docs/qa/test-gap-report-2026-08.md`                                                                                                             |
+| Workstream                                          | Status                                                                                              | Evidence and traceability                                                                                                                                                     |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Selective-CI failure publication                 | Implemented locally; hosted rerun pending                                                           | `.github/workflows/trusted-selective-tests.yml`, `tests/ci/selective-workflow-contract.test.ts`, D-201                                                                        |
+| 2. App static analysis and developer hooks          | Implemented locally                                                                                 | `docs/qa/static-analysis.md`, typed ESLint, `yarn typecheck`, `yarn lint`, `yarn format:check`, Husky/lint-staged; `noUncheckedIndexedAccess` deferred as a tracked migration |
+| 3. Cross-repo service quality and contracts         | Implemented locally                                                                                 | Server, food, and exercise `docs/qa/service-quality-gates.md` plus their build/lint/test/contract workflows; server backend baseline retained                                 |
+| 4. Protected full native (Maestro) iOS/Android lane | Implemented as protected manual/release workflow; self-hosted runner evidence pending               | `.github/workflows/native-protected-full.yml`, `docs/qa/native-release-validation.md`; no nightly until SLO proof                                                             |
+| 5. Top native E2E gaps                              | Implemented as scenario-isolated fixtures                                                           | `docs/qa/native-e2e-gap-matrix.md`; role persistence, camera denial, malformed QR on iOS/Android profiles                                                                     |
+| 6. Playwright critical paths                        | Implemented and locally green                                                                       | `e2e/web/critical-path-regressions.spec.ts`, `config/test-impact.json`, full 74-pass run across browser engines                                                               |
+| 7. Visual evidence triage                           | Implemented and locally tested                                                                      | `e2e/web/support/visual-evidence.ts`, `tests/ci/visual-evidence.test.ts`; no baseline means `unbaselined`, not pass                                                           |
+| 8. Provider/subscription validation                 | Implemented as credential-gated lane; provider evidence blocked without approved credentials/access | `.github/workflows/provider-validation.yml`, `docs/qa/provider-subscription-validation.md`; iOS Test Store lane only, Android provider setup pending                          |
+| 9. Recurring persona QA                             | Week-one browser-first run completed; native/provider rows remain unverified                        | Linear QA Run `ET-25`, `docs/qa/first-week-personas-2026-08-08.md`, QA Skill insight                                                                                          |
+| 10. Monthly cross-repo gap sweep                    | First dated sweep completed                                                                         | `docs/qa/test-gap-sweep.md`, `docs/qa/test-gap-report-2026-08.md`                                                                                                             |
+
+## Testing modernization
+
+| ID     | Status      | Outcome and acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | References                                                                                                     |
+| ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| BL-018 | In progress | Inventory/curate tests; own disposable Postgres; rendered component and integrated browser proof; move native E2E from Detox to Maestro; bounded exploration; gated CI migration. The Detox comparison was dropped (owner decision 2026-10-07) and Detox was retired on 2026-10-09 after the five native journeys passed on Maestro on both platforms; the 66 Detox fixture cases run as 70 tagged Maestro flows. Completion requires the remaining plan gates and receipts, including a hosted protected Maestro run, which has not happened yet. The SC-205 return-to-roster freshness source correction is Done. | D-219; docs/plans/2026-09-28-testing-structure-and-maestro-plan.md; docs/qa/testing-modernization-task-card.md |
+
+BL-016 remains In progress under D-195. Current selective candidate execution is web-only; protected native validation is separate. Broad-native/scheduled execution references above are historical targets, not a hosted promotion claim.
+
+### Camera input diagnostic source checkpoint (2026-10-03)
+
+BL-018 / D-219 remains **In progress**. Root integrated the independently reviewed V6 diagnostic into the qualified worktree only, with all thirteen source preimages and final hashes guarded. The public `--credential-interaction-diagnostic` flag is restricted to iOS/Maestro/`SCN-camera-denied-ios`/integration. The diagnostic retains the student fixture/home/auth boundary, explicitly disables the email tap retry, preserves the exact email assertion and all four camera assertion IDs, and binds the original monotonic deadline and cancellation to capture. Capture and public output retain distinct owned namespaces; directory/ID/deadline bindings are reread before cleanup-gated staging.
+
+The consolidated five-contract readiness gate passes, including the actual adapter orchestration with resource-free injected dependencies and positive, tampered-binding, tampered-deadline, missing-binding and cancellation outcomes. Canonical controls pass 76/76 focused, 8/8 dispatch and 14/14 closure/cleanup; full TypeScript, strict lint with zero warnings and formatting pass. The current-project overlay graph has 803 roots, 1902 source files, thirteen overrides and zero diagnostics. These are source controls, not native passing cases. Evidence: `camera-input-v6-root-integration-2026-10-03-v1/TRANSFER.private.json`; its root addendum corrects the review metadata's truncated manifest hash while preserving the immutable original review and all thirteen independently matched source hashes.
+
+Diagnostic source wiring is **Done**; actual camera execution and UI/API/SQL/independent-cleanup qualification remain **Pending**. A fresh build and declaration/source binding are required before the one representative journey. Native assertions executed/passed at this source checkpoint are 0/0; actual cold attempts remain zero and the 400-attempt comparison remains gated. The native logout owner decision is unchanged. No product, auth/provider, API, business rule or localized-copy behavior changed, so FR/UC/AC/BR/screen/localization artifacts need no update. All T14-T20 acceptance gates remain in scope.
+
+### Camera diagnostic runtime checkpoint (2026-10-03)
+
+Representative public attempt `ed04add4a4973aa25814bb5b`, capture
+`d680d07fbe4d107eefe3ca5d`: fresh iOS build and installation completed.
+The explicit no-retry email interaction and unchanged exact email assertion
+passed. The subsequent credential sign-in/home command failed with original
+child exit 1; the public invocation terminated with exit 2 and
+`harness-blocked`. Camera assertions were not reached; this is not a passing
+scenario or cold attempt. Independent cleanup passed for 106 PID/start pairs,
+with no survivors, unknown queries, missing foreign devices, owned device,
+cache, or owned Docker resources. All 197 frozen source hashes remained
+unchanged through terminal cleanup; the source hold was released.
+
+Evidence: primary private artifact directory
+`.qa/artifacts/testing-modernization/camera-input-representative-public-live-2026-10-03-v1`,
+including `ROOT-TERMINAL.private.json` and `ROOT-CLEANUP.private.json`.
+Sign-in/home diagnosis remains Pending; T14–T20 and the pending logout policy
+decision remain open. No product, auth, provider, or localized-copy behavior
+changed.
+
+### Diagnostic password-focus source change (2026-10-03)
+
+Following representative capture `d680d07fbe4d107eefe3ca5d`, retained protocol
+and hierarchy evidence show password input appended to the still-focused email
+field, causing the unchanged post-password email assertion to fail before
+submit. The visible iOS keyboard setup panel supports a focus-obstruction
+hypothesis; its causal role is unproven. The reviewed diagnostic continuation
+now dismisses the keyboard semantically immediately before selecting the
+password field. It preserves the existing post-password dismissal, exact email
+assertion, effective retries disabled, student auth/home identity, and all four
+camera assertions. Non-diagnostic credential helpers are unchanged.
+
+Source wiring: **Done in the qualified worktree**. Native repair, camera
+UI/API/SQL qualification, and T14–T20: **Pending** until controlled runtime
+evidence. This adds no coordinates, email re-entry, retries, auth behavior,
+provider change, or user-facing copy. FR/UC/AC/BR/screens/localization remain
+accurate and require no behavior update. Private integration evidence:
+`.qa/artifacts/testing-modernization/camera-password-keyboard-root-integration-2026-10-03-v1`.
+
+### Camera generated-flow parsing checkpoint (2026-10-03)
+
+Public attempt `550bd6203285d60273fba536`, capture
+`b3af53f7570409ccd14a0773`: fresh build/install and the credential continuation
+completed after the diagnostic keyboard dismissal. Student home, camera
+relationships, permission prompt, denial guidance, and manual-code preparation
+produced retained runtime evidence. The scenario remained **harness-blocked**:
+Maestro rejected `connection-switch-1-coach-account.yaml` before any Account UI
+action, because the semantic navigation token `student-professionals-back` was
+emitted as a bare YAML action body. This is a generation defect, not evidence
+of an Account-screen defect. Public assertions remain empty; no scenario pass
+or T15 cold attempt is credited.
+
+Independent cleanup passed 181 PID/start pairs with no survivors, unknown
+queries, missing foreign devices, owned simulator/cache, or owned Docker
+resources. All 197 frozen source hashes matched through cleanup; source hold
+released. Private terminal evidence:
+`.qa/artifacts/testing-modernization/camera-password-keyboard-public-live-2026-10-03-v1`.
+
+Navigation lowering repair and resource-free parsing of every reachable flow
+for this exact camera checkpoint are **In progress**. Before the next build,
+render safe fixture placeholders through existing helpers/parser and verify
+command-list structure, including student-back navigation and the
+student-to-coach switch. Retain the original malformed YAML/log and a detecting
+control; compare repaired bytes and report checked/reachable flow counts. This
+supplements source readiness and never substitutes for native UI/API/SQL
+qualification. All four camera assertions, build/source guards, deadlines,
+cleanup, logout-policy decision, T14–T20, and the 400-attempt gate remain intact.
+Product/auth/provider/copy requirements are unchanged.
+
+### Camera generated-flow source checkpoint passed (2026-10-03)
+
+The navigation lowering repair is **Done for source readiness; native qualification remains Pending**. The canonical production helper lowers student-back navigation into structured Maestro actions before opening Account. The actual 243-byte malformed flow is retained as a regression fixture. Resource-free controls parse all **21/21 reachable complete production documents** for this diagnostic camera path and separately check two shared builders, preserving four camera assertion IDs and the 90-second waits.
+
+The four new controls passed; the 13 existing affected controls passed in the initial batch. The initial aggregate 16/17 failure and subsequent adaptation failures remain retained alongside the final passing preflight, zero-warning lint, full-project typecheck, and formatting receipts in `.qa/artifacts/testing-modernization/camera-generated-flow-root-integration-2026-10-03-v1`. Source checks do not count as native passes or cold attempts.
+
+Existing build-reuse qualification excludes the prior camera harness-blocked capture, so the next controlled replay requires a fresh build. Native UI/API/SQL, independent cleanup, exact source identities, original deadlines, logout-policy decision, T14–T20, and the 400 actual cold-attempt gate remain required. No product behavior, provider terminology, requirements, screen copy, or localization changed; those artifacts require no update for this harness repair.
+
+### Camera generated-flow native replay terminal (2026-10-03)
+
+Public attempt `8723184abde92777c3aad4fc`, capture `447a56427f4e0659212d7abd`, ended **harness-blocked** with original child exit 2. The fresh build succeeded; diagnostic sign-in, camera permission denial, guidance, and manual-code preparation completed. Repaired Account-switch YAML parsed. Its student-back tap completed, but the following `tabs.account` tap failed because the selector was absent. A partial log containing completed actions did not prove the whole switch completed; the retained terminal log owns the outcome.
+
+The manual-entry screenshot shows an open keyboard. The failure screenshot shows the same invite-entry screen with the keyboard dismissed. Keyboard interception is a diagnosis to investigate against screen behavior, not a confirmed platform cause. No unchanged rerun is authorized by this checkpoint; establish and review a specific repair first. Four camera assertion IDs and native UI/API/SQL requirements remain intact; public assertions are empty and no scenario pass or cold attempt is credited.
+
+Independent cleanup passed 186 PID/start pairs with no survivors, unknown queries, missing foreign devices, owned simulator/cache, or Docker resources. All 199 frozen source hashes matched before release. Terminal evidence is sealed in `.qa/artifacts/testing-modernization/camera-generated-flow-public-live-2026-10-03-v1`. The final-source provenance addendum explicitly supersedes the earlier pre-adaptation transfer test hash while preserving the historical receipt. T14–T20 and the 400-attempt comparison remain Pending; product/auth/provider/localization behavior is unchanged.
+
+### Camera Back keyboard source repair (2026-10-03)
+
+The reviewed semantic student-back path now emits `hideKeyboard`, one Back tap, a bounded 90-second `student.home.screen` witness, then Account; the original 90-second Account-screen wait remains. The existing whole/step deadlines still bound execution. The installed React Native ScrollView source confirms default keyboard tap consumption, consistent with the retained before/after hierarchy and screenshots; successful native replay is still required. No repeated Back taps, coordinates, fallback retries, product navigation, auth policy, or camera assertions were introduced.
+
+Source repair is **Done; native qualification is Pending**. Canonical controls passed 11/11, including all 21 reachable complete production flow documents, unchanged `none`/legacy paths, and the original malformed-YAML fixture. Full-project typecheck, zero-warning lint, and formatting passed. The detecting-before missing-dismissal control and exact preimages are retained in `.qa/artifacts/testing-modernization/camera-back-keyboard-root-integration-2026-10-03-v1`. No native pass or cold attempt is credited. All T14–T20 gates, independent cleanup, UI/API/SQL evidence, four assertion IDs, and 400 actual cold attempts remain required. No product/provider/copy change occurred, so FR/UC/AC/BR/screens/localization need no update.
+
+### Camera keyboard repair native replay terminal (2026-10-03)
+
+Attempt `aba9a3c2da99139b612e2f25`, capture `ee26d04023ee52821d88c28b`, ended **harness-blocked**, original child exit 2. The fresh build succeeded. All five repaired Back/Account commands completed, including the home and Account destination witnesses. Both role switches, invitation creation, live manual submission, and pending-card observation reached their command checkpoints. These partial results do not qualify the full camera scenario.
+
+The observer then rejected `trainingAfter` versus `trainingBefore` as unrelated training state. The retained diff includes the expected newly submitted connection inside the broad domain snapshot. Diagnose the snapshot scope and consumer verification before repair; preserve strict expected-connection transition and unrelated connection isolation, and require mutation-detecting training checks. No assertion may be dropped to make the replay pass. Public assertions remain empty; native scenario passes and cold attempts are unchanged.
+
+Independent cleanup passed **402 PID/start pairs**, with no survivors, unknown queries, missing foreign devices, owned simulator/cache, or Docker resources. All 199 frozen paths matched; source hold released. Evidence is sealed in `.qa/artifacts/testing-modernization/camera-back-keyboard-public-live-2026-10-03-v1`. The generic iOS connection adapter's raw-navigation versus Detox enum mismatch is a separate reviewed-source candidate, not an integrated or runtime-qualified fix yet. All T14–T20 and 400 actual cold attempts remain in scope. Product/auth/provider/copy behavior is unchanged.
+
+### Generic iOS connection navigation source integration (2026-10-03)
+
+The shared iOS connection adapter now forwards `none` and `student-professionals-back` unchanged. Maestro lowers those values at the existing capture boundary; Detox validates/transports the semantic enum at its existing IPC boundary. This fixes the former raw-YAML conversion, which bypassed the repaired Maestro semantic branch and violated the Detox navigation contract. Source integration is **Done; native/runtime qualification remains Pending**.
+
+Canonical adapter/camera controls passed 6/6, including all 21 generated camera documents and real Detox command validation with a rejecting raw-YAML input. After three test-style lint warnings were repaired, the adapter controls passed 2/2 again; full-project typecheck, zero-warning lint, and formatting pass. The original warning receipt remains retained in `.qa/artifacts/testing-modernization/ios-connection-enum-root-integration-2026-10-03-v1`. Source checks do not qualify native Detox, cold resets, or the complete connection journey. The camera domain-snapshot comparison repair remains separate and Pending. No product/auth/provider/copy behavior changed, so product requirements and localization need no update; T14–T20 and 400 actual cold attempts remain required.
+
+### Camera domain preservation repair contract (2026-10-03)
+
+Status: **In progress**, owner: client/server maintainer. Preserve complete raw before/after `domain-snapshot-v1` bytes and their source references. Compare every non-connection field exactly, including schema/run/scope/read-only identity and all training plan/session/owner fields. The expected connection transition must remain independently strict, and unrelated connection isolation must remain exact. Bind embedded domain connection rows to the corresponding before/pending connection snapshots using every shared field. The domain-only `sourceInviteCodeValue` is retained: preexisting values must remain unchanged and the new target value must match the observed coach invite code. The retained baseline confirms the two shared rows match; no after-domain bytes exist for the historical failed run.
+
+Required source controls: a realistic expected 2-to-3 connection delta passes through the actual producer and consumer; training/session/ownership/row/identity changes and mismatched embedded connections reject. Existing empty-connection domain fixtures masked the failure and must be corrected. Save after-snapshot bytes before preservation checks so future failures retain diagnostics. Preserve four camera assertions, full raw schema validation, API/SQL evidence, deadlines, and cleanup. Source readiness and a fresh native replay are separate pending gates; do not rerun unchanged code or credit historical training preservation. No product behavior, provider, auth policy, or localized copy changes are in scope.
+
+### Camera domain preservation source acceptance (2026-10-03)
+
+The four-file repair is integrated and accepted by independent preservation and provenance/staging reviewers. Source readiness is **Done; native qualification remains Pending**. Full raw snapshots are persisted before semantic checks; complete non-connection identity/training equality, embedded SQL-row binding, preexisting invite-value preservation, observed target invite-value binding, strict connection transition, and isolation checks are enforced in both producer and consumer.
+
+The corrected actual-producer fixture models two preserved connections becoming three, one preserved plan/session, eight mutation/identity rejections, and complete raw-after retention. The consumer fixture covers the same connection delta and mutation/source-value failures. Canonical batch passed 56/57; the only failure was the stale inventory guard expectation. After refreshing inventory and fixing one test-only type annotation, affected controls passed 30/30; full-project typecheck, zero-warning lint, and formatting pass. The original failures remain retained. The final inventory-dependent closure check is required before dispatch. Evidence: `.qa/artifacts/testing-modernization/camera-domain-oracle-root-integration-2026-10-03-v1`.
+
+Review scopes were preservation/producer-consumer and provenance/staging/lifecycle, with one complete findings list per reviewer. Final preflight hash `c2fdba22360956f8818fa1d6e245bc6a0d2e0ae9f6a82bbf79959ee16deac984` supersedes the historical transfer preflight hash; the change adds only an erased TypeScript annotation. Existing four assertions, UI/API/SQL evidence, source identity, deadlines, cleanup, T14–T20, and 400 actual cold attempts remain unchanged. The failed camera capture does not qualify for build reuse; exactly one fresh representative replay follows the final source checkpoint. No native pass, cold attempt, product/auth/provider/copy change, or performance saving is claimed.
+
+### Camera domain preservation terminal replay (2026-10-03)
+
+The accepted source checkpoint was replayed once through the public iOS/Maestro integrated camera command with a fresh successful build. Public attempt `331f7489538121d7b38f348c`, capture `0c8298b88b625cbef9130da1`, is terminal with child exit 2: capture **observed**, callback completed, public **harness-blocked** at verification. No camera scenario pass or cold attempt is claimed.
+
+The actual denial/manual fallback, two-role journey, authenticated coach invite, native submit (201), pending UI/API/SQL and raw after-state persistence completed. Independent readback confirms the two-to-three embedded connection transition, exact complete non-connection domain preservation and identical isolation snapshot bytes. The public verifier rejected `Camera denial transport window contains an undeclared mutation`: producer metadata starts at request zero and includes pre-sign-in analytics requests 1 and 2 (`POST /analytics/events`, 202) before sign-in request 3. This is the next diagnosed harness boundary, not proof that the public assertion contract passed. The next correction must distinguish the authenticated prelude from the actual camera action interval with producer-backed boundaries, retain complete raw transport and normal sign-in/read evidence, and reject undeclared business mutations. Do not blanket-allow telemetry or change authentication/logout behavior. Boundary repair is **In progress (diagnosis)**; public native qualification remains **Pending**.
+
+Independent cleanup passed; all 200 held source paths remained unchanged before hold release. Original terminal receipts and after snapshots are retained. Private proof: `camera-domain-oracle-public-live-2026-10-03-v1/ROOT-TERMINAL.private.json` and `camera-domain-oracle-terminal-readback-2026-10-03-v1/READBACK.private.json`. No retry or build-reuse eligibility is inferred from this blocked public receipt. T14 equivalence, T15 all 400 actual cold attempts, T16-T20 and the separate pending logout policy decision remain unchanged. This checkpoint changes only QA delivery status: product requirements, business rules, use cases, screens, provider behavior and localized copy are unchanged, so those artifacts need no update.
+
+### Camera transport boundary repair contract (2026-10-03)
+
+**In progress (source); native Pending.** The diagnosed public camera failure is addressed by capturing the actual `owned-api-proxy.requestIdFence` immediately before the camera observer begins. Persist a producer-bound marker; the denial interval is `(preludeFence, denialEnd]`, selected request IDs must match complete raw sidecar rows exactly, and the fence must follow the initial authenticated student boundary. Preserve the full raw stream and separately verify the initial sign-in and normal camera-window relationship read. The consumer must reject missing/forged boundaries, reordered/omitted/hash-mismatched observations, analytics or business mutations after the marker, and any caller/source mismatch. No blanket telemetry exception is authorized by this QA repair.
+
+The actual replay also omitted `cameraInitialAuth.beforeRequestId` while the existing consumer requires it. Retain the actual captured pre-sign-in fence in the producer; do not invent zero or weaken identity validation. Keep all four assertion IDs, exact UI/API/SQL/domain checks, source-byte staging, deadlines, cancellation and independent cleanup. Resource-free positive/negative controls precede a fresh native replay; source controls are not native qualification. No product/auth/logout/provider/localization change is planned, and the separate logout policy decision remains pending.
+
+Before another native build, this source packet also requires one resource-free completed-report integration gate: invoke the real owned capture producer seam used by the production call-site, serialize its completed report, stage protected evidence, and consume it through the complete camera/public verifier including later initial-auth validation. Use the retained replay topology (pre-sign-in analytics, actual auth fences, normal reads, denial interval, one live-submit-shaped 201 and pending UI/API/SQL, complete two-to-three domain transition). The producer must emit the initial `beforeRequestId` and bound camera prelude marker; fixture code may not manually supply those missing fields in place of production emission. Reject missing/forged markers, prefix mismatch, undeclared in-window mutations and late metadata gaps. Reuse the current fixture/staging infrastructure, retain original receipts, and label this gate source evidence only. This gate is **Pending** until its actual receipt passes; it does not replace native assertions, cleanup, source/build binding or independent review.
+
+The completed-report trace also requires correcting publication order. The private camera adapter currently calls the complete stager before its own terminal sidecar exists, while the final public consumer calls the exclusive stager again. The adapter must validate the completed raw report, retain its cleanup/caller/deadline checks, and publish the immutable terminal sidecar with zero native passes. Its `stagedManifestPath` remains null because it has not staged. The complete public consumer then performs protected staging exactly once after all sidecars exist, revalidates the staged evidence and runtime/cleanup identities, and only then may expose the original four passed assertion outcomes. This ordering correction is **In progress** within the same source packet; offline positive and failure controls plus native replay remain required.
+
+Publication ordering is now **Done (source in the qualified worktree); packet acceptance and native qualification remain Pending**. The adapter validates the raw completed report and publishes its terminal sidecar without calling the protected stager; `stagedManifestPath` is null and native passing cases remain zero. The unchanged complete public staging body is exported solely so the offline integration control can execute the same function used by production. The affected actual adapter-chain control failed before this change and passes afterward, including its caller-binding, deadline, missing-binding and cancellation subcases. Full qualified TypeScript, scoped zero-warning lint and formatting pass. Proof: `camera-denial-boundary-controls-preparation-2026-10-03-v1/PUBLICATION-ORDER.private.json`. This is not the completed-report integration receipt: the producer boundary candidate, real-validator/stager/public-consumer gate, consolidated independent review and fresh native replay remain Pending.
+
+## Native logout owner decision (2026-10-03, 18:58 UTC)
+
+The owner instructed: “Only clear on device ! Now go ahead with the next steps,
+you’re owning that now! Go ahead”. D-219 / BL-018 therefore selects the existing
+FR-270 / BR-342 device-local native logout contract. AC-539 and TC-333 require
+persisted credential/session and authenticated identity clearing, signed-out
+relaunch, inaccessible protected UI and no authenticated hydrate after relaunch.
+A still-valid server bearer token is not failed native logout. Native server
+revocation is outside this acceptance scope; browser sign-out serialization and
+revocation remain unchanged.
+
+Policy decision: **Done**. T14-A execution and T15 comparison: **Pending**.
+Retain all five families, both platforms, both engines and the required 400
+actual balanced cold attempts. NAT-session-signout and
+NAT-session-signed-out-relaunch retain their IDs and gain the explicit
+FR-270 / BR-342 / AC-539 / TC-333 requirement links. Existing isolation,
+local-storage, UI, transport, cleanup and threshold checks remain required.
+Historical decision-needed reports retain their original outcomes and are
+superseded only as current policy gates. No product authentication, browser
+use case, user-facing copy or localization implementation changes are needed.
+
+### BL-018 / D-219 — T16 runtime integration checkpoint (2026-10-04)
+
+Status: **In progress**. The reviewed V4 exploration owner/stdio/controller/outer-cleanup integration is canonically transferred (25 paths), with 80/80 controls, full TypeScript and touched lint/format validation passing. Actual bounded exploration and T17 regression conversion remain Pending; source controls add no native/public/cold passes. The package script change requires a fresh qualified native build, confirmed by the actual reusable-iOS loader rejecting the prior source identity. Preserve all T14 twenty cells, T15 four-hundred actual cold attempts and T16–T20 completion gates. Camera request/cleanup fixes and remaining Detox camera wiring are ongoing, not deferred acceptance. Evidence: `t16-v4-root-canonical-integration-2026-10-04-v1/TRANSFER.private.json` and `BUILD-REUSE-REVALIDATION.private.json`. No product requirements, localization or backend provider behavior changed.

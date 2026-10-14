@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Student training - shows assigned training calendar and workout sessions for the current student
+tags: [training]
+---
+- runFlow:
+    file: ../common/student-open-route.yaml
+    env:
+      ROUTE: mychampions://student/training
+      SCREEN_ID: student.training.screen
+- extendedWaitUntil:
+    visible:
+      id: student.training.weekStrip
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: student.training.sessionCard-e2e-assigned-session
+    direction: DOWN

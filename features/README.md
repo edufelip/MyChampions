@@ -20,6 +20,6 @@ Before adding or moving a runtime file:
 
 1. Add its path to exactly one feature or shared rule.
 2. Declare any new dependency.
-3. Register every new Detox or Playwright spec in a suite.
+3. Register every new Maestro suite folder or Playwright spec in a suite.
 4. Update `CODEOWNERS` when ownership changes.
 5. Run `yarn test:impact` and `yarn test:impact:resolver`.

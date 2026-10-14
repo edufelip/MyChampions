@@ -1,0 +1,8 @@
+appId: com.edufelip.mychampions.dev
+---
+- runFlow: ../../common/launch-fresh.yaml
+- runFlow:
+    file: select-role.yaml
+    env:
+      ROLE: student
+- runFlow: student-open-ai-gate.yaml

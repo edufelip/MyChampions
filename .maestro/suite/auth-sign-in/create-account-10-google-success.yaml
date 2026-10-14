@@ -1,0 +1,17 @@
+appId: com.edufelip.mychampions.dev
+name: Auth create account - navigates to role-selection after successful Google create account
+tags: [auth-entry]
+---
+- runFlow: ../common/launch-fresh.yaml
+- runFlow: ../common/wait-sign-in.yaml
+- runFlow: ../common/open-create-account.yaml
+- scrollUntilVisible:
+    element:
+      id: auth.createAccount.googleButton
+    direction: DOWN
+- tapOn:
+    id: auth.createAccount.googleButton
+- extendedWaitUntil:
+    visible:
+      id: auth.roleSelection.title
+    timeout: 10000
